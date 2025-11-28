@@ -633,7 +633,7 @@ const ClaimEntry = () => {
               { label: "Email", key: "email" },
               { label: "Bank Name", key: "bank_name" },
               { label: "Branch Name", key: "branch_name" },
-              { label: "Branch Code", key: "branch_code" },
+              // { label: "Branch Code", key: "branch_code" },
               { label: "IFSC Code", key: "ifsc_code" },
               { label: "Account Number", key: "account_no" }
             ].map(({ label, key }) => (
