@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL;   // ✅ IMPORTANT
+
 
 const PaymentProcess = () => {
+  const API_URL = import.meta.env.VITE_API_URL;   // ✅ IMPORTANT
+  console.log(API_URL)
   const [prList, setPrList] = useState([]);
   const [selectedPrId, setSelectedPrId] = useState(null);
   const [claims, setClaims] = useState([]);
