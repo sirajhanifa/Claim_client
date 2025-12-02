@@ -58,7 +58,7 @@ const Layout = () => {
     },
     {
       name: 'Logout',
-      path: '/',
+      path: '/logout',
       icon: <IoIosLogOut />
     }
   ];
@@ -77,9 +77,10 @@ const Layout = () => {
     },
     {
       name: 'Logout',
-      path: '/',
+      path: '/logout',
       icon: <IoIosLogOut />
     }
+
   ];
 
   // Choose menu based on role

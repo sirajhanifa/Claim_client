@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate, useParams } from 'react-router-dom';
 import useFetch from '../../hooks/useFetch';
 import usePost from '../../hooks/usePost';
 import QpsFields from './QpsFields';
@@ -15,6 +16,9 @@ const ClaimEntry = () => {
   const apiUrl = import.meta.env.VITE_API_URL;
   const { data: claimTypes } = useFetch(`${apiUrl}/api/getClaim`);
   const { postData } = usePost();
+  const navigate = useNavigate();
+
+  const { username } = useParams();
 
   const [phoneNumber, setPhoneNumber] = useState('');
   const [form, setForm] = useState({
@@ -328,7 +332,10 @@ const ClaimEntry = () => {
           account_no: data.bank_acc_no || ''
         }));
       } else {
-        alert(data.message || "No staff found");
+        // ✅ Show alert with OK/Cancel
+        if (window.confirm(data.message || "No staff found. Do you want to add new staff?")) {
+          navigate(`/layout/${username}/staffmanage`);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -372,11 +379,15 @@ const ClaimEntry = () => {
 
   return (
 
-    <div className="p-8 max-w-full mx-auto">
-      <h2 className="text-2xl font-bold mb-6 text-blue-900">Claim Entry</h2>
+    <div className="p-10 max-w-7xl mx-auto">
+      <h2 className="text-3xl font-extrabold mb-8 text-blue-900 tracking-tight border-b pb-2">
+        Claim Entry
+      </h2>
 
-      <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-2 bg-white p-8 rounded-xl shadow-lg border border-gray-200">
-
+      <form
+        onSubmit={handleSubmit}
+        className="grid gap-8 md:grid-cols-2 bg-white p-10 rounded-2xl shadow-xl border border-gray-200"
+      >
         {/* Claim Type */}
         <div>
           <label className="text-sm font-semibold text-gray-700">Claim Type</label>
@@ -384,11 +395,13 @@ const ClaimEntry = () => {
             tabIndex={1}
             value={form.claim_type_name}
             onChange={(e) => setForm({ ...form, claim_type_name: e.target.value })}
-            className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+            className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition hover:border-blue-400"
           >
             <option value="">Select Type</option>
             {claimTypes?.map((c) => (
-              <option key={c._id} value={c.claim_type_name}>{c.claim_type_name}</option>
+              <option key={c._id} value={c.claim_type_name}>
+                {c.claim_type_name}
+              </option>
             ))}
           </select>
         </div>
@@ -403,14 +416,22 @@ const ClaimEntry = () => {
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               placeholder="Enter Phone Number"
-              className="flex-1 px-4 py-2 border font-semibold border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              className="flex-1 px-4 py-2 border font-semibold border-gray-300 rounded-lg 
+                 focus:outline-none focus:ring-2 focus:ring-blue-500 transition hover:border-blue-400"
               required
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault(); // prevent form submit
+                  handleFetchStaff(); // call Get button logic
+                }
+              }}
             />
             <button
               type="button"
               tabIndex={3}
               onClick={handleFetchStaff}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:scale-95 transition"
+              className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                 active:scale-95 transition font-semibold shadow-sm"
             >
               Get
             </button>
@@ -419,7 +440,9 @@ const ClaimEntry = () => {
 
         {/* Claim Details Section */}
         <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded-xl p-6 shadow-sm">
-          <h3 className="text-lg font-bold text-blue-800 mb-4 flex items-center gap-2">🧾 Claim Details</h3>
+          <h3 className="text-lg font-bold text-blue-800 mb-4 flex items-center gap-2">
+            🧾 Claim Details
+          </h3>
 
           <div className="grid md:grid-cols-2 gap-6">
             {form.claim_type_name === "QPS" && <QpsFields form={form} setForm={setForm} />}
@@ -439,7 +462,8 @@ const ClaimEntry = () => {
                 autoComplete="off"
                 value={form.amount}
                 onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                className={`mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${form.claim_type_name === "QPS" ? 'bg-gray-100' : ''}`}
+                className={`mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition hover:border-blue-400 ${form.claim_type_name === "QPS" ? "bg-gray-100" : ""
+                  }`}
                 required
               />
             </div>
@@ -447,9 +471,18 @@ const ClaimEntry = () => {
         </div>
 
         {/* Staff Info Section */}
-        <div className="md:col-span-2 bg-gray-50 border border-gray-200 rounded-xl p-6 shadow-sm">
-          <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">👤 Staff Information</h3>
+        <div className="md:col-span-2 bg-gray-50 border border-gray-200 rounded-2xl p-10 shadow-md">
+          {/* Section Header */}
+          <div className="flex items-center justify-between mb-6 border-b border-gray-300 pb-3">
+            <h3 className="text-xl font-extrabold text-gray-800 flex items-center gap-2">
+              👤 Staff Information
+            </h3>
+            <span className="text-xs font-medium text-gray-700 bg-gray-200 px-3 py-1 rounded-full">
+              View Only
+            </span>
+          </div>
 
+          {/* Staff Details Grid */}
           <div className="grid md:grid-cols-2 gap-6">
             {[
               { label: "Staff ID", key: "staff_id" },
@@ -460,22 +493,22 @@ const ClaimEntry = () => {
               { label: "Email", key: "email" },
               { label: "Bank Name", key: "bank_name" },
               { label: "Branch Name", key: "branch_name" },
-              // { label: "Branch Code", key: "branch_code" },
               { label: "IFSC Code", key: "ifsc_code" },
-              { label: "Account Number", key: "account_no" }
+              { label: "Account Number", key: "account_no" },
             ].map(({ label, key }) => (
-              <div key={key}>
+              <div key={key} className="flex flex-col">
                 <label className="text-sm font-semibold text-gray-700">{label}</label>
                 <input
                   type="text"
                   value={form[key]}
                   readOnly
-                  className="mt-2 w-full px-4 py-2 border border-gray-300 bg-gray-100 rounded-lg font-semibold text-gray-800"
+                  className="mt-2 w-full px-4 py-2 border border-gray-300 bg-white rounded-lg font-semibold text-gray-800 cursor-not-allowed shadow-sm focus:outline-none"
                 />
               </div>
             ))}
           </div>
         </div>
+
 
         {/* Entry Date */}
         <div>
@@ -484,7 +517,7 @@ const ClaimEntry = () => {
             type="date"
             value={form.entry_date}
             readOnly
-            className="mt-2 w-full px-4 py-2 border border-gray-300 bg-gray-100 rounded-lg"
+            className="mt-2 w-full px-4 py-2 border border-gray-300 bg-gray-100 rounded-lg cursor-not-allowed"
           />
         </div>
 
@@ -495,34 +528,22 @@ const ClaimEntry = () => {
             value={form.remarks}
             onChange={(e) => setForm({ ...form, remarks: e.target.value })}
             rows="3"
-            className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+            className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition hover:border-blue-400"
           />
         </div>
 
         {/* Submit Button */}
-        <div className="md:col-span-2 flex justify-end space-x-3 mt-4">
-          {/* Cancel Button */}
-          {/* <button
-            type="button"
-            className="px-6 py-2 bg-gray-300 text-gray-700 font-medium rounded-lg 
-               hover:bg-gray-400 active:scale-95 transition"
-            onClick={() => navigate(-1)} // or your custom cancel action
-          >
-            Cancel
-          </button> */}
-
-          {/* Submit Button */}
+        <div className="md:col-span-2 flex justify-end space-x-3 mt-6">
           <button
             type="submit"
-            className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg 
-               hover:bg-blue-700 active:scale-95 transition"
+            className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 active:scale-95 transition shadow-md"
           >
             Submit
           </button>
         </div>
-
       </form>
     </div>
+
 
   );
 };

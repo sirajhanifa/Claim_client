@@ -10,6 +10,7 @@ import ClaimReport from './pages/Claim Report/ClaimReport';
 import ProtectedRoute from './components/ProtectedRoute';
 import AddUser from './pages/Settings/AddUser';
 import PaymentProcess from './pages/PaymentProcessing/PaymentProcess';
+import Logout from './components/Logout';
 
 const App = () => {
   return (
@@ -17,6 +18,9 @@ const App = () => {
       <Routes>
         {/* Login route */}
         <Route path="/" element={<Login />} />
+        <Route path="/logout" element={<Logout />} />
+
+
 
         {/* Layout with nested routes */}
         <Route path="layout/:username" element={
@@ -31,6 +35,7 @@ const App = () => {
           <Route path="claimreport" element={<ClaimReport />} />
           <Route path="settings/adduser" element={<AddUser />} />
           <Route path="paymentprocessing" element={<PaymentProcess />} />
+
         </Route>
 
       </Routes>
