@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import CreatableSelect from "react-select/creatable";
 
 const StaffManage = () => {
   const apiUrl = import.meta.env.VITE_API_URL;
@@ -14,9 +15,9 @@ const StaffManage = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
   const [formData, setFormData] = useState({
-    staff_id: '', staff_name: '', department: '', category: '', designation: '',
+    employment_type: '', staff_id: '', staff_name: '', department: '', category: '', designation: '',
     phone_no: '', email: '', college: '', bank_acc_no: '',
-    ifsc_code: '', employment_type: '', bank_name: '', branch_name: ''
+    ifsc_code: '', bank_name: '', branch_name: ''
   });
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -67,21 +68,24 @@ const StaffManage = () => {
     }
   };
 
-  const handleDelete = async (staff_id) => {
+  const handleDelete = async (_id) => {
     if (!window.confirm('Are you sure to delete this record?')) return;
+
     try {
-      await axios.delete(`${apiUrl}/api/staff/delete/${staff_id}`);
+      await axios.delete(`${apiUrl}/api/staff/delete/${_id}`);
       fetchStaff();
-    } catch {
+    } catch (err) {
+      console.error(err);
       alert("Delete failed.");
     }
   };
+
 
   const handleSubmitForm = async (e) => {
     e.preventDefault();
     try {
       if (editingStaff) {
-        await axios.put(`${apiUrl}/api/staff/edit/${editingStaff.staff_id}`, formData);
+        await axios.put(`/api/staff/update/${formData._id}`, formData);
         alert("Updated successfully.");
       } else {
         await axios.post(`${apiUrl}/api/staff`, formData);
@@ -261,8 +265,8 @@ const StaffManage = () => {
                     </button>
 
                     <button
-                      onClick={() => handleDelete(s.staff_id)}
-                      className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold px-5 py-2.5 rounded-lg shadow-md transition-all duration-300 ease-in-out hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-red-400"
+                      onClick={() => handleDelete(s._id)}
+                       className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold px-5 py-2.5 rounded-lg shadow-md transition-all duration-300 ease-in-out hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-red-400"
                       title="Delete"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -316,100 +320,96 @@ const StaffManage = () => {
             <h2 className="text-2xl mb-6 font-bold border-b pb-2">
               {editingStaff ? "Edit Staff" : "Add Staff"}
             </h2>
+
             <form onSubmit={handleSubmitForm} className="grid grid-cols-2 gap-4">
+
               {[
-                "staff_id", "staff_name", "department", "designation", "category",
+                "employment_type", "staff_id", "staff_name", "department", "designation", "category",
                 "phone_no", "email", "college", "bank_acc_no", "ifsc_code",
-                "employment_type", "bank_name", "branch_name"
-              ].map((field) => (
-                <div key={field} className="flex flex-col">
+                "bank_name", "branch_name"
+              ].map((field) => {
 
-                  <label className="mb-1 font-medium capitalize">
-                    {field.replace(/_/g, " ")}
-                  </label>
+                // HIDE only for EXTERNAL
+                if (
+                  formData.employment_type === "EXTERNAL" &&
+                  ["staff_id", "designation", "category"].includes(field)
+                ) {
+                  return null;
+                }
 
-                  {/* CATEGORY — FIXED VALUES */}
-                  {field === "category" ? (
-                    <select
-                      value={formData[field] || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          [field]: e.target.value, // normal
-                        })
-                      }
-                      // ❌ removed required here
-                      className="border p-2 rounded"
-                    >
-                      <option value="">Select Category</option>
-                      <option value="AIDED">AIDED</option>
-                      <option value="SFM">SFM</option>
-                      <option value="SFW">SFW</option>
-                    </select>
+                // Camel Case Label
+                const camelCaseLabel = field
+                  .replace(/_/g, " ")
+                  .replace(/\b\w/g, (c) => c.toUpperCase());
 
-                  ) : field === "employment_type" ? (
+                // Fetch DB values for select
+                const options = getUniqueValues(field).map((val) => ({
+                  label: val,
+                  value: val,
+                }));
 
-                    /* EMPLOYMENT TYPE — FIXED VALUES */
-                    <select
-                      required
-                      value={formData[field] || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          [field]: e.target.value,
-                        })
-                      }
-                      className="border p-2 rounded"
-                    >
-                      <option value="">Select Employment Type</option>
-                      <option value="INTERNAL">INTERNAL</option>
-                      <option value="EXTERNAL">EXTERNAL</option>
-                    </select>
+                return (
+                  <div key={field} className="flex flex-col">
 
-                  ) : /* DROPDOWNS FROM DB */
-                    ["department", "designation", "college", "bank_name"].includes(field) ? (
-                      <select
-                        required
-                        value={formData[field] || ""}
-                        onChange={(e) =>
+                    {/* LABEL */}
+                    <label className="mb-1 font-medium">
+                      {field === "ifsc_code" ? "IFSC CODE" : camelCaseLabel}
+                    </label>
+
+                    {/* SEARCH + TYPE + ADD NEW REACT SELECT */}
+                    {[
+                      "department",
+                      "designation",
+                      "college",
+                      "bank_name",
+                      "category",
+                      "employment_type"
+                    ].includes(field) ? (
+                      <CreatableSelect
+                        isClearable
+                        options={options}
+                        value={
+                          formData[field]
+                            ? { label: formData[field], value: formData[field] }
+                            : null
+                        }
+                        onChange={(selected) =>
                           setFormData({
                             ...formData,
-                            [field]: e.target.value,
+                            [field]: selected ? selected.value : "",
                           })
                         }
-                        className="border p-2 rounded"
-                      >
-                        <option value="">Select {field.replace(/_/g, " ")}</option>
-                        {getUniqueValues(field).map((val, idx) => (
-                          <option key={idx} value={val}>
-                            {val}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
+                        onCreateOption={(newValue) => {
+                          setFormData({
+                            ...formData,
+                            [field]: newValue,
+                          });
+                        }}
+                        placeholder={`Select ${camelCaseLabel}`}
+                      />
 
-                      /* NORMAL INPUT FIELDS */
+                    ) : (
+                      // NORMAL INPUT
                       <input
                         type="text"
-                        placeholder={field.replace(/_/g, " ")}
+                        placeholder={camelCaseLabel}
                         value={formData[field] || ""}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
                             [field]:
                               field === "ifsc_code"
-                                ? e.target.value.toUpperCase() // IFSC uppercase only
+                                ? e.target.value.toUpperCase()
                                 : e.target.value,
                           })
                         }
-                        // ❌ staff_id is NOT required
-                        // other fields required
                         required={field !== "staff_id"}
                         className="border p-2 rounded"
                       />
                     )}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
 
               <div className="col-span-2 flex justify-end gap-3 mt-4">
                 <button
@@ -419,6 +419,7 @@ const StaffManage = () => {
                 >
                   Cancel
                 </button>
+
                 <button
                   type="submit"
                   className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
@@ -426,9 +427,8 @@ const StaffManage = () => {
                   Submit
                 </button>
               </div>
+
             </form>
-
-
           </div>
         </div>
       )}
@@ -437,258 +437,3 @@ const StaffManage = () => {
 };
 
 export default StaffManage;
-
-
-
-
-
-
-
-
-
-
-
-// import React, { useEffect, useState } from 'react';
-// import axios from 'axios';
-
-// const StaffManage = () => {
-//   const apiUrl = import.meta.env.VITE_API_URL;
-
-//   const [staffList, setStaffList] = useState([]);
-//   const [allStaff, setAllStaff] = useState([]);
-//   const [excelFile, setExcelFile] = useState(null);
-//   const [filters, setFilters] = useState({});
-//   const [searchQuery, setSearchQuery] = useState('');
-//   const [showModal, setShowModal] = useState(false);
-//   const [editingStaff, setEditingStaff] = useState(null);
-//   const [formData, setFormData] = useState({
-//     staff_id: '', staff_name: '', department: '', designation: '',
-//     phone_no: '', email: '', bank_acc_no: '',
-//     ifsc_code: '', employment_type: '', bank_name: '', branch_name: '', branch_code: ''
-//   });
-
-//   const [currentPage, setCurrentPage] = useState(1);
-//   const itemsPerPage = 100;
-
-//   const fetchStaff = async () => {
-//     try {
-//       const res = await axios.get(`${apiUrl}/api/staff`);
-//       setAllStaff(res.data);
-//       setStaffList(res.data);
-//     } catch {
-//       alert("Error fetching staff data.");
-//     }
-//   };
-
-//   useEffect(() => { fetchStaff(); }, []);
-
-//   useEffect(() => {
-//     let filtered = allStaff.filter(item =>
-//       (item.staff_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-//       (item.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-//       (item.phone_no || '').toLowerCase().includes(searchQuery.toLowerCase())
-//     );
-
-//     Object.entries(filters).forEach(([key, value]) => {
-//       if (value) {
-//         filtered = filtered.filter((item) => item[key] === value);
-//       }
-//     });
-
-//     setStaffList(filtered);
-//     setCurrentPage(1);
-//   }, [searchQuery, filters, allStaff]);
-
-//   const handleFileUpload = async (e) => {
-//     e.preventDefault();
-//     if (!excelFile) return alert("Please select a file");
-
-//     const formData = new FormData();
-//     formData.append('file', excelFile);
-
-//     try {
-//       const res = await axios.post(`${apiUrl}/api/staff/upload`, formData);
-//       alert(res.data.message);
-//       fetchStaff();
-//       setExcelFile(null);
-//       document.querySelector('input[type=file]').value = '';
-//     } catch {
-//       alert("Upload failed.");
-//     }
-//   };
-
-//   const handleDelete = async (staff_id) => {
-//     if (!window.confirm('Are you sure to delete this record?')) return;
-//     try {
-//       await axios.delete(`${apiUrl}/api/staff/delete/${staff_id}`);
-//       fetchStaff();
-//     } catch {
-//       alert("Delete failed.");
-//     }
-//   };
-
-//   const handleSubmitForm = async (e) => {
-//     e.preventDefault();
-//     try {
-//       if (editingStaff) {
-//         await axios.put(`${apiUrl}/api/staff/edit/${editingStaff.staff_id}`, formData);
-//         alert("Updated successfully.");
-//       } else {
-//         await axios.post(`${apiUrl}/api/staff`, formData);
-//         alert("Added successfully.");
-//       }
-//       setShowModal(false);
-//       setFormData({});
-//       setEditingStaff(null);
-//       fetchStaff();
-//     } catch {
-//       alert("Submit failed.");
-//     }
-//   };
-
-//   const openEditModal = (staff) => {
-//     setEditingStaff(staff);
-//     setFormData(staff);
-//     setShowModal(true);
-//   };
-
-//   const getUniqueValues = (key) => {
-//     const values = allStaff.map(item => item[key]).filter(Boolean);
-//     return [...new Set(values)];
-//   };
-
-//   const paginatedStaff = staffList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-//   const totalPages = Math.ceil(staffList.length / itemsPerPage);
-
-//   const filterFields = [
-//     "department", "designation", "phone_no", "email", "bank_acc_no",
-//     "ifsc_code", "employment_type", "bank_name", "branch_name", "branch_code"
-//   ];
-
-//   return (
-//     <div className="max-w-7xl mx-auto px-4">
-//       <h1 className="text-3xl font-bold text-center my-6 text-green-800">Staff Management Portal</h1>
-
-//       {/* Search & Upload */}
-//       <div className="flex flex-col sm:flex-row gap-4 mb-6 items-center">
-//         <input
-//           type="text"
-//           placeholder="Search by name, email or phone"
-//           className="p-2 border rounded w-full sm:w-1/2"
-//           value={searchQuery}
-//           onChange={(e) => setSearchQuery(e.target.value)}
-//         />
-//         <input
-//           type="file"
-//           accept=".xlsx,.xls"
-//           onChange={e => setExcelFile(e.target.files[0])}
-//           className="file:bg-green-100 file:text-green-800 file:px-4 file:py-2 file:rounded-lg text-sm text-gray-600"
-//         />
-//         <button onClick={handleFileUpload} className="bg-green-600 text-white font-bold px-4 py-2 rounded">
-//           Upload Excel
-//         </button>
-//         <button onClick={() => { setFormData({}); setEditingStaff(null); setShowModal(true); }}
-//           className="bg-blue-600 text-white font-bold px-4 py-2 rounded">
-//           Add Staff
-//         </button>
-//       </div>
-
-//       {/* Filters */}
-//       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
-//         {filterFields.map(field => (
-//           <select
-//             key={field}
-//             className="p-2 border rounded"
-//             value={filters[field] || ''}
-//             onChange={e => setFilters({ ...filters, [field]: e.target.value })}
-//           >
-//             <option value="">All {field.replace(/_/g, ' ')}</option>
-//             {getUniqueValues(field).map((val, i) => (
-//               <option key={i} value={val}>{val}</option>
-//             ))}
-//           </select>
-//         ))}
-//       </div>
-
-//       {/* Staff Table */}
-//       <div className="overflow-auto bg-white rounded-xl shadow">
-//         <table className="w-full border text-sm text-center">
-//           <thead className="bg-purple-900 text-white">
-//             <tr>
-//               {['Staff Id', 'Name', 'Dept', 'Designation', 'Phone', 'Email', 'Bank Acc', 'IFSC', 'Emp Type', 'Bank Name', 'Action'].map((h, i) => (
-//                 <th key={i} className="px-2 py-2 border">{h}</th>
-//               ))}
-//             </tr>
-//           </thead>
-//           <tbody>
-//             {paginatedStaff.map((s, i) => (
-//               <tr key={i} className="hover:bg-purple-50">
-//                 <td className="border px-2 py-2">{s.staff_id}</td>
-//                 <td className="border px-2 py-2">{s.staff_name}</td>
-//                 <td className="border px-2 py-2">{s.department}</td>
-//                 <td className="border px-2 py-2">{s.designation}</td>
-//                 <td className="border px-2 py-2">{s.phone_no}</td>
-//                 <td className="border px-2 py-2">{s.email}</td>
-//                 <td className="border px-2 py-2">{s.bank_acc_no}</td>
-//                 <td className="border px-2 py-2">{s.ifsc_code}</td>
-//                 <td className="border px-2 py-2">{s.employment_type}</td>
-//                 <td className="border px-2 py-2">{s.bank_name}</td>
-//                 <td className="border px-2 py-2 space-x-2">
-//                   <button onClick={() => openEditModal(s)} className="bg-green-600 text-white font-bold px-2 py-1 rounded">Edit</button>
-//                   <button onClick={() => handleDelete(s.staff_id)} className="bg-red-500 text-white font-bold px-2 py-1 rounded">Delete</button>
-//                 </td>
-//               </tr>
-//             ))}
-//             {paginatedStaff.length === 0 && (
-//               <tr><td colSpan="11" className="py-4 text-gray-500">No data found.</td></tr>
-//             )}
-//           </tbody>
-//         </table>
-//       </div>
-
-//       {/* Pagination */}
-//       {totalPages > 1 && (
-//         <div className="flex justify-center mt-4 space-x-2">
-//           {[...Array(totalPages)].map((_, i) => (
-//             <button key={i} onClick={() => setCurrentPage(i + 1)}
-//               className={`px-3 py-1 rounded ${currentPage === i + 1 ? 'bg-green-600 text-white' : 'bg-gray-200'}`}>
-//               {i + 1}
-//             </button>
-//           ))}
-//         </div>
-//       )}
-
-//       {/* Add/Edit Modal */}
-//       {showModal && (
-//         <div className="fixed inset-0 bg-white bg-opacity-95 flex justify-center items-center z-50">
-//           <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-lg border">
-//             <h2 className="text-xl mb-4 font-bold">{editingStaff ? "Edit Staff" : "Add Staff"}</h2>
-//             <form onSubmit={handleSubmitForm} className="grid grid-cols-1 gap-3">
-//               {[
-//                 'staff_id', 'staff_name', 'department', 'designation', 'phone_no',
-//                 'email', 'bank_acc_no', 'ifsc_code', 'employment_type',
-//                 'bank_name', 'branch_name', 'branch_code'
-//               ].map((field) => (
-//                 <input
-//                   key={field}
-//                   type="text"
-//                   placeholder={field.replace(/_/g, ' ')}
-//                   required
-//                   value={formData[field] || ''}
-//                   onChange={e => setFormData({ ...formData, [field]: e.target.value })}
-//                   className="border p-2 rounded"
-//                 />
-//               ))}
-//               <div className="flex justify-end gap-2">
-//                 <button type="button" onClick={() => setShowModal(false)} className="bg-gray-300 px-4 py-2 rounded">Cancel</button>
-//                 <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">Submit</button>
-//               </div>
-//             </form>
-//           </div>
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default StaffManage;
