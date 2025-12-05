@@ -35,43 +35,38 @@ const ClaimReport = () => {
 
   // Handler for download filtered claims when filter === 'all'
   const handleDownloadClaimTypePDF = () => {
-    // Collect claims matching claimType dropdown and entryDate filter
-    const selectedClaims = (claimData || []).filter((claim) =>
-      (claimType === 'all' || claim.claim_type_name === claimType) &&
-      (entryDate ? new Date(claim.entry_date).toLocaleDateString('en-CA') === entryDate : true)
-    );
-    if (selectedClaims.length === 0) {
+    if (filteredClaims.length === 0) {
       alert('No claims found to download.');
       return;
     }
-    // Use PR ID/submission date from first result, fallback to something generic
-    const prId = selectedClaims[0]?.payment_report_id || `PR-${new Date().getFullYear()}-000`;
-    const submissionDate = selectedClaims[0]?.submission_date
-      ? new Date(selectedClaims[0].submission_date).toLocaleDateString('en-GB')
-      : new Date().toLocaleDateString('en-GB');
-    createPDF(prId, submissionDate, selectedClaims);
+    const prId = `PR-${new Date().getFullYear()}-TEMP`;
+    const submissionDate = new Date().toLocaleDateString('en-GB'); // ✅ always include system date
+    createPDF(prId, submissionDate, filteredClaims);
   };
 
-  // PDF creator (unchanged)
+
+
+  // PDF creator
   const createPDF = (prId, submittedDate, claims) => {
     const doc = new jsPDF();
     doc.setFontSize(22);
     doc.text(`Claims Report - ${prId}`, 14, 12);
     doc.setFontSize(14);
+
+    // Only 6 columns
     const tableColumn = [
-      "Sno", "Claim Type", "Staff Name", "Amount", "Entry Date", "Submission Date",
-      "Credited Date", "Status", "Payment Id"
+      "Sno", "Claim Type", "Staff Name", "Amount", "Entry Date", "Submission Date"
     ];
+
     const tableRows = claims?.map((claim, index) => [
       index + 1,
       claim.claim_type_name,
       claim.staff_name,
       claim.amount,
       claim.entry_date ? new Date(claim.entry_date).toLocaleDateString('en-GB') : "-",
-      claim.submission_date ? new Date(claim.submission_date).toLocaleDateString('en-GB') : submittedDate,
-      claim.credited_date ? new Date(claim.credited_date).toLocaleDateString('en-GB') : "-",
-      claim.status,
-      claim.payment_report_id || prId
+      claim.submission_date
+        ? new Date(claim.submission_date).toLocaleDateString('en-GB')
+        : submittedDate // ✅ always put submission date
     ]);
 
     autoTable(doc, {
@@ -82,6 +77,37 @@ const ClaimReport = () => {
       headStyles: { fontSize: 10 },
     });
     doc.save(`ClaimEntryReport_${prId}.pdf`);
+  };
+
+
+  // Submit button handler (update only, no PDF)
+  const handleSubmitClaims = async () => {
+    setIsSubmitting(true);
+    try {
+      if (filteredClaims.length === 0) {
+        alert('No unsubmitted claims to submit.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const submitRes = await fetch(`${apiUrl}/api/submitClaims`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ claimType })
+      });
+
+      if (submitRes.ok) {
+        const result = await submitRes.json();
+        alert(result.message || 'Claims submitted successfully');
+        if (refetch) await refetch(); // refresh table
+      } else {
+        const result = await submitRes.json();
+        alert(result.message || 'Failed to submit claims.');
+      }
+    } catch (err) {
+      alert('Failed to submit claims.');
+    }
+    setIsSubmitting(false);
   };
 
   const handleSubmitAndDownloadPDF = async () => {
@@ -267,16 +293,27 @@ const ClaimReport = () => {
 
       {/* Buttons */}
       {filter === 'unsubmitted' && filteredClaims.length > 0 && (
-        <div className="mt-5 text-center flex justify-end">
+        <div className="mt-5 text-center flex justify-end gap-4">
+          {/* Download PDF */}
           <button
-            className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800 transition"
-            onClick={handleSubmitAndDownloadPDF}
+            className="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800 transition"
+            onClick={handleDownloadClaimTypePDF}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Processing..." : "Submit & Download PDF"}
+            Download PDF
+          </button>
+
+          {/* Submit claims (update only) */}
+          <button
+            className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800 transition"
+            onClick={handleSubmitClaims}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Processing..." : "Submit Claims"}
           </button>
         </div>
       )}
+
 
 
 
@@ -285,3 +322,19 @@ const ClaimReport = () => {
 };
 
 export default ClaimReport;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
