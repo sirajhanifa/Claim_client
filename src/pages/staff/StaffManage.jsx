@@ -17,7 +17,7 @@ const StaffManage = () => {
   const [formData, setFormData] = useState({
     employment_type: '', staff_id: '', staff_name: '', department: '', category: '', designation: '',
     phone_no: '', email: '', college: '', bank_acc_no: '',
-    ifsc_code: '', bank_name: '', branch_name: ''
+    ifsc_code: '',
   });
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -326,7 +326,6 @@ const StaffManage = () => {
               {[
                 "employment_type", "staff_id", "staff_name", "department", "designation", "category",
                 "phone_no", "email", "college", "bank_acc_no", "ifsc_code",
-                "bank_name", "branch_name"
               ].map((field) => {
 
                 // HIDE only for EXTERNAL
@@ -361,7 +360,6 @@ const StaffManage = () => {
                       "department",
                       "designation",
                       "college",
-                      "bank_name",
                       "category",
                       "employment_type"
                     ].includes(field) ? (
