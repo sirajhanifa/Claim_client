@@ -54,7 +54,7 @@ const Dashboard = () => {
           count={awaitingCounts?.awaitingClaims || 0}
           amount={awaitingCounts?.awaitingAmount || 0}
           color="red"
-          showAlert={true}
+          // showAlert={true}
         />
 
         {/* <StaffOverviewCard

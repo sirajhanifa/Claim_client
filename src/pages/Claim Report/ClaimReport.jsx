@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import useFetch from '../../hooks/useFetch';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { Trash2 } from "lucide-react";
+import axios from 'axios';
+
 
 import logo1 from '../../assets/75.jpeg';
 import logo2 from '../../assets/logo.jpeg'
@@ -48,78 +51,78 @@ const ClaimReport = () => {
   };
 
 
-// PDF creator
-const createPDF = (prId, submittedDate, claims) => {
-  const doc = new jsPDF("p", "mm", "a4");
-  const pageWidth = doc.internal.pageSize.getWidth();
+  // PDF creator
+  const createPDF = (prId, submittedDate, claims) => {
+    const doc = new jsPDF("p", "mm", "a4");
+    const pageWidth = doc.internal.pageSize.getWidth();
 
-  // Add Logos
-  doc.addImage(logo2, "JPEG", 15, 10, 25, 25);
-  doc.addImage(logo1, "JPEG", pageWidth - 40, 10, 25, 25);
+    // Add Logos
+    doc.addImage(logo2, "JPEG", 15, 10, 25, 25);
+    doc.addImage(logo1, "JPEG", pageWidth - 40, 10, 25, 25);
 
-  // College Name
-  doc.setFontSize(18);
-  doc.setFont("helvetica", "bold");
-  doc.text("Jamal Mohamed College (Autonomous)", pageWidth / 2, 20, { align: "center" });
+    // College Name
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("Jamal Mohamed College (Autonomous)", pageWidth / 2, 20, { align: "center" });
 
-  doc.setFontSize(10);
-  doc.text("Accredited with A++ Grade by NAAC (4th Cycle) with CGPA 3.69 out of 4.0.", pageWidth / 2, 28, { align: "center" });
+    doc.setFontSize(10);
+    doc.text("Accredited with A++ Grade by NAAC (4th Cycle) with CGPA 3.69 out of 4.0.", pageWidth / 2, 28, { align: "center" });
 
-  doc.setFontSize(11);
-  doc.text("Tiruchirappalli – 620 020", pageWidth / 2, 35, { align: "center" });
+    doc.setFontSize(11);
+    doc.text("Tiruchirappalli – 620 020", pageWidth / 2, 35, { align: "center" });
 
-  // PR & Submission
-  doc.setFontSize(12);
-  doc.setFont("helvetica", "normal");
-  doc.text(`PR ID: ${prId}`, 15, 50);
-  doc.text(`Submission Date: ${submittedDate}`, pageWidth - 15, 50, { align: "right" });
+    // PR & Submission
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.text(`PR ID: ${prId}`, 15, 50);
+    doc.text(`Submission Date: ${submittedDate}`, pageWidth - 15, 50, { align: "right" });
 
-  // Table Columns
-  const tableColumn = [
-    "S.No",
-    "Claim Type",
-    "Staff Name",
-    "Amount",
-    "Entry Date",
-    "Submission Date"
-  ];
+    // Table Columns
+    const tableColumn = [
+      "S.No",
+      "Claim Type",
+      "Staff Name",
+      "Amount",
+      "Entry Date",
+      "Submission Date"
+    ];
 
-  const tableRows = claims?.map((claim, index) => [
-    index + 1,
-    claim.claim_type_name,
-    claim.staff_name,
-    claim.amount,
-    new Date(claim.entry_date).toLocaleDateString('en-GB'),
-    claim.submission_date
-      ? new Date(claim.submission_date).toLocaleDateString('en-GB')
-      : submittedDate
-  ]);
+    const tableRows = claims?.map((claim, index) => [
+      index + 1,
+      claim.claim_type_name,
+      claim.staff_name,
+      claim.amount,
+      new Date(claim.entry_date).toLocaleDateString('en-GB'),
+      claim.submission_date
+        ? new Date(claim.submission_date).toLocaleDateString('en-GB')
+        : submittedDate
+    ]);
 
-  // AutoTable
-  autoTable(doc, {
-    startY: 60,
-    head: [tableColumn],
-    body: tableRows,
-    styles: { fontSize: 10, halign: "center" },
-    headStyles: { fillColor: [0, 51, 102], textColor: "#fff", fontStyle: "bold" },
-    columnStyles: {
-      0: { cellWidth: 15 },
-      1: { cellWidth: 40 },
-      2: { cellWidth: 45 },
-      3: { cellWidth: 25 },
-      4: { cellWidth: 30 },
-      5: { cellWidth: 32 },
-    },
-  });
+    // AutoTable
+    autoTable(doc, {
+      startY: 60,
+      head: [tableColumn],
+      body: tableRows,
+      styles: { fontSize: 10, halign: "center" },
+      headStyles: { fillColor: [0, 51, 102], textColor: "#fff", fontStyle: "bold" },
+      columnStyles: {
+        0: { cellWidth: 15 },
+        1: { cellWidth: 40 },
+        2: { cellWidth: 45 },
+        3: { cellWidth: 25 },
+        4: { cellWidth: 30 },
+        5: { cellWidth: 32 },
+      },
+    });
 
-  // **Signature at bottom-left**
-  const pageHeight = doc.internal.pageSize.getHeight();
-  doc.setFontSize(12);
-  doc.setFont("helvetica", "bold");
-  doc.text("Controller of Examinations", 15, pageHeight - 20);
+    // **Signature at bottom-left**
+    const pageHeight = doc.internal.pageSize.getHeight();
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Controller of Examinations", 15, pageHeight - 20);
 
-  doc.save(`ClaimEntryReport_${prId}.pdf`);
-};
+    doc.save(`ClaimEntryReport_${prId}.pdf`);
+  };
 
 
 
@@ -156,47 +159,34 @@ const createPDF = (prId, submittedDate, claims) => {
   const handleSubmitAndDownloadPDF = async () => {
     setIsSubmitting(true);
     try {
-      if (filteredClaims.length === 0) {
-        alert('No unsubmitted claims to submit.');
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Send claimType as body param
       const submitRes = await fetch(`${apiUrl}/api/submitClaims`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ claimType })
       });
 
+      const result = await submitRes.json();
+
       if (submitRes.ok) {
-        const result = await submitRes.json();
-        const prId = result.prId || existingPrId || `PR-${new Date().getFullYear()}-000`;
+        const prId = result.prId;
+
         const getDateOnlyString = (dateStr) => {
-          const d = new Date(dateStr);
-          return d.toLocaleDateString('en-GB'); // DD/MM/YYYY format without time
+          return new Date(dateStr).toLocaleDateString('en-GB');
         };
 
-        const actualSubmittedDate = result.submission_date
-          ? getDateOnlyString(result.submission_date)
-          : getDateOnlyString(new Date());
-
+        const actualSubmittedDate = getDateOnlyString(result.submission_date); // ✅ FIXED
 
         if (refetch) await refetch();
 
-        // After refetch, use updated filtered claims JUST for selected claim type
-        const updatedClaims = (claimData || []).filter((claim) => {
-          if (claimType !== 'all' && claim.claim_type_name !== claimType) return false;
-          if (filter === 'unsubmitted' && claim.submission_date) return false;
-          if (entryDate && new Date(claim.entry_date).toLocaleDateString('en-CA') !== entryDate) return false;
-          return true;
-        });
+        const updatedClaims = claimData.filter(c =>
+          (claimType === 'all' || c.claim_type_name === claimType)
+        );
 
         createPDF(prId, actualSubmittedDate, updatedClaims);
       } else {
-        const result = await submitRes.json();
-        alert(result.message || 'Failed to submit claims.');
+        alert(result.message);
       }
+
     } catch (err) {
       alert('Failed to submit claims.');
     }
@@ -214,6 +204,27 @@ const createPDF = (prId, submittedDate, claims) => {
       (claimType === 'all' || claim.claim_type_name === claimType)
     );
     createPDF(existingPrId, existingSubmissionDate, submittedFilteredClaims);
+  };
+
+
+  const handleDelete = async (id) => {
+    if (!confirm("Are you sure you want to delete this claim?")) return;
+
+    try {
+      const res = await axios.delete(`${apiUrl}/api/delete/${id}`);
+
+      alert("Claim deleted successfully");
+
+      // Remove deleted claim from UI
+      // If you are using useFetch → refetch instead of setClaims
+      if (refetch) {
+        refetch();
+      }
+
+    } catch (error) {
+      console.log(error);
+      alert("Error deleting claim");
+    }
   };
 
 
@@ -274,7 +285,7 @@ const createPDF = (prId, submittedDate, claims) => {
         <table className="min-w-full bg-white">
           <thead className="bg-blue-950 border-b-2 border-gray-300">
             <tr>
-              {["S.No", "Claim Type", "Staff Name", "Amount", "Entry Date", "Submission Date", "Credited Date", "Status", "Payment Id"]
+              {["S.No", "Claim Type", "Staff Name", "Amount", "Entry Date", "Submission Date", "Credited Date", "Status", "Payment Id", "Actions"]
                 .map(h => (
                   <th key={h} className="text-left p-3 font-semibold text-sm text-white">{h}</th>
                 ))}
@@ -318,11 +329,23 @@ const createPDF = (prId, submittedDate, claims) => {
                     )}
                     {claim.status}
                   </span>
-                  
+
                 </td>
 
                 <td className="p-3 text-sm font-semibold text-gray-800">{claim.payment_report_id}</td>
-              </tr>      
+                <td className="p-3 text-center">
+                  {filter === "unsubmitted" && (
+                    <button
+                      onClick={() => handleDelete(claim._id)}
+                      className="p-2 rounded-full bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  )}
+                </td>
+
+
+              </tr>
             ))}
             {filteredClaims.length === 0 && (
               <tr>

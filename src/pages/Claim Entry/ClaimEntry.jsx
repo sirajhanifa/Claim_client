@@ -18,6 +18,9 @@ const ClaimEntry = () => {
   const { postData } = usePost();
   const navigate = useNavigate();
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+
   const { username } = useParams();
 
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -323,7 +326,7 @@ const ClaimEntry = () => {
           department: data.department,
           designation: data.designation,
           internal_external: data.employment_type,
-          phone_number: phoneNumber, // ✅ SET phone_number HERE
+          phone_number: phoneNumber,
           email: data.email,
           bank_name: data.bank_name || '',
           branch_name: data.branch_name || '',
@@ -332,9 +335,10 @@ const ClaimEntry = () => {
           account_no: data.bank_acc_no || ''
         }));
       } else {
-        // ✅ Show alert with OK/Cancel
         if (window.confirm(data.message || "No staff found. Do you want to add new staff?")) {
-          navigate(`/layout/${username}/staffmanage`);
+          navigate(`/layout/${username}/staffmanage`, {
+            state: { openAddStaffModal: true, prefillPhone: phoneNumber }
+          });
         }
       }
     } catch (err) {
@@ -346,18 +350,24 @@ const ClaimEntry = () => {
   //Submit the Claim data
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (isSubmitting) return; // Prevent double click
+
+    setIsSubmitting(true);  // Disable button
+
     try {
       await postData(`${apiUrl}/api/postClaim`, form);
       alert("Claim submitted successfully");
 
+      // Reset form (keep claim type if you want)
       setForm({
-        claim_type_name: form.claim_type_name,
+        claim_type_name: form.claim_type_name, // optional: keep selected claim type
         staff_id: '',
         staff_name: '',
         department: '',
         designation: '',
         internal_external: '',
-        phone_number: '', // ✅ RESET IT HERE
+        phone_number: '',
         email: '',
         entry_date: new Date().toISOString().split('T')[0],
         submission_date: '',
@@ -368,12 +378,56 @@ const ClaimEntry = () => {
         branch_name: '',
         branch_code: '',
         ifsc_code: '',
-        account_no: ''
+        account_no: '',
+
+        // QPS
+        no_of_qps_ug: '',
+        no_of_qps_pg: '',
+        no_of_scheme: '',
+
+        // Scrutiny
+        scrutiny_level: '',
+        scrutiny_no_of_papers: '',
+        scrutiny_days: '',
+
+        // Practical Claim
+        qps_paper_setting: '',
+        total_students: '',
+        days_halted: '',
+        travelling_allowance: '',
+        tax_type: '',
+        degree_level: '',
+
+        // CIA Reappear
+        cia_no_of_papers: '',
+        cia_role_type: '',
+
+        // Central Valuation
+        central_role: '',
+        central_total_scripts_ug_pg: '',
+        central_days_halted: '',
+        central_travel_allowance: '',
+        central_tax_applicable: '',
+
+        // Ability Enhancement
+        ability_total_no_students: '',
+        ability_no_of_days_halted: '',
+        ability_tax_type: '',
+
+        // Skilled
+        skilled_no_of_students: '',
+        skilled_days_halted: '',
+        skilled_tax_type: '',
       });
 
       setPhoneNumber('');
+
+      // ✅ Re-enable the submit button
+      setIsSubmitting(false);
+
     } catch (err) {
       alert("Failed to submit claim");
+      setIsSubmitting(false); // Re-enable only on error
     }
   };
 
@@ -412,31 +466,41 @@ const ClaimEntry = () => {
           <div className="mt-2 flex gap-2">
             <input
               type="text"
-              tabIndex={2}
+              tabIndex={form.claim_type_name ? 2 : -1}   // disable tab key
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               placeholder="Enter Phone Number"
-              className="flex-1 px-4 py-2 border font-semibold border-gray-300 rounded-lg 
-                 focus:outline-none focus:ring-2 focus:ring-blue-500 transition hover:border-blue-400"
-              required
+              disabled={!form.claim_type_name}   // 🔥 Disable until claim type selected
+              className={`flex-1 px-4 py-2 border font-semibold rounded-lg transition 
+        focus:outline-none 
+        ${form.claim_type_name
+                  ? "border-gray-300 focus:ring-2 focus:ring-blue-500 hover:border-blue-400"
+                  : "bg-gray-200 cursor-not-allowed border-gray-300"
+                }`}
               onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault(); // prevent form submit
-                  handleFetchStaff(); // call Get button logic
+                if (e.key === "Enter" && form.claim_type_name) {
+                  e.preventDefault();
+                  handleFetchStaff();
                 }
               }}
             />
+
             <button
               type="button"
-              tabIndex={3}
+              tabIndex={form.claim_type_name ? 3 : -1}
               onClick={handleFetchStaff}
-              className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                 active:scale-95 transition font-semibold shadow-sm"
+              disabled={!form.claim_type_name}   // 🔥 Disable Get button too
+              className={`px-5 py-2 rounded-lg font-semibold shadow-sm transition 
+        ${form.claim_type_name
+                  ? "bg-blue-600 text-white hover:bg-blue-700 active:scale-95"
+                  : "bg-gray-400 text-gray-700 cursor-not-allowed"
+                }`}
             >
               Get
             </button>
           </div>
         </div>
+
 
         {/* Claim Details Section */}
         <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded-xl p-6 shadow-sm">
@@ -491,8 +555,8 @@ const ClaimEntry = () => {
               { label: "Designation", key: "designation" },
               { label: "Internal / External", key: "internal_external" },
               { label: "Email", key: "email" },
-              { label: "Bank Name", key: "bank_name" },
-              { label: "Branch Name", key: "branch_name" },
+              // { label: "Bank Name", key: "bank_name" },
+              // { label: "Branch Name", key: "branch_name" },
               { label: "IFSC Code", key: "ifsc_code" },
               { label: "Account Number", key: "account_no" },
             ].map(({ label, key }) => (
@@ -536,10 +600,16 @@ const ClaimEntry = () => {
         <div className="md:col-span-2 flex justify-end space-x-3 mt-6">
           <button
             type="submit"
-            className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 active:scale-95 transition shadow-md"
+            disabled={isSubmitting}
+            className={`px-6 py-2 rounded-lg text-white font-semibold transition
+      ${isSubmitting
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-green-600 hover:bg-green-700"}`}
           >
-            Submit
+            {isSubmitting ? "Submitting..." : "Submit"}
           </button>
+
+
         </div>
       </form>
     </div>
