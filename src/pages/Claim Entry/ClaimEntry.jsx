@@ -21,6 +21,8 @@ const ClaimEntry = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
 
+  const [phoneSuggestions, setPhoneSuggestions] = useState([]);
+
   const { username } = useParams();
 
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -431,6 +433,22 @@ const ClaimEntry = () => {
     }
   };
 
+  const fetchPhoneSuggestions = async (query) => {
+    if (query.length < 2) {
+      setPhoneSuggestions([]);
+      return;
+    }
+
+    try {
+      const res = await axios.get(`${apiUrl}/api/search-phone/${query}`);
+      setPhoneSuggestions(res.data);
+    } catch (err) {
+      console.error("Phone suggestion error:", err);
+    }
+  };
+
+
+
   return (
 
     <div className="p-10 max-w-7xl mx-auto">
@@ -461,35 +479,59 @@ const ClaimEntry = () => {
         </div>
 
         {/* Phone Number & Fetch */}
-        <div>
+        <div className="relative">
           <label className="text-sm font-semibold text-gray-700">Phone Number</label>
+
           <div className="mt-2 flex gap-2">
-            <input
-              type="text"
-              tabIndex={form.claim_type_name ? 2 : -1}   // disable tab key
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              placeholder="Enter Phone Number"
-              disabled={!form.claim_type_name}   // 🔥 Disable until claim type selected
-              className={`flex-1 px-4 py-2 border font-semibold rounded-lg transition 
-        focus:outline-none 
-        ${form.claim_type_name
-                  ? "border-gray-300 focus:ring-2 focus:ring-blue-500 hover:border-blue-400"
-                  : "bg-gray-200 cursor-not-allowed border-gray-300"
-                }`}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && form.claim_type_name) {
-                  e.preventDefault();
-                  handleFetchStaff();
-                }
-              }}
-            />
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                tabIndex={form.claim_type_name ? 2 : -1}
+                value={phoneNumber}
+                onChange={(e) => {
+                  setPhoneNumber(e.target.value);
+                  fetchPhoneSuggestions(e.target.value);  // 🔥 new function
+                }}
+                placeholder="Enter Phone Number"
+                disabled={!form.claim_type_name}
+                className={`w-full px-4 py-2 border font-semibold rounded-lg transition 
+          focus:outline-none 
+          ${form.claim_type_name
+                    ? "border-gray-300 focus:ring-2 focus:ring-blue-500 hover:border-blue-400"
+                    : "bg-gray-200 cursor-not-allowed border-gray-300"
+                  }`}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && form.claim_type_name) {
+                    e.preventDefault();
+                    handleFetchStaff();
+                  }
+                }}
+              />
+
+              {/* 🔽 DROPDOWN SUGGESTIONS */}
+              {phoneSuggestions.length > 0 && (
+                <ul className="absolute z-20 bg-white border border-gray-300 rounded-lg mt-1 w-full shadow-md max-h-40 overflow-y-auto">
+                  {phoneSuggestions.map((item) => (
+                    <li
+                      key={item.phone_no}
+                      onClick={() => {
+                        setPhoneNumber(item.phone_no);
+                        setPhoneSuggestions([]);
+                      }}
+                      className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                    >
+                      {item.phone_no}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
 
             <button
               type="button"
               tabIndex={form.claim_type_name ? 3 : -1}
               onClick={handleFetchStaff}
-              disabled={!form.claim_type_name}   // 🔥 Disable Get button too
+              disabled={!form.claim_type_name}
               className={`px-5 py-2 rounded-lg font-semibold shadow-sm transition 
         ${form.claim_type_name
                   ? "bg-blue-600 text-white hover:bg-blue-700 active:scale-95"
@@ -500,6 +542,7 @@ const ClaimEntry = () => {
             </button>
           </div>
         </div>
+
 
 
         {/* Claim Details Section */}
@@ -600,6 +643,7 @@ const ClaimEntry = () => {
         <div className="md:col-span-2 flex justify-end space-x-3 mt-6">
           <button
             type="submit"
+            tabIndex={5}
             disabled={isSubmitting}
             className={`px-6 py-2 rounded-lg text-white font-semibold transition
       ${isSubmitting
