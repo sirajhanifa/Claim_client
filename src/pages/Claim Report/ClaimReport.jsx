@@ -65,37 +65,38 @@ const ClaimReport = () => {
     doc.setFont("helvetica", "bold");
     doc.text("Jamal Mohamed College (Autonomous)", pageWidth / 2, 20, { align: "center" });
 
-    doc.setFontSize(10);
-    doc.text("Accredited with A++ Grade by NAAC (4th Cycle) with CGPA 3.69 out of 4.0.", pageWidth / 2, 28, { align: "center" });
+    doc.setFontSize(9);
+    doc.text("Accredited with A++ Grade by NAAC (4th Cycle) with CGPA 3.69 out of 4.0.", pageWidth / 2, 27, { align: "center" });
 
-    doc.setFontSize(11);
-    doc.text("Tiruchirappalli – 620 020", pageWidth / 2, 35, { align: "center" });
+    doc.setFontSize(9);
+    doc.text("Tiruchirappalli – 620 020", pageWidth / 2, 33, { align: "center" });
 
     // PR & Submission
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
     doc.text(`PR ID: ${prId}`, 15, 50);
-    doc.text(`Submission Date: ${submittedDate}`, pageWidth - 15, 50, { align: "right" });
+    doc.text(`Date: ${submittedDate}`, pageWidth - 15, 50, { align: "right" });
 
     // Table Columns
     const tableColumn = [
       "S.No",
-      "Claim Type",
-      "Staff Name",
-      "Amount",
       "Entry Date",
-      "Submission Date"
+      "Name",
+      "Department",
+      "Claim Type",
+      "Amount",
     ];
 
     const tableRows = claims?.map((claim, index) => [
       index + 1,
-      claim.claim_type_name,
-      claim.staff_name,
-      claim.amount,
       new Date(claim.entry_date).toLocaleDateString('en-GB'),
-      claim.submission_date
-        ? new Date(claim.submission_date).toLocaleDateString('en-GB')
-        : submittedDate
+      claim.staff_name,
+      claim.department,
+      claim.claim_type_name,
+      claim.amount,
+      // claim.submission_date
+      //   ? new Date(claim.submission_date).toLocaleDateString('en-GB')
+      //   : submittedDate
     ]);
 
     // AutoTable
@@ -120,6 +121,10 @@ const ClaimReport = () => {
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.text("Controller of Examinations", 15, pageHeight - 20);
+
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Principal", 180, pageHeight - 20);
 
     doc.save(`ClaimEntryReport_${prId}.pdf`);
   };
