@@ -112,56 +112,61 @@ const PaymentProcess = () => {
                 </thead>
 
                 <tbody>
-                  {claims.map((claim, index) => (
-                    <tr key={claim._id} className={index % 2 ? "bg-gray-50" : "bg-white"}>
-                      <td className="px-4 py-2">{claim.staff_name}</td>
-                      <td className="px-4 py-2">{claim.claim_type_name}</td>
-                      <td className="px-4 py-2">₹{claim.amount}</td>
-                      <td className="px-4 py-2">{claim.account_no}</td>
-                      <td className="px-4 py-2">{claim.ifsc_code}</td>
-                      <td className="px-4 py-2">
-                        {new Date(claim.submission_date).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-2">
-                        {claim.credited_date ? new Date(claim.credited_date).toLocaleDateString() : "–"}
-                      </td>
-
-                      <td className="px-4 py-2">
-                        <span className={`px-2 py-1 text-xs rounded-full font-semibold 
-                          ${claim.status === "Credited"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-yellow-100 text-yellow-700"
-                          }`}>
-                          {claim.status}
-                        </span>
-                      </td>
-
-                      <td className="px-4 py-2">
-                        <button
-                          onClick={() => markClaimCredited(claim._id)}
-                          disabled={claim.status === "Credited" || loadingClaimId === claim._id}
-                          className={`
-      px-3 py-1 rounded-md text-sm text-white transition
-      ${claim.status === "Credited"
-                              ? "bg-green-400 cursor-not-allowed"
+                  {[...claims]
+                    .sort((a, b) =>
+                      (a.ifsc_code || "").localeCompare(b.ifsc_code || "")
+                    )
+                    .map((claim, index) => (
+                      <tr key={claim._id} className={index % 2 ? "bg-gray-50" : "bg-white"}>
+                        <td className="px-4 py-2">{claim.staff_name}</td>
+                        <td className="px-4 py-2">{claim.claim_type_name}</td>
+                        <td className="px-4 py-2">₹{claim.amount}</td>
+                        <td className="px-4 py-2">{claim.account_no}</td>
+                        <td className="px-4 py-2">{claim.ifsc_code}</td>
+                        <td className="px-4 py-2">
+                          {new Date(claim.submission_date).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-2">
+                          {claim.credited_date
+                            ? new Date(claim.credited_date).toLocaleDateString()
+                            : "–"}
+                        </td>
+                        <td className="px-4 py-2">
+                          <span
+                            className={`px-2 py-1 text-xs rounded-full font-semibold 
+              ${claim.status === "Credited"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-yellow-100 text-yellow-700"
+                              }`}
+                          >
+                            {claim.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2">
+                          <button
+                            onClick={() => markClaimCredited(claim._id)}
+                            disabled={claim.status === "Credited" || loadingClaimId === claim._id}
+                            className={`
+              px-3 py-1 rounded-md text-sm text-white transition
+              ${claim.status === "Credited"
+                                ? "bg-green-400 cursor-not-allowed"
+                                : loadingClaimId === claim._id
+                                  ? "bg-gray-400 cursor-not-allowed"
+                                  : "bg-green-600 hover:bg-green-700"
+                              }
+            `}
+                          >
+                            {claim.status === "Credited"
+                              ? "Credited"
                               : loadingClaimId === claim._id
-                                ? "bg-gray-400 cursor-not-allowed"
-                                : "bg-green-600 hover:bg-green-700"
-                            }
-    `}
-                        >
-                          {claim.status === "Credited"
-                            ? "Credited"
-                            : loadingClaimId === claim._id
-                              ? "Processing..."
-                              : "Mark Credited"}
-                        </button>
-                      </td>
-
-
-                    </tr>
-                  ))}
+                                ? "Processing..."
+                                : "Mark Credited"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
+
 
               </table>
             </div>

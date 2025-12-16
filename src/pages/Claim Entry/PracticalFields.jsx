@@ -20,27 +20,46 @@ const PracticalFields = ({ form, setForm }) => {
         <label className="text-sm font-semibold text-gray-700 block mb-2">
           Degree Level
         </label>
-        <div className="flex gap-6 mt-1">
-          <label className="flex items-center gap-2">
+
+        <div className="flex gap-4 mt-1">
+          {/* UG */}
+          <label className="flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer
+                      transition
+                      hover:border-blue-400
+                      has-[:checked]:border-blue-500
+                      has-[:checked]:bg-blue-50">
             <input
               type="radio"
               value="UG"
               checked={form.degree_level === "UG"}
-              onChange={(e) => setForm({ ...form, degree_level: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, degree_level: e.target.value })
+              }
+              className="w-4 h-4 text-blue-600"
             />
-            UG
+            <span className="text-sm font-medium text-gray-800">UG</span>
           </label>
-          <label className="flex items-center gap-2">
+
+          {/* PG */}
+          <label className="flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer
+                      transition
+                      hover:border-blue-400
+                      has-[:checked]:border-blue-500
+                      has-[:checked]:bg-blue-50">
             <input
               type="radio"
               value="PG"
               checked={form.degree_level === "PG"}
-              onChange={(e) => setForm({ ...form, degree_level: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, degree_level: e.target.value })
+              }
+              className="w-4 h-4 text-blue-600"
             />
-            PG
+            <span className="text-sm font-medium text-gray-800">PG</span>
           </label>
         </div>
       </div>
+
 
 
       {/* Total No. of Students */}

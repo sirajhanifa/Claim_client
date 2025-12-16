@@ -3,13 +3,17 @@ import React from 'react';
 const ScrutinyField = ({ form, setForm }) => {
   return (
     <>
-      {/* UG / PG Radio Buttons */}
       <div>
-        <label className="text-sm font-semibold text-gray-700 block mb-2">
+        <label className="text-sm font-medium text-gray-700 block mb-2">
           Select Level (UG / PG)
         </label>
-        <div className="flex gap-6 mt-1">
-          <label className="flex items-center gap-2">
+
+        <div className="flex gap-4">
+          <label className="flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer
+                      transition
+                      hover:border-blue-400
+                      has-[:checked]:border-blue-500
+                      has-[:checked]:bg-blue-50">
             <input
               type="radio"
               value="UG"
@@ -17,11 +21,16 @@ const ScrutinyField = ({ form, setForm }) => {
               onChange={(e) =>
                 setForm({ ...form, scrutiny_level: e.target.value })
               }
-              className="form-radio text-blue-600"
+              className="w-4 h-4 text-blue-600"
             />
-            UG
+            <span className="text-sm font-medium">UG</span>
           </label>
-          <label className="flex items-center gap-2">
+
+          <label className="flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer
+                      transition
+                      hover:border-blue-400
+                      has-[:checked]:border-blue-500
+                      has-[:checked]:bg-blue-50">
             <input
               type="radio"
               value="PG"
@@ -29,12 +38,13 @@ const ScrutinyField = ({ form, setForm }) => {
               onChange={(e) =>
                 setForm({ ...form, scrutiny_level: e.target.value })
               }
-              className="form-radio text-blue-600"
+              className="w-4 h-4 text-blue-600"
             />
-            PG
+            <span className="text-sm font-medium">PG</span>
           </label>
         </div>
       </div>
+
 
       {/* No. of Papers */}
       <div className="mt-4">

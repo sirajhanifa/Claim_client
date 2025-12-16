@@ -13,29 +13,41 @@ const CiaReapear = ({ form, setForm }) => {
     <div className="mb-4">
       <label className="block mb-1 font-medium">Role Type</label>
       <div className="flex gap-4 mt-2">
-        <label className="flex items-center">
+        {/* Staff */}
+        <label className="flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer
+                    transition
+                    hover:border-blue-400
+                    has-[:checked]:border-blue-500
+                    has-[:checked]:bg-blue-50">
           <input
             type="radio"
             name="cia_role_type"
             value="Staff"
-            checked={form.cia_role_type === 'Staff'}
+            checked={form.cia_role_type === "Staff"}
             onChange={handleChange}
-            className="mr-2"
+            className="w-4 h-4 text-blue-600"
           />
-          Staff
+          <span className="text-sm font-medium text-gray-800">Staff</span>
         </label>
-        <label className="flex items-center">
+
+        {/* Tutor */}
+        <label className="flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer
+                    transition
+                    hover:border-blue-400
+                    has-[:checked]:border-blue-500
+                    has-[:checked]:bg-blue-50">
           <input
             type="radio"
             name="cia_role_type"
             value="Tutor"
-            checked={form.cia_role_type === 'Tutor'}
+            checked={form.cia_role_type === "Tutor"}
             onChange={handleChange}
-            className="mr-2"
+            className="w-4 h-4 text-blue-600"
           />
-          Tutor
+          <span className="text-sm font-medium text-gray-800">Tutor</span>
         </label>
       </div>
+
 
       <label className="block mt-4 mb-1 font-medium">No of Papers</label>
       <input

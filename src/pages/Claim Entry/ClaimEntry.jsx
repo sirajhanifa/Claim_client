@@ -55,12 +55,12 @@ const ClaimEntry = () => {
     // 🔷 Scrutiny Claim
     scrutiny_level: '',           // UG / PG
     scrutiny_no_of_papers: '',    // No. of Papers
-    scrutiny_days: '',            // No. of Days Halted
+    scrutiny_days: 1,            // No. of Days Halted
 
     // 🔷 Practical Exam Claim
     qps_paper_setting: '',        // QPS Paper Setting
     total_students: '',           // Total No. of Students
-    days_halted: '',              // No. of Days Halted
+    days_halted: 1,              // No. of Days Halted
     travelling_allowance: '',     // Travelling Allowance
     degree_level: '', // UG / PG for Practical Exam Claim
     tax_type: '',                 // Dropdown: Aided / SF / AICTE
@@ -73,13 +73,13 @@ const ClaimEntry = () => {
     // 🔷 Central Valuation Claim
     central_role: '',                 // Chairman / Examiner
     central_total_scripts_ug_pg: '', // Total Scripts
-    central_days_halted: '',         // No. of Days Halted
+    central_days_halted: 1,         // No. of Days Halted
     central_travel_allowance: '',    // Travel Allowance
     central_tax_applicable: '',      // Tax Type (Aided / SF)
 
     // 🔷 Ability Enhancement Claim ✅
     ability_total_no_students: '',     // Total No. of Students
-    ability_no_of_days_halted: '',     // No. of Days Halted
+    ability_no_of_days_halted: 1,     // No. of Days Halted
     ability_tax_type: '',              // Aided / AICTE only
   });
 
@@ -609,6 +609,7 @@ const ClaimEntry = () => {
                   type="text"
                   value={form[key]}
                   readOnly
+                  required
                   className="mt-2 w-full px-4 py-2 border border-gray-300 bg-white rounded-lg font-semibold text-gray-800 cursor-not-allowed shadow-sm focus:outline-none"
                 />
               </div>
