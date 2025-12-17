@@ -4,8 +4,8 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Trash2 } from "lucide-react";
 import axios from 'axios';
-
-
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 import logo1 from '../../assets/75.jpeg';
 import logo2 from '../../assets/logo.jpeg'
 
@@ -13,31 +13,108 @@ const ClaimReport = () => {
   const [filter, setFilter] = useState('all');
   const [claimType, setClaimType] = useState('all');
   const [entryDate, setEntryDate] = useState('');
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all"); // INTERNAL / EXTERNAL
+
   const apiUrl = import.meta.env.VITE_API_URL;
   const { data: claimData, loading, error, refetch } = useFetch(`${apiUrl}/api/getclaimEntry`);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const claimTypes = [...new Set(claimData?.map((claim) => claim.claim_type_name))];
 
+  const handleDownloadExcel = () => {
+    if (filteredClaims.length === 0) {
+      alert("No data available to download");
+      return;
+    }
+
+    const excelData = filteredClaims.map((claim, index) => {
+      const baseData = {
+        "S.No": index + 1,
+        "Category": claim.internal_external,
+        "Claim Type": claim.claim_type_name,
+        "Staff Name": claim.staff_name,
+        "Amount": claim.amount,
+        "Entry Date": new Date(claim.entry_date).toLocaleDateString("en-GB"),
+        "Submission Date": claim.submission_date
+          ? new Date(claim.submission_date).toLocaleDateString("en-GB")
+          : "-",
+        "Credited Date": claim.credited_date
+          ? new Date(claim.credited_date).toLocaleDateString("en-GB")
+          : "-",
+        "Status": claim.status,
+        "Payment ID": claim.payment_report_id || "-"
+      };
+
+      // ✅ Include Phone No only for ALL filter
+      if (filter === "all" && filter === "submitted" && filter === "unsubmitted" && filter === "credited") {
+        baseData["Phone No"] = claim.phone_number;
+      }
+
+      return baseData;
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Claims");
+
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array"
+    });
+
+    const file = new Blob([excelBuffer], {
+      type: "application/octet-stream"
+    });
+
+    saveAs(file, `Claim_Report_${filter}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
+
   // Core filtered claims for table
   const filteredClaims = claimData?.filter((claim) => {
+
+    // 🔹 Status filter
     switch (filter) {
-      case 'submitted':
+      case "submitted":
         if (!claim.submission_date) return false;
         break;
-      case 'unsubmitted':
+      case "unsubmitted":
         if (claim.submission_date) return false;
         break;
-      case 'credited':
+      case "credited":
         if (!claim.credited_date) return false;
         break;
       default:
         break;
     }
-    if (claimType !== 'all' && claim.claim_type_name !== claimType) return false;
-    if (entryDate && new Date(claim.entry_date).toLocaleDateString('en-CA') !== entryDate) return false;
+
+    // 🔹 Claim Type
+    if (claimType !== "all" && claim.claim_type_name !== claimType) return false;
+
+    // 🔹 INTERNAL / EXTERNAL
+    if (categoryFilter !== "all" && claim.internal_external !== categoryFilter) return false;
+
+    // 🔹 Date filter
+    if (
+      entryDate &&
+      new Date(claim.entry_date).toLocaleDateString("en-CA") !== entryDate
+    )
+      return false;
+
+    // 🔹 Search (Staff Name OR Phone)
+    if (search) {
+      const searchText = search.toLowerCase();
+      const nameMatch = claim.staff_name?.toLowerCase().includes(searchText);
+      const phoneMatch = claim.phone_number?.toString().includes(searchText);
+
+      if (!nameMatch && !phoneMatch) return false;
+    }
+
     return true;
   }) || [];
+
 
   // Handler for download filtered claims when filter === 'all'
   const handleDownloadClaimTypePDF = () => {
@@ -80,6 +157,7 @@ const ClaimReport = () => {
     // Table Columns
     const tableColumn = [
       "S.No",
+      "Category",
       "Entry Date",
       "Name",
       "Department",
@@ -89,6 +167,7 @@ const ClaimReport = () => {
 
     const tableRows = claims?.map((claim, index) => [
       index + 1,
+      claim.internal_external,
       new Date(claim.entry_date).toLocaleDateString('en-GB'),
       claim.staff_name,
       claim.department,
@@ -107,13 +186,14 @@ const ClaimReport = () => {
       styles: { fontSize: 10, halign: "center" },
       headStyles: { fillColor: [0, 51, 102], textColor: "#fff", fontStyle: "bold" },
       columnStyles: {
-        0: { cellWidth: 15 },
-        1: { cellWidth: 40 },
-        2: { cellWidth: 45 },
-        3: { cellWidth: 25 },
-        4: { cellWidth: 30 },
-        5: { cellWidth: 32 },
-      },
+        0: { cellWidth: 12 },
+        1: { cellWidth: 22 }, // Category
+        2: { cellWidth: 30 },
+        3: { cellWidth: 35 },
+        4: { cellWidth: 25 },
+        5: { cellWidth: 28 },
+        6: { cellWidth: 25 },
+      }
     });
 
     // **Signature at bottom-left**
@@ -133,6 +213,9 @@ const ClaimReport = () => {
 
   // Submit button handler (update only, no PDF)
   const handleSubmitClaims = async () => {
+    if (
+      !confirm(`Submit ${categoryFilter} ${claimType} claims?`)
+    ) return;
     setIsSubmitting(true);
     try {
       if (filteredClaims.length === 0) {
@@ -144,7 +227,10 @@ const ClaimReport = () => {
       const submitRes = await fetch(`${apiUrl}/api/submitClaims`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ claimType })
+        body: JSON.stringify({
+          claimType,
+          category: categoryFilter
+        })
       });
 
       if (submitRes.ok) {
@@ -235,43 +321,89 @@ const ClaimReport = () => {
 
   return (
     <div className="p-6">
-      {/* <h2 className="text-3xl font-semibold mb-6 text-center text-gray-800">Claim Entry Report</h2> */}
 
-      {/* Filters */}
-      <div className="mb-6 flex flex-wrap justify-center gap-6">
-        <div className="flex gap-4">
-          {['all', 'submitted', 'unsubmitted', 'credited'].map((type) => (
-            <label key={type} className="flex items-center gap-2 text-gray-700">
-              <input
-                type="radio"
-                name="filter"
-                value={type}
-                checked={filter === type}
-                onChange={(e) => setFilter(e.target.value)}
-              />
-              {type.charAt(0).toUpperCase() + type.slice(1)}
-            </label>
-          ))}
+      {/* Filters Container */}
+      <div className="mb-6 bg-white p-4 rounded-lg shadow-sm border space-y-4">
+
+        <div className="flex flex-wrap items-center justify-between gap-4">
+
+          {/* Search */}
+          <input
+            type="text"
+            placeholder="Search Staff Name / Phone No"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="border border-gray-500 rounded px-3 py-2 w-72"
+          />
+
+          {/* Claim Type */}
+          <select
+            value={claimType}
+            onChange={(e) => setClaimType(e.target.value)}
+            className="border border-gray-300 rounded px-3 py-2 min-w-[200px]"
+          >
+            <option value="all">All Claim Types</option>
+            {claimTypes.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+
+          {/* Category */}
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="border border-gray-300 rounded px-3 py-2 min-w-[180px]"
+          >
+            <option value="all">All Categories</option>
+            <option value="INTERNAL">INTERNAL</option>
+            <option value="EXTERNAL">EXTERNAL</option>
+          </select>
+
+          {/* Date */}
+          <input
+            type="date"
+            value={entryDate}
+            onChange={(e) => setEntryDate(e.target.value)}
+            className="border border-gray-300 rounded px-3 py-2"
+          />
         </div>
-        <select
-          value={claimType}
-          onChange={(e) => setClaimType(e.target.value)}
-          className="border border-gray-300 rounded px-3 py-2"
-        >
-          <option value="all">All Claim Types</option>
-          {claimTypes.map((type) => (
-            <option key={type} value={type}>{type}</option>
-          ))}
-        </select>
-        <input
-          type="date"
-          value={entryDate}
-          onChange={(e) => setEntryDate(e.target.value)}
-          className="border border-gray-300 rounded px-3 py-2"
-        />
+
+        <div className="mt-10 flex flex-wrap justify-center gap-4">
+          {/* Radio Buttons */}
+          <div className="flex items-center gap-4">
+            {['all', 'submitted', 'unsubmitted', 'credited'].map((type) => (
+              <label
+                key={type}
+                className="flex items-center gap-2 text-lg font-semibold text-gray-700"
+              >
+                <input
+                  type="radio"
+                  name="filter"
+                  value={type}
+                  checked={filter === type}
+                  onChange={(e) => setFilter(e.target.value)}
+                  className="accent-blue-700"
+                />
+                {type.charAt(0).toUpperCase() + type.slice(1)}
+              </label>
+            ))}
+          </div>
+
+        </div>
       </div>
+
+
       {/* Only show Download PDF button when radio 'All' is selected */}
-      <div className='-mt-16'>
+      <div className='flex justify-between'>
+        <button
+          className="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700 transition"
+          onClick={handleDownloadExcel}
+        >
+          Download Excel
+        </button>
+
         {filter === 'all' && (
           <div className="text-center flex justify-end">
             <button
@@ -284,18 +416,28 @@ const ClaimReport = () => {
           </div>
         )}
       </div>
+
       {/* Table */}
       <h1 className='text-lg font-bold text-end mt-4'>No.of.Claims : {filteredClaims.length} </h1>
       <div className="overflow-x-auto shadow-md rounded-lg border border-gray-200 mt-5">
         <table className="min-w-full bg-white">
-          <thead className="bg-blue-950 border-b-2 border-gray-300">
-            <tr>
-              {["S.No", "Claim Type", "Staff Name", "Amount", "Entry Date", "Submission Date", "Credited Date", "Status", "Payment Id", "Actions"]
+          <thead className="border-b-2 border-gray-300">
+            <tr className="bg-blue-950 text-left p-3 font-semibold text-sm text-white">
+              {["S.No", "Category", "Claim Type", "Staff Name", "Phone No", "Amount", "Entry Date", "Submission Date", "Credited Date", "Status", "Payment Id"]
                 .map(h => (
-                  <th key={h} className="text-left p-3 font-semibold text-sm text-white">{h}</th>
+                  <th key={h} className="text-left p-3 font-semibold text-sm text-white">
+                    {h}
+                  </th>
                 ))}
+
+              {filter === "unsubmitted" && (
+                <th className="text-left p-3 font-semibold text-sm text-white">
+                  Actions
+                </th>
+              )}
             </tr>
           </thead>
+
           <tbody>
             {filteredClaims.map((claim, index) => (
               <tr
@@ -303,8 +445,10 @@ const ClaimReport = () => {
                 className={index % 2 === 0 ? 'bg-gray-50 hover:bg-gray-100' : 'bg-white hover:bg-gray-100'}
               >
                 <td className="p-3 text-sm font-semibold text-gray-700">{index + 1}</td>
+                <td className="p-3 text-sm font-semibold text-gray-800">{claim.internal_external}</td>
                 <td className="p-3 text-sm font-semibold text-gray-800">{claim.claim_type_name}</td>
                 <td className="p-3 text-sm font-semibold text-gray-800">{claim.staff_name}</td>
+                <td className="p-3 text-sm font-semibold text-gray-800">{claim.phone_number}</td>
                 <td className="p-3 text-sm font-semibold text-green-700">₹{claim.amount}</td>
                 <td className="p-3 text-sm font-semibold text-gray-600">
                   {new Date(claim.entry_date).toLocaleDateString('en-GB')}
@@ -338,18 +482,14 @@ const ClaimReport = () => {
                 </td>
 
                 <td className="p-3 text-sm font-semibold text-gray-800">{claim.payment_report_id}</td>
-                <td className="p-3 text-center">
-                  {filter === "unsubmitted" && (
-                    <button
-                      onClick={() => handleDelete(claim._id)}
-                      className="p-2 rounded-full bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  )}
-                </td>
-
-
+                {filter === "unsubmitted" && (
+                  <button
+                    onClick={() => handleDelete(claim._id)}
+                    className="p-2 rounded-full mt-1 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                )}
               </tr>
             ))}
             {filteredClaims.length === 0 && (
@@ -385,10 +525,6 @@ const ClaimReport = () => {
           </button>
         </div>
       )}
-
-
-
-
     </div>
   );
 };
@@ -752,8 +888,5 @@ export default ClaimReport;
 // };
 
 // export default ClaimReport;
-
-
-
 
 
