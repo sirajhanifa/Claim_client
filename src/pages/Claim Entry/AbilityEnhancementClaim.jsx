@@ -44,8 +44,8 @@ const AbilityEnhancementClaim = ({ form, setForm }) => {
           className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg"
         >
           <option value="">Select Tax Type</option>
-          <option value="AIDED">Aided</option>
-          <option value="SF">SF</option>
+          <option value="AIDED">TDS</option>
+          <option value="SF">NO TDS</option>
         </select>
       </div>
     </>

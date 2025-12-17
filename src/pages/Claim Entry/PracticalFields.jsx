@@ -108,9 +108,9 @@ const PracticalFields = ({ form, setForm }) => {
           className="w-full px-4 py-2 border border-gray-300 rounded-lg"
         >
           <option value="">Select Tax Type</option>
-          <option value="Aided">Aided</option>
-          <option value="SF">SF</option>
-          <option value="AICTE">AICTE</option>
+          <option value="Aided">TDS</option>
+          <option value="SF">NO TDS</option>
+          {/* <option value="AICTE">AICTE</option> */}
         </select>
       </div>
 

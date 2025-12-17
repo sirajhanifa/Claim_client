@@ -8,8 +8,11 @@ const CentralValuation = ({ form, setForm }) => {
 
   return (
     <>
+      {/* Role */}
       <div>
-        <label className="text-sm font-semibold text-gray-700">Chairman / Examiner</label>
+        <label className="text-sm font-semibold text-gray-700">
+          Chairman / Examiner
+        </label>
         <select
           name="central_role"
           value={form.central_role}
@@ -22,44 +25,69 @@ const CentralValuation = ({ form, setForm }) => {
         </select>
       </div>
 
+      {/* UG Scripts */}
       <div>
-        <label className="text-sm font-semibold text-gray-700">Total Scripts (UG/PG)</label>
+        <label className="text-sm font-semibold text-gray-700">
+          Total UG Scripts
+        </label>
         <input
           type="number"
-          name="central_total_scripts_ug_pg"
-          value={form.central_total_scripts_ug_pg}
+          name="central_total_scripts_ug"
+          value={form.central_total_scripts_ug}
           onChange={handleChange}
           className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg"
-          placeholder="Enter total scripts"
+          placeholder="Enter UG scripts"
         />
       </div>
 
+      {/* PG Scripts */}
       <div>
-        <label className="text-sm font-semibold text-gray-700">No. of Days Halted</label>
+        <label className="text-sm font-semibold text-gray-700">
+          Total PG Scripts
+        </label>
+        <input
+          type="number"
+          name="central_total_scripts_pg"
+          value={form.central_total_scripts_pg}
+          onChange={handleChange}
+          className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg"
+          placeholder="Enter PG scripts"
+        />
+      </div>
+
+      {/* Halt Days */}
+      <div>
+        <label className="text-sm font-semibold text-gray-700">
+          No. of Days Halted
+        </label>
         <input
           type="number"
           name="central_days_halted"
           value={form.central_days_halted}
           onChange={handleChange}
           className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg"
-          placeholder="Enter halt days"
         />
       </div>
 
+      {/* Travel */}
       <div>
-        <label className="text-sm font-semibold text-gray-700">Travel Allowance</label>
+        <label className="text-sm font-semibold text-gray-700">
+          Travel Allowance
+        </label>
         <input
           type="number"
           name="central_travel_allowance"
           value={form.central_travel_allowance}
           onChange={handleChange}
           className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg"
-          placeholder="Enter travel allowance"
         />
       </div>
 
+      {/* Tax */}
       <div>
-        <label className="text-sm font-semibold text-gray-700">Tax Type</label>
+        <label className="text-sm font-semibold text-gray-700">
+          Tax Type
+        </label>
         <select
           name="central_tax_applicable"
           value={form.central_tax_applicable}
@@ -67,8 +95,8 @@ const CentralValuation = ({ form, setForm }) => {
           className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg"
         >
           <option value="">Select Tax Type</option>
-          <option value="AIDED">Aided</option>
-          <option value="SF">Self-Financed</option>
+          <option value="AIDED">TDS</option>
+          <option value="SF">NO TDS</option>
         </select>
       </div>
     </>

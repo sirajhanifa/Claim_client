@@ -61,7 +61,7 @@ const ClaimEntry = () => {
     qps_paper_setting: '',        // QPS Paper Setting
     total_students: '',           // Total No. of Students
     days_halted: 1,              // No. of Days Halted
-    travelling_allowance: '',     // Travelling Allowance
+    travelling_allowance:'',     // Travelling Allowance
     degree_level: '', // UG / PG for Practical Exam Claim
     tax_type: '',                 // Dropdown: Aided / SF / AICTE
     tax_amount: '',               // Optional Tax Amount
@@ -71,11 +71,13 @@ const ClaimEntry = () => {
     cia_role_type: '',
 
     // 🔷 Central Valuation Claim
-    central_role: '',                 // Chairman / Examiner
-    central_total_scripts_ug_pg: '', // Total Scripts
-    central_days_halted: 1,         // No. of Days Halted
-    central_travel_allowance: '',    // Travel Allowance
-    central_tax_applicable: '',      // Tax Type (Aided / SF)
+    central_role: '',
+    central_total_scripts_ug: '',
+    central_total_scripts_pg: '',
+    central_days_halted: 1,
+    central_travel_allowance: 0,
+    central_tax_applicable: '',
+
 
     // 🔷 Ability Enhancement Claim ✅
     ability_total_no_students: '',     // Total No. of Students
@@ -188,21 +190,19 @@ const ClaimEntry = () => {
       // ✅ Central Valuation logic
       if (
         claim_type_name === "CENTRAL VALUATION" &&
-        central_total_scripts_ug_pg &&
+        (form.central_total_scripts_ug || form.central_total_scripts_pg) &&
         central_days_halted &&
-        central_travel_allowance &&
-        central_tax_applicable && // ensure tax type is selected
-        !isNaN(central_total_scripts_ug_pg) &&
-        !isNaN(central_days_halted) &&
-        !isNaN(central_travel_allowance)
+        central_travel_allowance !== '' &&
+        central_tax_applicable
       ) {
         try {
           const response = await axios.post(`${apiUrl}/api/calculateAmount`, {
             claim_type_name,
-            total_scripts: parseInt(central_total_scripts_ug_pg),
-            days_halted: parseInt(central_days_halted),
-            travel_allowance: parseFloat(central_travel_allowance),
-            tax_applicable: central_tax_applicable // only "AIDED" or "SF"
+            central_total_scripts_ug: parseInt(form.central_total_scripts_ug) || 0,
+            central_total_scripts_pg: parseInt(form.central_total_scripts_pg) || 0,
+            central_days_halted: parseInt(central_days_halted),
+            central_travel_allowance: parseFloat(central_travel_allowance),
+            central_tax_applicable
           });
 
           const { amount } = response.data;
@@ -213,6 +213,7 @@ const ClaimEntry = () => {
           console.error("Error calculating Central Valuation amount:", error.message);
         }
       }
+
 
       // Practical Exam Claim logic
       if (
@@ -283,7 +284,8 @@ const ClaimEntry = () => {
     form.scrutiny_level,
     form.scrutiny_no_of_papers,
     form.scrutiny_days,
-    form.central_total_scripts_ug_pg,
+    form.central_total_scripts_ug,
+    form.central_total_scripts_pg,
     form.central_days_halted,
     form.central_travel_allowance,
     form.central_tax_applicable,
@@ -406,7 +408,8 @@ const ClaimEntry = () => {
 
         // Central Valuation
         central_role: '',
-        central_total_scripts_ug_pg: '',
+        central_total_scripts_ug: '',
+        central_total_scripts_pg: '',
         central_days_halted: '',
         central_travel_allowance: '',
         central_tax_applicable: '',
@@ -572,6 +575,7 @@ const ClaimEntry = () => {
                 className={`mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition hover:border-blue-400 ${form.claim_type_name === "QPS" ? "bg-gray-100" : ""
                   }`}
                 required
+                onWheel={(e) => e.target.blur()} // ✅ Disable scroll
               />
             </div>
           </div>
