@@ -61,10 +61,11 @@ const ClaimEntry = () => {
     qps_paper_setting: '',        // QPS Paper Setting
     total_students: '',           // Total No. of Students
     days_halted: 1,              // No. of Days Halted
-    travelling_allowance:'',     // Travelling Allowance
+    travelling_allowance: '',     // Travelling Allowance
     degree_level: '', // UG / PG for Practical Exam Claim
     tax_type: '',                 // Dropdown: Aided / SF / AICTE
     tax_amount: '',               // Optional Tax Amount
+    dearness_allowance: 200,
 
     // 🔷 CIA Reappear Claim
     cia_no_of_papers: '',
@@ -77,12 +78,15 @@ const ClaimEntry = () => {
     central_days_halted: 1,
     central_travel_allowance: 0,
     central_tax_applicable: '',
+    central_dearness_allowance: 200,    // added DA per day
 
 
     // 🔷 Ability Enhancement Claim ✅
     ability_total_no_students: '',     // Total No. of Students
     ability_no_of_days_halted: 1,     // No. of Days Halted
     ability_tax_type: '',              // Aided / AICTE only
+    ability_dearness_allowance: 200, // ✅ ADD THIS
+
   });
 
 
@@ -191,42 +195,49 @@ const ClaimEntry = () => {
       if (
         claim_type_name === "CENTRAL VALUATION" &&
         (form.central_total_scripts_ug || form.central_total_scripts_pg) &&
-        central_days_halted &&
-        central_travel_allowance !== '' &&
-        central_tax_applicable
+        form.central_days_halted &&
+        form.central_travel_allowance !== '' &&
+        form.central_dearness_allowance !== '' &&
+        form.central_tax_applicable
       ) {
         try {
           const response = await axios.post(`${apiUrl}/api/calculateAmount`, {
             claim_type_name,
             central_total_scripts_ug: parseInt(form.central_total_scripts_ug) || 0,
             central_total_scripts_pg: parseInt(form.central_total_scripts_pg) || 0,
-            central_days_halted: parseInt(central_days_halted),
-            central_travel_allowance: parseFloat(central_travel_allowance),
-            central_tax_applicable
+            central_travel_allowance: parseFloat(form.central_travel_allowance) || 0,
+            central_tax_applicable: form.central_tax_applicable
           });
 
-          const { amount } = response.data;
-          if (amount !== undefined) {
-            setForm((prev) => ({ ...prev, amount: amount.toString() }));
-          }
+          const { baseAmount, taxPercent } = response.data;
+
+          // ✅ Calculate DA in frontend
+          const daAmount = Number(form.central_days_halted || 0) * Number(form.central_dearness_allowance || 0);
+
+          const subTotal = baseAmount + daAmount;
+
+          // ✅ Apply tax on frontend
+          const taxAmount = subTotal * (taxPercent || 0);
+          const finalAmount = subTotal - taxAmount;
+
+          setForm(prev => ({ ...prev, amount: finalAmount.toString() }));
+
         } catch (error) {
           console.error("Error calculating Central Valuation amount:", error.message);
         }
       }
 
 
-      // Practical Exam Claim logic
+      // Practical Exam Claim logic ✅ UPDATED
       if (
         claim_type_name === "PRACTICAL EXAM CLAIM" &&
         qps_paper_setting &&
         total_students &&
         days_halted &&
-        travelling_allowance &&
         tax_type &&
         degree_level &&
         !isNaN(total_students) &&
-        !isNaN(days_halted) &&
-        !isNaN(travelling_allowance)
+        !isNaN(days_halted)
       ) {
         try {
           const response = await axios.post(`${apiUrl}/api/calculateAmount`, {
@@ -239,8 +250,21 @@ const ClaimEntry = () => {
           });
 
           const { amount } = response.data;
+
           if (amount !== undefined) {
-            setForm((prev) => ({ ...prev, amount: amount.toString() }));
+            const daPerDay = Number(form.dearness_allowance || 0);
+            const haltedDays = Number(days_halted || 0);
+
+            // ✅ DA calculation
+            const daAmount = haltedDays * daPerDay;
+
+            // ✅ FINAL AMOUNT
+            const finalAmount = Number(amount) + daAmount;
+
+            setForm((prev) => ({
+              ...prev,
+              amount: finalAmount.toString()
+            }));
           }
         } catch (error) {
           console.error("Error calculating Practical Exam amount:", error.message);
@@ -248,24 +272,38 @@ const ClaimEntry = () => {
       }
 
       // Ability Enhancement Claim logic
+      // Ability Enhancement Claim logic ✅ UPDATED
       if (
         claim_type_name === "ABILITY ENHANCEMENT CLAIM" &&
-        form.ability_total_no_students &&
-        form.ability_no_of_days_halted &&
-        !isNaN(form.ability_total_no_students) &&
-        !isNaN(form.ability_no_of_days_halted)
+        ability_total_no_students &&
+        ability_no_of_days_halted &&
+        !isNaN(ability_total_no_students) &&
+        !isNaN(ability_no_of_days_halted)
       ) {
         try {
           const response = await axios.post(`${apiUrl}/api/calculateAmount`, {
             claim_type_name,
-            ability_total_no_students: parseInt(form.ability_total_no_students),
-            ability_no_of_days_halted: parseInt(form.ability_no_of_days_halted),
-            ability_tax_type: form.ability_tax_type || ''
+            ability_total_no_students: parseInt(ability_total_no_students),
+            ability_no_of_days_halted: parseInt(ability_no_of_days_halted),
+            ability_tax_type: ability_tax_type || ''
           });
 
           const { amount } = response.data;
+
           if (amount !== undefined) {
-            setForm((prev) => ({ ...prev, amount: amount.toString() }));
+            const daPerDay = Number(form.ability_dearness_allowance || 0);
+            const haltedDays = Number(ability_no_of_days_halted || 0);
+
+            // ✅ DA calculation
+            const daAmount = daPerDay * haltedDays;
+
+            // ✅ FINAL AMOUNT
+            const finalAmount = Number(amount) + daAmount;
+
+            setForm(prev => ({
+              ...prev,
+              amount: finalAmount.toString()
+            }));
           }
         } catch (error) {
           console.error("Error calculating Ability Enhancement amount:", error.message);
@@ -299,7 +337,11 @@ const ClaimEntry = () => {
     form.ability_total_no_students,
     form.ability_tax_type,
     form.cia_no_of_papers,
-    form.cia_role_type
+    form.cia_role_type,
+    form.dearness_allowance,
+    form.ability_dearness_allowance,
+
+
 
   ]);
 
@@ -401,6 +443,8 @@ const ClaimEntry = () => {
         travelling_allowance: '',
         tax_type: '',
         degree_level: '',
+        dearness_allowance: 200,
+
 
         // CIA Reappear
         cia_no_of_papers: '',
@@ -418,6 +462,8 @@ const ClaimEntry = () => {
         ability_total_no_students: '',
         ability_no_of_days_halted: '',
         ability_tax_type: '',
+        ability_dearness_allowance: 200,
+
 
         // Skilled
         skilled_no_of_students: '',

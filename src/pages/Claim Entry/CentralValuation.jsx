@@ -69,6 +69,26 @@ const CentralValuation = ({ form, setForm }) => {
         />
       </div>
 
+      {/* Dearness Allowance */}
+      {/* Dearness Allowance */}
+      <div>
+        <label className="text-sm font-semibold text-gray-700">
+          Dearness Allowance (per day)
+        </label>
+        <input
+          type="number"
+          name="central_dearness_allowance"
+          value={form.central_dearness_allowance || ''}
+          onChange={(e) =>
+            setForm({ ...form, central_dearness_allowance: e.target.value })
+          }
+          className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg"
+          placeholder="Enter DA per day"
+        />
+      </div>
+
+
+
       {/* Travel */}
       <div>
         <label className="text-sm font-semibold text-gray-700">
