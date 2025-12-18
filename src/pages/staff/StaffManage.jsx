@@ -88,7 +88,7 @@ const StaffManage = () => {
     e.preventDefault();
     try {
       if (editingStaff) {
-        await axios.put(`/api/staff/update/${formData._id}`, formData);
+        await axios.put(`${apiUrl}/api/staff/update/${formData._id}`, formData);
         alert("Updated successfully.");
       } else {
         await axios.post(`${apiUrl}/api/staff`, formData);
