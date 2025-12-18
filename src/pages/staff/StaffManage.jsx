@@ -351,7 +351,7 @@ return (
               // HIDE only for EXTERNAL
               if (
                 formData.employment_type === "EXTERNAL" &&
-                ["staff_id", "designation", "category"].includes(field)
+                ["staff_id"].includes(field)
               ) {
                 return null;
               }
