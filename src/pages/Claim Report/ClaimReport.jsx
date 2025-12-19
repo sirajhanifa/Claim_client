@@ -1,11 +1,11 @@
-import React, {useState, useMemo} from 'react';
+import React, { useState, useMemo } from 'react';
 import useFetch from '../../hooks/useFetch';
-import {jsPDF} from "jspdf";
+import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import {Trash2} from "lucide-react";
+import { Trash2 } from "lucide-react";
 import axios from 'axios';
 import * as XLSX from "xlsx";
-import {saveAs} from "file-saver";
+import { saveAs } from "file-saver";
 import logo1 from '../../assets/75.jpeg';
 import logo2 from '../../assets/logo.jpeg'
 
@@ -15,12 +15,14 @@ const ClaimReport = () => {
   const [entryDate, setEntryDate] = useState('');
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all"); // INTERNAL / EXTERNAL
+  const [ifscFilter, setIfscFilter] = useState("all"); // INTERNAL / EXTERNAL
 
   const apiUrl = import.meta.env.VITE_API_URL;
-  const {data: claimData, loading, error, refetch} = useFetch(`${apiUrl}/api/getclaimEntry`);
+  const { data: claimData, loading, error, refetch } = useFetch(`${apiUrl}/api/getclaimEntry`);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const claimTypes = [...new Set(claimData?.map((claim) => claim.claim_type_name))];
+  const ifscTypes = [...new Set(claimData?.map((claim) => claim.ifsc_code))];
 
   const handleDownloadExcel = () => {
     if (displayedClaims.length === 0) {
@@ -34,6 +36,7 @@ const ClaimReport = () => {
         "Category": claim.internal_external,
         "Claim Type": claim.claim_type_name,
         "Staff Name": claim.staff_name,
+        "IFSC Code": claim.ifsc_code,
         "Amount": claim.amount,
         "Entry Date": new Date(claim.entry_date).toLocaleDateString("en-GB"),
         "Submission Date": claim.submission_date
@@ -96,6 +99,24 @@ const ClaimReport = () => {
     // 🔹 INTERNAL / EXTERNAL
     if (categoryFilter !== "all" && claim.internal_external !== categoryFilter) return false;
 
+    /* IFSC Filter Logic */
+    let ifscMatch = true;
+
+    if (ifscFilter === "JMC_IOB") {
+      ifscMatch = claim.ifsc_code === "IOBA0000467";
+    }
+
+    if (ifscFilter === "IOB_OTHERS") {
+      ifscMatch =
+        claim.ifsc_code?.startsWith("IOBA") &&
+        claim.ifsc_code !== "IOBA0000467";
+    }
+
+    if (ifscFilter === "OTHER_BANKS") {
+      ifscMatch = !claim.ifsc_code?.startsWith("IOBA");
+    }
+
+    if (!ifscMatch) return false;
     // 🔹 Date filter
     if (
       entryDate &&
@@ -127,7 +148,7 @@ const ClaimReport = () => {
 
       if (!map.has(key)) {
         // clone object so we don't mutate original
-        map.set(key, {...c, _mergedCount: 1});
+        map.set(key, { ...c, _mergedCount: 1 });
       } else {
         const existing = map.get(key);
         existing.amount = (Number(existing.amount) || 0) + (Number(c.amount) || 0);
@@ -173,19 +194,19 @@ const ClaimReport = () => {
     // College Name
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
-    doc.text("Jamal Mohamed College (Autonomous)", pageWidth / 2, 20, {align: "center"});
+    doc.text("Jamal Mohamed College (Autonomous)", pageWidth / 2, 20, { align: "center" });
 
     doc.setFontSize(9);
-    doc.text("Accredited with A++ Grade by NAAC (4th Cycle) with CGPA 3.69 out of 4.0.", pageWidth / 2, 27, {align: "center"});
+    doc.text("Accredited with A++ Grade by NAAC (4th Cycle) with CGPA 3.69 out of 4.0.", pageWidth / 2, 27, { align: "center" });
 
     doc.setFontSize(9);
-    doc.text("Tiruchirappalli – 620 020", pageWidth / 2, 33, {align: "center"});
+    doc.text("Tiruchirappalli – 620 020", pageWidth / 2, 33, { align: "center" });
 
     // PR & Submission
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
     doc.text(`PR ID: ${prId}`, 15, 50);
-    doc.text(`Date: ${submittedDate}`, pageWidth - 15, 50, {align: "right"});
+    doc.text(`Date: ${submittedDate}`, pageWidth - 15, 50, { align: "right" });
 
     // Table Columns
     const tableColumn = [
@@ -216,16 +237,16 @@ const ClaimReport = () => {
       startY: 60,
       head: [tableColumn],
       body: tableRows,
-      styles: {fontSize: 10, halign: "center"},
-      headStyles: {fillColor: [0, 51, 102], textColor: "#fff", fontStyle: "bold"},
+      styles: { fontSize: 10, halign: "center" },
+      headStyles: { fillColor: [0, 51, 102], textColor: "#fff", fontStyle: "bold" },
       columnStyles: {
-        0: {cellWidth: 12},
-        1: {cellWidth: 22}, // Category
-        2: {cellWidth: 30},
-        3: {cellWidth: 35},
-        4: {cellWidth: 25},
-        5: {cellWidth: 28},
-        6: {cellWidth: 25},
+        0: { cellWidth: 12 },
+        1: { cellWidth: 22 }, // Category
+        2: { cellWidth: 30 },
+        3: { cellWidth: 35 },
+        4: { cellWidth: 25 },
+        5: { cellWidth: 28 },
+        6: { cellWidth: 25 },
       }
     });
 
@@ -259,7 +280,7 @@ const ClaimReport = () => {
 
       const submitRes = await fetch(`${apiUrl}/api/submitClaims`, {
         method: 'PUT',
-        headers: {'Content-Type': 'application/json'},
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           claimType,
           category: categoryFilter
@@ -289,8 +310,8 @@ const ClaimReport = () => {
     try {
       const submitRes = await fetch(`${apiUrl}/api/submitClaims`, {
         method: 'PUT',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({claimType})
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ claimType })
       });
 
       const result = await submitRes.json();
@@ -361,7 +382,7 @@ const ClaimReport = () => {
       {/* Filters Container */}
       <div className="mb-6 bg-white p-4 rounded-lg shadow-sm border space-y-4">
 
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-0">
 
           {/* Search */}
           <input
@@ -397,6 +418,20 @@ const ClaimReport = () => {
             <option value="EXTERNAL">EXTERNAL</option>
           </select>
 
+          {/* IFSC Filter */}
+
+          <select
+            value={ifscFilter}
+            onChange={(e) => setIfscFilter(e.target.value)}
+            className="border border-gray-300 rounded px-3 py-2 min-w-[200px]"
+          >
+            <option value="all">Select IFSC Types</option>
+            <option value="JMC_IOB">JMC IOB Branch</option>
+            <option value="IOB_OTHERS">IOB Other Branch</option>
+            <option value="OTHER_BANKS">Other Branches</option>
+          </select>
+
+
           {/* Date */}
           <input
             type="date"
@@ -405,6 +440,8 @@ const ClaimReport = () => {
             className="border border-gray-300 rounded px-3 py-2"
           />
         </div>
+
+
 
         <div className="mt-10 flex flex-wrap justify-center gap-4">
           {/* Radio Buttons */}
@@ -434,7 +471,7 @@ const ClaimReport = () => {
       {/* Only show Download PDF button when radio 'All' is selected */}
       <div className='flex justify-between'>
         <button
-          className="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700 transition"
+          className="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800  transition"
           onClick={handleDownloadExcel}
         >
           Download Excel
@@ -459,7 +496,7 @@ const ClaimReport = () => {
         <table className="min-w-full bg-white">
           <thead className="border-b-2 border-gray-300">
             <tr className="bg-blue-950 text-left p-3 font-semibold text-sm text-white">
-              {["S.No", "Category", "Claim Type", "Staff Name", "Phone No", "Amount", "Entry Date", "Submission Date", "Credited Date", "Status", "Payment Id"]
+              {["S.No", "Category", "Claim Type", "Staff Name", "Phone No","IFSC Code", "Amount", "Entry Date", "Submission Date", "Credited Date", "Status", "Payment Id"]
                 .map(h => (
                   <th key={h} className="text-left p-3 font-semibold text-sm text-white">
                     {h}
@@ -485,6 +522,7 @@ const ClaimReport = () => {
                 <td className="p-3 text-sm font-semibold text-gray-800">{claim.claim_type_name}</td>
                 <td className="p-3 text-sm font-semibold text-gray-800">{claim.staff_name}</td>
                 <td className="p-3 text-sm font-semibold text-gray-800">{claim.phone_number}</td>
+                <td className="p-3 text-sm font-semibold text-gray-800">{claim.ifsc_code}</td>
                 <td className="p-3 text-sm font-semibold text-green-700">₹{claim.amount}</td>
                 <td className="p-3 text-sm font-semibold text-gray-600">
                   {new Date(claim.entry_date).toLocaleDateString('en-GB')}
