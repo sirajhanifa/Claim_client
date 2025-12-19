@@ -99,7 +99,7 @@ const PracticalFields = ({ form, setForm }) => {
           </label>
           <input
             type="number"
-            value={form.dearness_allowance || ""}
+            value={form.dearness_allowance}
             onChange={(e) =>
               setForm({ ...form, dearness_allowance: Number(e.target.value) })
             }
@@ -114,7 +114,7 @@ const PracticalFields = ({ form, setForm }) => {
           <label className="text-sm font-semibold text-gray-700">Travelling Allowance</label>
           <input
             type="number"
-            value={form.travelling_allowance || ""}
+            value={form.travelling_allowance}
             onChange={(e) => setForm({ ...form, travelling_allowance: e.target.value })}
             className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg"
             placeholder="Enter travelling allowance"

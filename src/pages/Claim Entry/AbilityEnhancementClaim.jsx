@@ -27,7 +27,7 @@ const AbilityEnhancementClaim = ({ form, setForm }) => {
         <input
           type="number"
           name="ability_no_of_days_halted"
-          value={form.ability_no_of_days_halted || ''}
+          value={form.ability_no_of_days_halted}
           onChange={handleChange}
           className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg"
           placeholder="Enter halt days"

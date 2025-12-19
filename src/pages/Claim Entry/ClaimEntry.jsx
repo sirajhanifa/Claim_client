@@ -54,15 +54,15 @@ const ClaimEntry = () => {
     no_of_scheme: '',        // No. of Scheme
 
     // 🔷 Scrutiny Claim
-    scrutiny_level: '',           // UG / PG
-    scrutiny_no_of_papers: '',    // No. of Papers
-    scrutiny_days: 1,            // No. of Days Halted
+    no_of_ug_papers: '',
+    no_of_pg_papers: '',
+    scrutiny_days: 1,
 
     // 🔷 Practical Exam Claim
     qps_paper_setting: '',        // QPS Paper Setting
     total_students: '',           // Total No. of Students
     days_halted: 1,              // No. of Days Halted
-    travelling_allowance: '',     // Travelling Allowance
+    travelling_allowance: 0,     // Travelling Allowance
     degree_level: '', // UG / PG for Practical Exam Claim
     tax_type: '',                 // Dropdown: Aided / SF / AICTE
     tax_amount: '',               // Optional Tax Amount
@@ -167,30 +167,31 @@ const ClaimEntry = () => {
 
 
       // Scrutiny logic
-      if (
-        claim_type_name === "SCRUTINY CLAIM" &&
-        scrutiny_level &&
-        scrutiny_no_of_papers &&
-        scrutiny_days &&
-        !isNaN(scrutiny_no_of_papers) &&
-        !isNaN(scrutiny_days)
-      ) {
+
+      // Scrutiny logic
+      if (claim_type_name?.trim().toUpperCase() === "SCRUTINY CLAIM") {
+        const ugPapers = parseInt(form.no_of_ug_papers) || 0;
+        const pgPapers = parseInt(form.no_of_pg_papers) || 0;
+
+        if (ugPapers === 0 && pgPapers === 0) return; // skip if both are 0
+
         try {
           const response = await axios.post(`${apiUrl}/api/calculateAmount`, {
             claim_type_name,
-            scrutiny_level,
-            scrutiny_no_of_papers: parseInt(scrutiny_no_of_papers),
-            scrutiny_days: parseInt(scrutiny_days),
+            no_of_ug_papers: ugPapers,
+            no_of_pg_papers: pgPapers,
           });
 
-          const { amount } = response.data;
-          if (amount !== undefined) {
-            setForm((prev) => ({ ...prev, amount: amount.toString() }));
-          }
+          const backendAmount = Number(response.data.amount) || 0;
+          const daAmount = (parseInt(form.scrutiny_days) || 0) * (parseInt(form.dearness_allowance) || 200);
+          const totalAmount = backendAmount + daAmount;
+
+          setForm(prev => ({ ...prev, amount: totalAmount.toString() }));
         } catch (error) {
           console.error("Error calculating Scrutiny amount:", error.message);
         }
       }
+
 
       // ✅ Central Valuation logic
       if (
@@ -275,8 +276,7 @@ const ClaimEntry = () => {
         }
       }
 
-      // Ability Enhancement Claim logic
-      // Ability Enhancement Claim logic ✅ UPDATED
+
       // 🔷 Ability Enhancement Claim logic (FINAL)
       if (
         claim_type_name === "ABILITY ENHANCEMENT CLAIM" &&
@@ -327,9 +327,9 @@ const ClaimEntry = () => {
     form.no_of_qps_ug,
     form.no_of_qps_pg,
     form.no_of_scheme,
-    form.no_of_papers,
-    form.scrutiny_level,
-    form.scrutiny_no_of_papers,
+    form.no_of_ug_papers,
+    form.no_of_pg_papers,
+    form.scrutiny_days,
     form.scrutiny_days,
     form.central_total_scripts_ug,
     form.central_total_scripts_pg,
@@ -492,6 +492,8 @@ const ClaimEntry = () => {
     }
   };
 
+
+  //fetch phone number suggestion
   const fetchPhoneSuggestions = async (query) => {
     if (query.length < 2) {
       setPhoneSuggestions([]);
