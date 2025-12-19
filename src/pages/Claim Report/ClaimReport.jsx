@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, {useState, useMemo} from 'react';
 import useFetch from '../../hooks/useFetch';
-import { jsPDF } from "jspdf";
+import {jsPDF} from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Trash2 } from "lucide-react";
+import {Trash2} from "lucide-react";
 import axios from 'axios';
 import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
+import {saveAs} from "file-saver";
 import logo1 from '../../assets/75.jpeg';
 import logo2 from '../../assets/logo.jpeg'
 
@@ -17,18 +17,18 @@ const ClaimReport = () => {
   const [categoryFilter, setCategoryFilter] = useState("all"); // INTERNAL / EXTERNAL
 
   const apiUrl = import.meta.env.VITE_API_URL;
-  const { data: claimData, loading, error, refetch } = useFetch(`${apiUrl}/api/getclaimEntry`);
+  const {data: claimData, loading, error, refetch} = useFetch(`${apiUrl}/api/getclaimEntry`);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const claimTypes = [...new Set(claimData?.map((claim) => claim.claim_type_name))];
 
   const handleDownloadExcel = () => {
-    if (filteredClaims.length === 0) {
+    if (displayedClaims.length === 0) {
       alert("No data available to download");
       return;
     }
 
-    const excelData = filteredClaims.map((claim, index) => {
+    const excelData = displayedClaims.map((claim, index) => {
       const baseData = {
         "S.No": index + 1,
         "Category": claim.internal_external,
@@ -115,16 +115,49 @@ const ClaimReport = () => {
     return true;
   }) || [];
 
+  // Merge duplicates when viewing unsubmitted claims.
+  // Duplicates are detected by (claim_type_name, phone_number, staff_name).
+  const mergeDuplicates = (claims = []) => {
+    const map = new Map();
+    for (const c of claims) {
+      const key = `${(c.claim_type_name || '').trim()}::${(c.phone_number || '').trim()}::${(c.staff_name || '').trim()}`;
+      const entryDate = c.entry_date ? new Date(c.entry_date) : null;
+      const submissionDate = c.submission_date ? new Date(c.submission_date) : null;
+      const creditedDate = c.credited_date ? new Date(c.credited_date) : null;
+
+      if (!map.has(key)) {
+        // clone object so we don't mutate original
+        map.set(key, {...c, _mergedCount: 1});
+      } else {
+        const existing = map.get(key);
+        existing.amount = (Number(existing.amount) || 0) + (Number(c.amount) || 0);
+        existing._mergedCount = (existing._mergedCount || 1) + 1;
+        if (entryDate && (!existing.entry_date || new Date(existing.entry_date) < entryDate)) existing.entry_date = entryDate.toISOString();
+        if (submissionDate && (!existing.submission_date || new Date(existing.submission_date) < submissionDate)) existing.submission_date = submissionDate.toISOString();
+        if (creditedDate && (!existing.credited_date || new Date(existing.credited_date) < creditedDate)) existing.credited_date = creditedDate.toISOString();
+        // prefer most up-to-date status
+        if (c.status && c.status !== existing.status) existing.status = c.status;
+      }
+    }
+
+    return Array.from(map.values());
+  };
+
+  const displayedClaims = useMemo(() => {
+    if (filter === 'unsubmitted') return mergeDuplicates(filteredClaims);
+    return filteredClaims;
+  }, [filter, filteredClaims]);
+
 
   // Handler for download filtered claims when filter === 'all'
   const handleDownloadClaimTypePDF = () => {
-    if (filteredClaims.length === 0) {
+    if (displayedClaims.length === 0) {
       alert('No claims found to download.');
       return;
     }
     const prId = `PR-${new Date().getFullYear()}-TEMP`;
     const submissionDate = new Date().toLocaleDateString('en-GB'); // ✅ always include system date
-    createPDF(prId, submissionDate, filteredClaims);
+    createPDF(prId, submissionDate, displayedClaims);
   };
 
 
@@ -140,19 +173,19 @@ const ClaimReport = () => {
     // College Name
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
-    doc.text("Jamal Mohamed College (Autonomous)", pageWidth / 2, 20, { align: "center" });
+    doc.text("Jamal Mohamed College (Autonomous)", pageWidth / 2, 20, {align: "center"});
 
     doc.setFontSize(9);
-    doc.text("Accredited with A++ Grade by NAAC (4th Cycle) with CGPA 3.69 out of 4.0.", pageWidth / 2, 27, { align: "center" });
+    doc.text("Accredited with A++ Grade by NAAC (4th Cycle) with CGPA 3.69 out of 4.0.", pageWidth / 2, 27, {align: "center"});
 
     doc.setFontSize(9);
-    doc.text("Tiruchirappalli – 620 020", pageWidth / 2, 33, { align: "center" });
+    doc.text("Tiruchirappalli – 620 020", pageWidth / 2, 33, {align: "center"});
 
     // PR & Submission
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
     doc.text(`PR ID: ${prId}`, 15, 50);
-    doc.text(`Date: ${submittedDate}`, pageWidth - 15, 50, { align: "right" });
+    doc.text(`Date: ${submittedDate}`, pageWidth - 15, 50, {align: "right"});
 
     // Table Columns
     const tableColumn = [
@@ -183,16 +216,16 @@ const ClaimReport = () => {
       startY: 60,
       head: [tableColumn],
       body: tableRows,
-      styles: { fontSize: 10, halign: "center" },
-      headStyles: { fillColor: [0, 51, 102], textColor: "#fff", fontStyle: "bold" },
+      styles: {fontSize: 10, halign: "center"},
+      headStyles: {fillColor: [0, 51, 102], textColor: "#fff", fontStyle: "bold"},
       columnStyles: {
-        0: { cellWidth: 12 },
-        1: { cellWidth: 22 }, // Category
-        2: { cellWidth: 30 },
-        3: { cellWidth: 35 },
-        4: { cellWidth: 25 },
-        5: { cellWidth: 28 },
-        6: { cellWidth: 25 },
+        0: {cellWidth: 12},
+        1: {cellWidth: 22}, // Category
+        2: {cellWidth: 30},
+        3: {cellWidth: 35},
+        4: {cellWidth: 25},
+        5: {cellWidth: 28},
+        6: {cellWidth: 25},
       }
     });
 
@@ -218,7 +251,7 @@ const ClaimReport = () => {
     ) return;
     setIsSubmitting(true);
     try {
-      if (filteredClaims.length === 0) {
+      if (displayedClaims.length === 0) {
         alert('No unsubmitted claims to submit.');
         setIsSubmitting(false);
         return;
@@ -226,7 +259,7 @@ const ClaimReport = () => {
 
       const submitRes = await fetch(`${apiUrl}/api/submitClaims`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
           claimType,
           category: categoryFilter
@@ -248,12 +281,16 @@ const ClaimReport = () => {
   };
 
   const handleSubmitAndDownloadPDF = async () => {
+    if (displayedClaims.length === 0) {
+      alert('No unsubmitted claims to submit.');
+      return;
+    }
     setIsSubmitting(true);
     try {
       const submitRes = await fetch(`${apiUrl}/api/submitClaims`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ claimType })
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({claimType})
       });
 
       const result = await submitRes.json();
@@ -268,12 +305,11 @@ const ClaimReport = () => {
         const actualSubmittedDate = getDateOnlyString(result.submission_date); // ✅ FIXED
 
         if (refetch) await refetch();
-
         const updatedClaims = claimData.filter(c =>
           (claimType === 'all' || c.claim_type_name === claimType)
         );
-
-        createPDF(prId, actualSubmittedDate, updatedClaims);
+        const updatedClaimsMerged = filter === 'unsubmitted' ? mergeDuplicates(updatedClaims) : updatedClaims;
+        createPDF(prId, actualSubmittedDate, updatedClaimsMerged);
       } else {
         alert(result.message);
       }
@@ -290,7 +326,7 @@ const ClaimReport = () => {
       alert('No submitted claims available to download PDF.');
       return;
     }
-    const submittedFilteredClaims = (claimData || []).filter((claim) =>
+    const submittedFilteredClaims = (displayedClaims || []).filter((claim) =>
       claim.payment_report_id === existingPrId &&
       (claimType === 'all' || claim.claim_type_name === claimType)
     );
@@ -418,7 +454,7 @@ const ClaimReport = () => {
       </div>
 
       {/* Table */}
-      <h1 className='text-lg font-bold text-end mt-4'>No.of.Claims : {filteredClaims.length} </h1>
+      <h1 className='text-lg font-bold text-end mt-4'>No.of.Claims : {displayedClaims.length} </h1>
       <div className="overflow-x-auto shadow-md rounded-lg border border-gray-200 mt-5">
         <table className="min-w-full bg-white">
           <thead className="border-b-2 border-gray-300">
@@ -430,7 +466,7 @@ const ClaimReport = () => {
                   </th>
                 ))}
 
-              {filter === "unsubmitted" && (
+              {filter === "all" && (
                 <th className="text-left p-3 font-semibold text-sm text-white">
                   Actions
                 </th>
@@ -439,7 +475,7 @@ const ClaimReport = () => {
           </thead>
 
           <tbody>
-            {filteredClaims.map((claim, index) => (
+            {displayedClaims.map((claim, index) => (
               <tr
                 key={claim._id}
                 className={index % 2 === 0 ? 'bg-gray-50 hover:bg-gray-100' : 'bg-white hover:bg-gray-100'}
@@ -482,17 +518,21 @@ const ClaimReport = () => {
                 </td>
 
                 <td className="p-3 text-sm font-semibold text-gray-800">{claim.payment_report_id}</td>
-                {filter === "unsubmitted" && (
-                  <button
-                    onClick={() => handleDelete(claim._id)}
-                    className="p-2 rounded-full mt-1 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition"
-                  >
-                    <Trash2 size={18} />
-                  </button>
+                {filter === "all" && (
+                  (claim._mergedCount && claim._mergedCount > 1) ? (
+                    <div className="text-xs text-gray-500">Merged ({claim._mergedCount})</div>
+                  ) : (
+                    <button
+                      onClick={() => handleDelete(claim._id)}
+                      className="p-2 rounded-full mt-1 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  )
                 )}
               </tr>
             ))}
-            {filteredClaims.length === 0 && (
+            {displayedClaims.length === 0 && (
               <tr>
                 <td colSpan="9" className="p-4 text-center text-gray-500">
                   No claim entries found.
@@ -504,7 +544,7 @@ const ClaimReport = () => {
       </div>
 
       {/* Buttons */}
-      {filter === 'unsubmitted' && filteredClaims.length > 0 && (
+      {filter === 'unsubmitted' && displayedClaims.length > 0 && (
         <div className="mt-5 text-center flex justify-end gap-4">
           {/* Download PDF */}
           <button

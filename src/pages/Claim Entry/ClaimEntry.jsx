@@ -7,7 +7,6 @@ import QpsFields from './QpsFields';
 import CiaReapear from './CiaReapear';
 import ScrutinyField from './ScrutinyField';
 import CentralValuation from './CentralValuation';
-import PracticalClaim from './PracticalFields';
 import PracticalFields from './PracticalFields';
 import AbilityEnhancementClaim from './AbilityEnhancementClaim';
 import SkilledClaim from './SkilledClaim';
@@ -22,6 +21,8 @@ const ClaimEntry = () => {
 
 
   const [phoneSuggestions, setPhoneSuggestions] = useState([]);
+  const [activeIndex, setActiveIndex] = useState(-1);
+
 
   const { username } = useParams();
 
@@ -249,23 +250,26 @@ const ClaimEntry = () => {
             degree_level
           });
 
-          const { amount } = response.data;
 
-          if (amount !== undefined) {
-            const daPerDay = Number(form.dearness_allowance || 0);
-            const haltedDays = Number(days_halted || 0);
+          const { baseAmount, taxPercent } = response.data;
 
-            // ✅ DA calculation
-            const daAmount = haltedDays * daPerDay;
+          const daAmount =
+            Number(form.days_halted || 0) * Number(form.dearness_allowance || 0);
 
-            // ✅ FINAL AMOUNT
-            const finalAmount = Number(amount) + daAmount;
+          const subTotal = Number(baseAmount) + daAmount;
 
-            setForm((prev) => ({
-              ...prev,
-              amount: finalAmount.toString()
-            }));
-          }
+          // ✅ apply tax AFTER adding DA
+          const taxRate = (taxPercent || 0) / 100;   // 🔥 FIX
+          const taxAmount = subTotal * taxRate;
+          const finalAmount = Math.max(subTotal - taxAmount, 0);
+
+
+
+          setForm(prev => ({
+            ...prev,
+            amount: finalAmount.toString()
+          }));
+
         } catch (error) {
           console.error("Error calculating Practical Exam amount:", error.message);
         }
@@ -273,6 +277,7 @@ const ClaimEntry = () => {
 
       // Ability Enhancement Claim logic
       // Ability Enhancement Claim logic ✅ UPDATED
+      // 🔷 Ability Enhancement Claim logic (FINAL)
       if (
         claim_type_name === "ABILITY ENHANCEMENT CLAIM" &&
         ability_total_no_students &&
@@ -284,27 +289,31 @@ const ClaimEntry = () => {
           const response = await axios.post(`${apiUrl}/api/calculateAmount`, {
             claim_type_name,
             ability_total_no_students: parseInt(ability_total_no_students),
-            ability_no_of_days_halted: parseInt(ability_no_of_days_halted),
             ability_tax_type: ability_tax_type || ''
           });
 
-          const { amount } = response.data;
+          const { baseAmount, taxPercent } = response.data;
 
-          if (amount !== undefined) {
-            const daPerDay = Number(form.ability_dearness_allowance || 0);
-            const haltedDays = Number(ability_no_of_days_halted || 0);
+          // ✅ DA calculation (frontend only)
+          const daPerDay = Number(form.ability_dearness_allowance || 0);
+          const haltedDays = Number(ability_no_of_days_halted || 0);
+          const daAmount = daPerDay * haltedDays;
 
-            // ✅ DA calculation
-            const daAmount = daPerDay * haltedDays;
+          // ✅ Subtotal = Base + DA
+          const subTotal = Number(baseAmount) + daAmount;
 
-            // ✅ FINAL AMOUNT
-            const finalAmount = Number(amount) + daAmount;
+          // ✅ Tax applied AFTER DA
+          const taxRate = (taxPercent || 0) / 100;
+          const taxAmount = subTotal * taxRate;
 
-            setForm(prev => ({
-              ...prev,
-              amount: finalAmount.toString()
-            }));
-          }
+          // ✅ Final amount
+          const finalAmount = subTotal - taxAmount;
+
+          setForm(prev => ({
+            ...prev,
+            amount: finalAmount.toString()
+          }));
+
         } catch (error) {
           console.error("Error calculating Ability Enhancement amount:", error.message);
         }
@@ -357,11 +366,12 @@ const ClaimEntry = () => {
 
 
   //fetch Staff by using phone Number
-  const handleFetchStaff = async () => {
-    if (!phoneNumber) return alert("Enter a phone number");
+  const handleFetchStaff = async (phone = null) => {
+    const lookupPhone = phone ?? phoneNumber;
+    if (!lookupPhone) return alert("Enter a phone number");
 
     try {
-      const res = await fetch(`${apiUrl}/api/getStaffByPhone/${phoneNumber}`);
+      const res = await fetch(`${apiUrl}/api/getStaffByPhone/${encodeURIComponent(lookupPhone)}`);
       const data = await res.json();
 
       if (res.ok) {
@@ -372,7 +382,7 @@ const ClaimEntry = () => {
           department: data.department,
           designation: data.designation,
           internal_external: data.employment_type,
-          phone_number: phoneNumber,
+          phone_number: lookupPhone,
           email: data.email,
           bank_name: data.bank_name || '',
           branch_name: data.branch_name || '',
@@ -383,7 +393,7 @@ const ClaimEntry = () => {
       } else {
         if (window.confirm(data.message || "No staff found. Do you want to add new staff?")) {
           navigate(`/layout/${username}/staffmanage`, {
-            state: { openAddStaffModal: true, prefillPhone: phoneNumber }
+            state: { openAddStaffModal: true, prefillPhone: lookupPhone }
           });
         }
       }
@@ -539,7 +549,8 @@ const ClaimEntry = () => {
                 value={phoneNumber}
                 onChange={(e) => {
                   setPhoneNumber(e.target.value);
-                  fetchPhoneSuggestions(e.target.value);  // 🔥 new function
+                  fetchPhoneSuggestions(e.target.value);
+                  setActiveIndex(-1);
                 }}
                 placeholder="Enter Phone Number"
                 disabled={!form.claim_type_name}
@@ -550,36 +561,71 @@ const ClaimEntry = () => {
                     : "bg-gray-200 cursor-not-allowed border-gray-300"
                   }`}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && form.claim_type_name) {
+                  if (!phoneSuggestions.length) return;
+
+                  // Arrow Down -> move highlight & preview
+                  if (e.key === "ArrowDown") {
                     e.preventDefault();
-                    handleFetchStaff();
+                    setActiveIndex((prev) => {
+                      const next = prev < phoneSuggestions.length - 1 ? prev + 1 : 0;
+                      setPhoneNumber(phoneSuggestions[next].phone_no);
+                      return next;
+                    });
+                  }
+
+                  // Arrow Up -> move highlight & preview
+                  if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setActiveIndex((prev) => {
+                      const next = prev > 0 ? prev - 1 : phoneSuggestions.length - 1;
+                      setPhoneNumber(phoneSuggestions[next].phone_no);
+                      return next;
+                    });
+                  }
+
+                  // Enter -> choose currently visible number (or typed one)
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    const idx = phoneSuggestions.findIndex(s => s.phone_no === phoneNumber);
+
+                    if (idx >= 0) {
+                      const selected = phoneSuggestions[idx].phone_no;
+                      setPhoneSuggestions([]);
+                      setActiveIndex(-1);
+                      handleFetchStaff(selected);
+                    } else {
+                      handleFetchStaff();
+                    }
                   }
                 }}
               />
 
-              {/* 🔽 DROPDOWN SUGGESTIONS */}
+              {/* Dropdown suggestions */}
               {phoneSuggestions.length > 0 && (
-                <ul className="absolute z-20 bg-white border border-gray-300 rounded-lg mt-1 w-full shadow-md max-h-40 overflow-y-auto">
-                  {phoneSuggestions.map((item) => (
+                <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-sm max-h-48 overflow-auto">
+                  {phoneSuggestions.map((item, index) => (
                     <li
                       key={item.phone_no}
                       onClick={() => {
                         setPhoneNumber(item.phone_no);
                         setPhoneSuggestions([]);
+                        setActiveIndex(-1);
+                        handleFetchStaff(item.phone_no);
                       }}
-                      className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                      className={`px-4 py-2 cursor-pointer text-sm ${index === activeIndex ? "bg-blue-100 font-semibold" : "hover:bg-blue-50"}`}
                     >
                       {item.phone_no}
                     </li>
                   ))}
                 </ul>
               )}
+
             </div>
 
             <button
               type="button"
               tabIndex={form.claim_type_name ? 3 : -1}
-              onClick={handleFetchStaff}
+              onClick={() => handleFetchStaff()}
               disabled={!form.claim_type_name}
               className={`px-5 py-2 rounded-lg font-semibold shadow-sm transition 
         ${form.claim_type_name
