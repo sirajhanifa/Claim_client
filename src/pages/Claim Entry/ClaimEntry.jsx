@@ -24,6 +24,9 @@ const ClaimEntry = () => {
   const [activeIndex, setActiveIndex] = useState(-1);
 
 
+
+
+
   const { username } = useParams();
 
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -90,6 +93,7 @@ const ClaimEntry = () => {
 
   });
 
+  const isStaffFetched = Boolean(form.staff_id);
 
 
   useEffect(() => {
@@ -511,253 +515,257 @@ const ClaimEntry = () => {
 
 
   return (
-
-    <div className="p-10 max-w-7xl mx-auto">
-      <h2 className="text-3xl font-extrabold mb-8 text-blue-900 tracking-tight border-b pb-2">
-        Claim Entry
-      </h2>
-
-      <form
-        onSubmit={handleSubmit}
-        className="grid gap-8 md:grid-cols-2 bg-white p-10 rounded-2xl shadow-xl border border-gray-200"
-      >
-        {/* Claim Type */}
-        <div>
-          <label className="text-sm font-semibold text-gray-700">Claim Type</label>
-          <select
-            tabIndex={1}
-            value={form.claim_type_name}
-            onChange={(e) => setForm({ ...form, claim_type_name: e.target.value })}
-            className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition hover:border-blue-400"
-          >
-            <option value="">Select Type</option>
-            {claimTypes?.map((c) => (
-              <option key={c._id} value={c.claim_type_name}>
-                {c.claim_type_name}
-              </option>
-            ))}
-          </select>
+    <div className="min-h-screen bg-slate-50/50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header Section */}
+        <div className="mb-10 border-l-4 border-blue-600 pl-6">
+          <h2 className="text-4xl font-black tracking-tight italic">
+            <span className="text-blue-600">Claim</span>
+            <span className="text-slate-900 ml-2">Entry</span>
+          </h2>
+          <p className="mt-1 text-slate-500 font-medium text-sm">
+            Please fill in the details below to submit a new claim.
+          </p>
         </div>
 
-        {/* Phone Number & Fetch */}
-        <div className="relative">
-          <label className="text-sm font-semibold text-gray-700">Phone Number</label>
+        <form
+          onSubmit={handleSubmit}
+          className="grid gap-y-10 gap-x-8 md:grid-cols-2 bg-white p-8 md:p-12 rounded-3xl shadow-2xl shadow-blue-100/50 border border-slate-100 relative overflow-hidden"
+        >
+          {/* Subtle Background Accent */}
+          <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-blue-50 rounded-full blur-3xl opacity-50"></div>
 
-          <div className="mt-2 flex gap-2">
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                tabIndex={form.claim_type_name ? 2 : -1}
-                value={phoneNumber}
-                onChange={(e) => {
-                  setPhoneNumber(e.target.value);
-                  fetchPhoneSuggestions(e.target.value);
-                  setActiveIndex(-1);
-                }}
-                placeholder="Enter Phone Number"
-                disabled={!form.claim_type_name}
-                className={`w-full px-4 py-2 border font-semibold rounded-lg transition 
-          focus:outline-none 
-          ${form.claim_type_name
-                    ? "border-gray-300 focus:ring-2 focus:ring-blue-500 hover:border-blue-400"
-                    : "bg-gray-200 cursor-not-allowed border-gray-300"
-                  }`}
-                onKeyDown={(e) => {
-                  if (!phoneSuggestions.length) return;
-
-                  // Arrow Down -> move highlight & preview
-                  if (e.key === "ArrowDown") {
-                    e.preventDefault();
-                    setActiveIndex((prev) => {
-                      const next = prev < phoneSuggestions.length - 1 ? prev + 1 : 0;
-                      setPhoneNumber(phoneSuggestions[next].phone_no);
-                      return next;
-                    });
-                  }
-
-                  // Arrow Up -> move highlight & preview
-                  if (e.key === "ArrowUp") {
-                    e.preventDefault();
-                    setActiveIndex((prev) => {
-                      const next = prev > 0 ? prev - 1 : phoneSuggestions.length - 1;
-                      setPhoneNumber(phoneSuggestions[next].phone_no);
-                      return next;
-                    });
-                  }
-
-                  // Enter -> choose currently visible number (or typed one)
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    const idx = phoneSuggestions.findIndex(s => s.phone_no === phoneNumber);
-
-                    if (idx >= 0) {
-                      const selected = phoneSuggestions[idx].phone_no;
-                      setPhoneSuggestions([]);
-                      setActiveIndex(-1);
-                      handleFetchStaff(selected);
-                    } else {
-                      handleFetchStaff();
-                    }
-                  }
-                }}
-              />
-
-              {/* Dropdown suggestions */}
-              {phoneSuggestions.length > 0 && (
-                <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-sm max-h-48 overflow-auto">
-                  {phoneSuggestions.map((item, index) => (
-                    <li
-                      key={item.phone_no}
-                      onClick={() => {
-                        setPhoneNumber(item.phone_no);
-                        setPhoneSuggestions([]);
-                        setActiveIndex(-1);
-                        handleFetchStaff(item.phone_no);
-                      }}
-                      className={`px-4 py-2 cursor-pointer text-sm ${index === activeIndex ? "bg-blue-100 font-semibold" : "hover:bg-blue-50"}`}
-                    >
-                      {item.phone_no}
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-            </div>
-
-            <button
-              type="button"
-              tabIndex={form.claim_type_name ? 3 : -1}
-              onClick={() => handleFetchStaff()}
-              disabled={!form.claim_type_name}
-              className={`px-5 py-2 rounded-lg font-semibold shadow-sm transition 
-        ${form.claim_type_name
-                  ? "bg-blue-600 text-white hover:bg-blue-700 active:scale-95"
-                  : "bg-gray-400 text-gray-700 cursor-not-allowed"
-                }`}
+          {/* Claim Type */}
+          <div className="space-y-2">
+            <label className="block text-sm font-bold text-slate-700 ml-1">Claim Type</label>
+            <select
+              tabIndex={1}
+              value={form.claim_type_name}
+              onChange={(e) => setForm({ ...form, claim_type_name: e.target.value })}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all duration-200 outline-none appearance-none cursor-pointer font-medium"
             >
-              Get
-            </button>
-          </div>
-        </div>
-
-
-
-        {/* Claim Details Section */}
-        <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded-xl p-6 shadow-sm">
-          <h3 className="text-lg font-bold text-blue-800 mb-4 flex items-center gap-2">
-            🧾 Claim Details
-          </h3>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            {form.claim_type_name === "QPS" && <QpsFields form={form} setForm={setForm} />}
-            {form.claim_type_name === "CIA REAPEAR CLAIM" && <CiaReapear form={form} setForm={setForm} />}
-            {form.claim_type_name === "SCRUTINY CLAIM" && <ScrutinyField form={form} setForm={setForm} />}
-            {form.claim_type_name === "CENTRAL VALUATION" && <CentralValuation form={form} setForm={setForm} />}
-            {form.claim_type_name === "PRACTICAL EXAM CLAIM" && <PracticalFields form={form} setForm={setForm} />}
-            {form.claim_type_name === "ABILITY ENHANCEMENT CLAIM" && <AbilityEnhancementClaim form={form} setForm={setForm} />}
-            {form.claim_type_name === "SKILLED CLAIM" && <SkilledClaim form={form} setForm={setForm} />}
-
-            {/* Amount Field */}
-            <div>
-              <label className="text-sm font-semibold text-gray-700">Amount</label>
-              <input
-                type="number"
-                tabIndex={4}
-                autoComplete="off"
-                value={form.amount}
-                onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                className={`mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition hover:border-blue-400 ${form.claim_type_name === "QPS" ? "bg-gray-100" : ""
-                  }`}
-                required
-                onWheel={(e) => e.target.blur()} // ✅ Disable scroll
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Staff Info Section */}
-        <div className="md:col-span-2 bg-gray-50 border border-gray-200 rounded-2xl p-10 shadow-md">
-          {/* Section Header */}
-          <div className="flex items-center justify-between mb-6 border-b border-gray-300 pb-3">
-            <h3 className="text-xl font-extrabold text-gray-800 flex items-center gap-2">
-              👤 Staff Information
-            </h3>
-            <span className="text-xs font-medium text-gray-700 bg-gray-200 px-3 py-1 rounded-full">
-              View Only
-            </span>
+              <option value="">Select Type</option>
+              {claimTypes?.map((c) => (
+                <option key={c._id} value={c.claim_type_name}>
+                  {c.claim_type_name}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* Staff Details Grid */}
-          <div className="grid md:grid-cols-2 gap-6">
-            {[
-              { label: "Staff ID", key: "staff_id" },
-              { label: "Staff Name", key: "staff_name" },
-              { label: "Department", key: "department" },
-              { label: "Designation", key: "designation" },
-              { label: "Internal / External", key: "internal_external" },
-              { label: "Email", key: "email" },
-              // { label: "Bank Name", key: "bank_name" },
-              // { label: "Branch Name", key: "branch_name" },
-              { label: "IFSC Code", key: "ifsc_code" },
-              { label: "Account Number", key: "account_no" },
-            ].map(({ label, key }) => (
-              <div key={key} className="flex flex-col">
-                <label className="text-sm font-semibold text-gray-700">{label}</label>
+          {/* Phone Number & Fetch */}
+          <div className="relative space-y-2">
+            <label className="block text-sm font-bold text-slate-700 ml-1">Phone Number</label>
+            <div className="flex gap-3">
+              <div className="flex-1 relative">
                 <input
                   type="text"
-                  value={form[key]}
-                  readOnly
-                  required
-                  className="mt-2 w-full px-4 py-2 border border-gray-300 bg-white rounded-lg font-semibold text-gray-800 cursor-not-allowed shadow-sm focus:outline-none"
+                  tabIndex={form.claim_type_name ? 2 : -1}
+                  value={phoneNumber}
+                  onChange={(e) => {
+                    setPhoneNumber(e.target.value);
+                    fetchPhoneSuggestions(e.target.value);
+                    setActiveIndex(-1);
+                  }}
+                  placeholder="Enter 10-digit number"
+                  disabled={!form.claim_type_name}
+                  className={`w-full px-4 py-3 border rounded-xl font-bold transition-all duration-200 outline-none
+                  ${form.claim_type_name
+                      ? "bg-slate-50 border-slate-200 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+                      : "bg-slate-100 cursor-not-allowed border-slate-200 text-slate-400"
+                    }`}
+                  onKeyDown={(e) => {
+                    if (!phoneSuggestions.length) return;
+                    if (e.key === "ArrowDown") {
+                      e.preventDefault();
+                      setActiveIndex((prev) => {
+                        const next = prev < phoneSuggestions.length - 1 ? prev + 1 : 0;
+                        setPhoneNumber(phoneSuggestions[next].phone_no);
+                        return next;
+                      });
+                    }
+                    if (e.key === "ArrowUp") {
+                      e.preventDefault();
+                      setActiveIndex((prev) => {
+                        const next = prev > 0 ? prev - 1 : phoneSuggestions.length - 1;
+                        setPhoneNumber(phoneSuggestions[next].phone_no);
+                        return next;
+                      });
+                    }
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const idx = phoneSuggestions.findIndex(s => s.phone_no === phoneNumber);
+                      if (idx >= 0) {
+                        const selected = phoneSuggestions[idx].phone_no;
+                        setPhoneSuggestions([]);
+                        setActiveIndex(-1);
+                        handleFetchStaff(selected);
+                      } else {
+                        handleFetchStaff();
+                      }
+                    }
+                  }}
                 />
+
+                {/* Suggestions Dropdown */}
+                {phoneSuggestions.length > 0 && (
+                  <ul className="absolute z-20 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-xl max-h-56 overflow-auto py-2 ring-1 ring-black ring-opacity-5 animate-in fade-in slide-in-from-top-2">
+                    {phoneSuggestions.map((item, index) => (
+                      <li
+                        key={item.phone_no}
+                        onClick={() => {
+                          setPhoneNumber(item.phone_no);
+                          setPhoneSuggestions([]);
+                          setActiveIndex(-1);
+                          handleFetchStaff(item.phone_no);
+                        }}
+                        className={`px-4 py-2.5 cursor-pointer text-sm font-medium transition-colors
+                        ${index === activeIndex ? "bg-blue-600 text-white" : "text-slate-700 hover:bg-blue-50"}`}
+                      >
+                        {item.phone_no}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-            ))}
+
+              <button
+                type="button"
+                tabIndex={form.claim_type_name ? 3 : -1}
+                onClick={() => handleFetchStaff()}
+                disabled={!form.claim_type_name}
+                className={`px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-200/50 transition-all duration-200 active:scale-95
+                ${form.claim_type_name
+                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                    : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
+                  }`}
+              >
+                Get
+              </button>
+            </div>
           </div>
-        </div>
 
+          {/* Claim Details Section */}
+          <div className="md:col-span-2 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-8 shadow-inner">
+            <h3 className="text-xl font-black text-blue-900 mb-6 flex items-center gap-3">
+              <span className="p-2 bg-white rounded-lg shadow-sm">🧾</span>
+              Claim Details
+            </h3>
 
-        {/* Entry Date */}
-        <div>
-          <label className="text-sm font-semibold text-gray-700">Entry Date</label>
-          <input
-            type="date"
-            value={form.entry_date}
-            readOnly
-            className="mt-2 w-full px-4 py-2 border border-gray-300 bg-gray-100 rounded-lg cursor-not-allowed"
-          />
-        </div>
+            <div className="grid md:grid-cols-2 gap-8">
+              {form.claim_type_name === "QPS" && <QpsFields form={form} setForm={setForm} />}
+              {form.claim_type_name === "CIA REAPEAR CLAIM" && <CiaReapear form={form} setForm={setForm} />}
+              {form.claim_type_name === "SCRUTINY CLAIM" && <ScrutinyField form={form} setForm={setForm} />}
+              {form.claim_type_name === "CENTRAL VALUATION" && <CentralValuation form={form} setForm={setForm} />}
+              {form.claim_type_name === "PRACTICAL EXAM CLAIM" && <PracticalFields form={form} setForm={setForm} />}
+              {form.claim_type_name === "ABILITY ENHANCEMENT CLAIM" && <AbilityEnhancementClaim form={form} setForm={setForm} />}
+              {form.claim_type_name === "SKILLED CLAIM" && <SkilledClaim form={form} setForm={setForm} />}
 
-        {/* Remarks */}
-        <div className="md:col-span-2">
-          <label className="text-sm font-semibold text-gray-700">💬 Remarks</label>
-          <textarea
-            value={form.remarks}
-            onChange={(e) => setForm({ ...form, remarks: e.target.value })}
-            rows="3"
-            className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition hover:border-blue-400"
-          />
-        </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-slate-700 ml-1">Amount</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                  <input
+                    type="number"
+                    tabIndex={4}
+                    autoComplete="off"
+                    value={form.amount}
+                    onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                    className={`w-full pl-8 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold outline-none
+                    ${form.claim_type_name === "QPS" ? "bg-slate-100" : "bg-white"}`}
+                    required
+                    onWheel={(e) => e.target.blur()}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
 
-        {/* Submit Button */}
-        <div className="md:col-span-2 flex justify-end space-x-3 mt-6">
-          <button
-            type="submit"
-            tabIndex={5}
-            disabled={isSubmitting}
-            className={`px-6 py-2 rounded-lg text-white font-semibold transition
-      ${isSubmitting
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-green-600 hover:bg-green-700"}`}
-          >
-            {isSubmitting ? "Submitting..." : "Submit"}
-          </button>
+          {/* Staff Info Section */}
+          <div className="md:col-span-2 bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+            <div className="bg-slate-50 px-8 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-lg font-black text-slate-800 flex items-center gap-3">
+                <span className="text-blue-600">👤</span> Staff Information
+              </h3>
+              <span className="text-[10px] uppercase tracking-widest font-black text-slate-400 bg-white border border-slate-200 px-3 py-1 rounded-full shadow-sm">
+                Read Only
+              </span>
+            </div>
 
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 p-8">
+              {[
+                { label: "Staff ID", key: "staff_id" },
+                { label: "Staff Name", key: "staff_name" },
+                { label: "Department", key: "department" },
+                { label: "Designation", key: "designation" },
+                { label: "Internal / External", key: "internal_external" },
+                { label: "Email", key: "email" },
+                { label: "IFSC Code", key: "ifsc_code" },
+                { label: "Account Number", key: "account_no" },
+              ].map(({ label, key }) => (
+                <div key={key} className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">{label}</label>
+                  <input
+                    type="text"
+                    value={form[key]}
+                    readOnly
+                    className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-100 rounded-lg font-bold text-slate-700 cursor-not-allowed outline-none"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
 
-        </div>
-      </form>
+          {/* Lower Fields */}
+          <div className="md:col-span-1 space-y-2">
+            <label className="block text-sm font-bold text-slate-700 ml-1">Entry Date</label>
+            <input
+              type="date"
+              value={form.entry_date}
+              readOnly
+              className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-600 font-medium cursor-not-allowed outline-none"
+            />
+          </div>
+
+          <div className="md:col-span-2 space-y-2">
+            <label className="block text-sm font-bold text-slate-700 ml-1">💬 Remarks</label>
+            <textarea
+              value={form.remarks}
+              onChange={(e) => setForm({ ...form, remarks: e.target.value })}
+              rows="3"
+              placeholder="Add any additional notes here..."
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none font-medium"
+            />
+          </div>
+
+          {/* Submit Button */}
+          <div className="md:col-span-2 flex justify-end pt-4 border-t border-slate-100">
+            <button
+              type="submit"
+              tabIndex={isStaffFetched ? 4 : -1}
+              disabled={isSubmitting || !isStaffFetched}
+              className={`group relative flex items-center gap-3 px-10 py-4 rounded-2xl font-black text-white transition-all duration-300 shadow-xl
+    ${isSubmitting || !isStaffFetched
+                  ? "bg-slate-400 cursor-not-allowed shadow-none"
+                  : "bg-green-600 hover:bg-green-700 hover:shadow-green-200 hover:-translate-y-1 active:translate-y-0"
+                }`}
+            >
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  Submit Claim
+                  <span className="group-hover:translate-x-1 transition-transform">→</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
-
-
   );
 };
 
