@@ -64,10 +64,11 @@ const PaymentProcess = () => {
   };
 
   // Mark multiple claims credited (for merged groups)
-  const markClaimsCredited = async (claimIds = []) => {
+  const markClaimsCredited = async (claimIds = [], loadingKey = null) => {
     if (!Array.isArray(claimIds) || claimIds.length === 0) return;
     if (!confirm(`Mark ${claimIds.length} claim(s) as credited?`)) return;
-    setLoadingClaimId(claimIds.join(','));
+    // Use a per-call loading key so only the intended rows show "Processing..." (use 'bulk' for header 'Mark All')
+    setLoadingClaimId(loadingKey || 'bulk');
 
     const payload = {
       claimIds,
@@ -162,9 +163,23 @@ const PaymentProcess = () => {
       {/* Claims Table */}
       {selectedPrId && (
         <div className="mt-6">
-          <h3 className="text-xl font-semibold mb-4 text-gray-700">
-            Claims under <span className="text-blue-600">{selectedPrId}</span>
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold text-gray-700">
+              Claims under <span className="text-blue-600">{selectedPrId}</span>
+            </h3>
+            <div>
+              <button
+                onClick={() => {
+                  const allClaimIds = displayedClaims.flatMap(c => c._claimIds ? c._claimIds : [c._id]);
+                  markClaimsCredited(allClaimIds);
+                }}
+                disabled={loadingClaimId || displayedClaims.length === 0 || !displayedClaims.some(c => c.status !== "Credited")}
+                className={`px-3 py-1 rounded-md text-sm text-white transition ${loadingClaimId ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}`}
+              >
+                {loadingClaimId ? "Processing..." : "Mark All Credited"}
+              </button>
+            </div>
+          </div>
 
           {loadingClaims ? (
             <p className="text-gray-500 italic">Loading claims...</p>
@@ -193,7 +208,8 @@ const PaymentProcess = () => {
                     .map((claim, index) => {
                       const key = claim._claimIds ? claim._claimIds.join('-') : claim._id;
                       const isMerged = claim._mergedCount && claim._mergedCount > 1;
-                      const loadingForThis = loadingClaimId && (loadingClaimId === claim._id || loadingClaimId === (claim._claimIds || []).join(','));
+                      // Disable individual buttons when bulk processing is in progress
+                      const loadingForThis = loadingClaimId && (loadingClaimId === 'bulk' || loadingClaimId === claim._id || loadingClaimId === (claim._claimIds || []).join(','));
                       return (
                         <tr key={key} className={index % 2 ? "bg-gray-50" : "bg-white"}>
                           <td className="px-4 py-2">{claim.staff_name}{isMerged ? <span className="ml-2 text-xs text-gray-500">(Merged {claim._mergedCount})</span> : null}</td>
@@ -211,17 +227,17 @@ const PaymentProcess = () => {
                           <td className="px-4 py-2">
                             {isMerged ? (
                               <button
-                                onClick={() => markClaimsCredited(claim._claimIds)}
-                                disabled={claim.status === "Credited" || loadingForThis}
-                                className={`px-3 py-1 rounded-md text-sm text-white transition ${claim.status === "Credited" ? "bg-green-400 cursor-not-allowed" : loadingForThis ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"}`}
+                                onClick={() => markClaimsCredited(claim._claimIds, (claim._claimIds || []).join(','))}
+                                disabled={claim.status === "Credited" || Boolean(loadingClaimId)}
+                                className={`px-3 py-1 rounded-md text-sm text-white transition ${claim.status === "Credited" ? "bg-green-400 cursor-not-allowed" : loadingForThis ? "bg-gray-400 cursor-not-allowed" : Boolean(loadingClaimId) ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"}`}
                               >
                                 {loadingForThis ? "Processing..." : `Mark Credited (${claim._mergedCount})`}
                               </button>
                             ) : (
                               <button
                                 onClick={() => markClaimCredited(claim._id)}
-                                disabled={claim.status === "Credited" || loadingForThis}
-                                className={`px-3 py-1 rounded-md text-sm text-white transition ${claim.status === "Credited" ? "bg-green-400 cursor-not-allowed" : loadingForThis ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"}`}
+                                disabled={claim.status === "Credited" || Boolean(loadingClaimId)}
+                                className={`px-3 py-1 rounded-md text-sm text-white transition ${claim.status === "Credited" ? "bg-green-400 cursor-not-allowed" : loadingForThis ? "bg-gray-400 cursor-not-allowed" : Boolean(loadingClaimId) ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"}`}
                               >
                                 {claim.status === "Credited" ? "Credited" : loadingForThis ? "Processing..." : "Mark Credited"}
                               </button>
