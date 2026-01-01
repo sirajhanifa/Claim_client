@@ -11,6 +11,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AddUser from './pages/Settings/AddUser';
 import PaymentProcess from './pages/PaymentProcessing/PaymentProcess';
 import Logout from './components/Logout';
+import PaymentStatus from './pages/Payment Status/PaymentStatus';
+import AdminYearDelete from './pages/Settings/AdminYearDelete';
 
 const App = () => {
   return (
@@ -30,10 +32,12 @@ const App = () => {
         }>
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="staffmanage" element={<StaffManage />} />
+          <Route path="paymentstatus" element={<PaymentStatus />} />
           <Route path="claimentry" element={<ClaimEntry />} />
           <Route path="claimmanage" element={<ClaimManage />} />
           <Route path="claimreport" element={<ClaimReport />} />
           <Route path="settings/adduser" element={<AddUser />} />
+          <Route path="settings/deleteclaim" element={<AdminYearDelete />} />
           <Route path="paymentprocessing" element={<PaymentProcess />} />
 
         </Route>

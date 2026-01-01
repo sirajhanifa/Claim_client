@@ -11,6 +11,7 @@ import {
 import { IoIosLogOut } from 'react-icons/io';
 import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
 
+
 const Layout = () => {
   const location = useLocation();
   const { username } = useParams();
@@ -39,6 +40,11 @@ const Layout = () => {
       path: `/layout/${username}/staffmanage`,
       icon: <FaUsers />
     },
+    {
+      name: 'Payment Status',
+      path: `/layout/${username}/paymentstatus`,
+      icon: <FaFileInvoiceDollar />
+    },
 
     {
       name: 'Claim Manage',
@@ -53,6 +59,10 @@ const Layout = () => {
         {
           name: 'Add User',
           path: `/layout/${username}/settings/adduser`
+        },
+        {
+          name: 'Delete Claim',
+          path: `/layout/${username}/settings/deleteclaim`
         }
       ]
     },
