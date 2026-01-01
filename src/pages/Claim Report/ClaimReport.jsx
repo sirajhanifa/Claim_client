@@ -33,20 +33,25 @@ const ClaimReport = () => {
     const excelData = displayedClaims.map((claim, index) => {
       const baseData = {
         "S.No": index + 1,
-        "Category": claim.internal_external,
-        "Claim Type": claim.claim_type_name,
-        "Staff Name": claim.staff_name,
+        "Date": new Date(claim.entry_date).toLocaleDateString("en-GB"),
+        "Name": claim.staff_name,
+        "College": claim.college,
+        "Department": claim.department,
+        "Amount Paid": claim.amount,
         "IFSC Code": claim.ifsc_code,
-        "Amount": claim.amount,
-        "Entry Date": new Date(claim.entry_date).toLocaleDateString("en-GB"),
-        "Submission Date": claim.submission_date
-          ? new Date(claim.submission_date).toLocaleDateString("en-GB")
-          : "-",
-        "Credited Date": claim.credited_date
-          ? new Date(claim.credited_date).toLocaleDateString("en-GB")
-          : "-",
-        "Status": claim.status,
-        "Payment ID": claim.payment_report_id || "-"
+        "Account No": claim.account_no,
+
+        
+        // "Category": claim.category,  
+        // "Claim Type": claim.claim_type_name,
+        // "Submission Date": claim.submission_date
+        //   ? new Date(claim.submission_date).toLocaleDateString("en-GB")
+        //   : "-",
+        // "Credited Date": claim.credited_date
+        //   ? new Date(claim.credited_date).toLocaleDateString("en-GB")
+        //   : "-",
+        // "Status": claim.status,
+        // "Payment ID": claim.payment_report_id || "-"
       };
 
       // ✅ Include Phone No only for ALL filter
@@ -97,7 +102,20 @@ const ClaimReport = () => {
     if (claimType !== "all" && claim.claim_type_name !== claimType) return false;
 
     // 🔹 INTERNAL / EXTERNAL
-    if (categoryFilter !== "all" && claim.internal_external !== categoryFilter) return false;
+    if (categoryFilter !== "all") {
+
+      // Normal INTERNAL / EXTERNAL
+      if (categoryFilter !== "TDS" && claim.internal_external !== categoryFilter) {
+        return false;
+      }
+
+      // 🔥 TDS → ONLY AIDED STAFF
+      if (categoryFilter === "TDS") {
+        if (claim.category !== "AIDED") {
+          return false;
+        }
+      }
+    }
 
     /* IFSC Filter Logic */
     let ifscMatch = true;
@@ -416,6 +434,7 @@ const ClaimReport = () => {
             <option value="all">All Categories</option>
             <option value="INTERNAL">INTERNAL</option>
             <option value="EXTERNAL">EXTERNAL</option>
+            <option value="TDS">TDS</option>
           </select>
 
           {/* IFSC Filter */}
@@ -426,9 +445,9 @@ const ClaimReport = () => {
             className="border border-gray-300 rounded px-3 py-2 min-w-[200px]"
           >
             <option value="all">Select IFSC Types</option>
-            <option value="JMC_IOB">JMC IOB Branch</option>
+            <option value="JMC_IOB">IOB JMC Branch</option>
             <option value="IOB_OTHERS">IOB Other Branch</option>
-            <option value="OTHER_BANKS">Other Branches</option>
+            <option value="OTHER_BANKS">Other Banks</option>
           </select>
 
 
@@ -496,7 +515,7 @@ const ClaimReport = () => {
         <table className="min-w-full bg-white">
           <thead className="border-b-2 border-gray-300">
             <tr className="bg-blue-950 text-left p-3 font-semibold text-sm text-white">
-              {["S.No", "Category", "Claim Type", "Staff Name", "Phone No","IFSC Code", "Amount", "Entry Date", "Submission Date", "Credited Date", "Status", "Payment Id"]
+              {["S.No", "Category", "Claim Type", "Staff Name", "Phone No", "IFSC Code", "Amount", "Entry Date", "Submission Date", "Credited Date", "Status", "Payment Id"]
                 .map(h => (
                   <th key={h} className="text-left p-3 font-semibold text-sm text-white">
                     {h}
@@ -518,7 +537,9 @@ const ClaimReport = () => {
                 className={index % 2 === 0 ? 'bg-gray-50 hover:bg-gray-100' : 'bg-white hover:bg-gray-100'}
               >
                 <td className="p-3 text-sm font-semibold text-gray-700">{index + 1}</td>
-                <td className="p-3 text-sm font-semibold text-gray-800">{claim.internal_external}</td>
+                <td>
+                  {categoryFilter === "TDS" ? "AIDED" : claim.internal_external}
+                </td>
                 <td className="p-3 text-sm font-semibold text-gray-800">{claim.claim_type_name}</td>
                 <td className="p-3 text-sm font-semibold text-gray-800">{claim.staff_name}</td>
                 <td className="p-3 text-sm font-semibold text-gray-800">{claim.phone_number}</td>
