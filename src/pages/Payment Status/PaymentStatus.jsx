@@ -67,7 +67,8 @@ const PaymentStatus = () => {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] p-4 md:p-8 font-sans text-slate-900">
-      <div className="max-w-7xl mx-auto space-y-6">
+      {/* // Change max-w-7xl to max-w-[1600px] or max-w-[90%] */}
+      <div className="max-w-[1600px] 2xl:max-w-[1800px] mx-auto space-y-6">
 
         {/* Top Navigation / Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -77,7 +78,7 @@ const PaymentStatus = () => {
           </div> */}
 
           <div className="mb-10 border-l-4 border-blue-600 pl-6">
-            <h2 className="text-4xl font-black tracking-tight italic">
+            <h2 className="text-4xl xl:text-6xl font-black tracking-tight italic">
               <span className="text-blue-600">Payment</span>
               <span className="text-slate-900 ml-2">Reports</span>
             </h2>
@@ -96,10 +97,10 @@ const PaymentStatus = () => {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 xl:grid-cols-10 gap-8">
 
           {/* SIDEBAR: PR List */}
-          <aside className="lg:col-span-3 space-y-4">
+          <aside className="lg:col-span-3 xl:col-span-2 space-y-4">
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="p-4 border-b border-slate-100 bg-slate-50/50">
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Available Reports</h3>
@@ -128,7 +129,7 @@ const PaymentStatus = () => {
           </aside>
 
           {/* MAIN CONTENT: Claims Table */}
-          <main className="lg:col-span-9 space-y-6">
+          <main className="lg:col-span-9 xl:col-span-8 space-y-6">
             {!selectedPrId ? (
               <div className="h-full min-h-[500px] flex flex-col items-center justify-center bg-white rounded-3xl border border-slate-200 shadow-sm text-center p-12">
                 <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-6">
@@ -169,7 +170,7 @@ const PaymentStatus = () => {
                         <tbody className="divide-y divide-slate-100">
                           {displayedClaims.map((c, i) => (
                             <tr key={i} className="hover:bg-slate-50/80 transition-colors group">
-                              <td className="px-6 py-4">
+                              <td className="px-6 py-4 xl:py-6">
                                 <div className="flex items-center gap-3">
                                   <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold border border-white shadow-sm">
                                     {c.staff_name.split(' ').map(n => n[0]).join('')}
@@ -184,13 +185,12 @@ const PaymentStatus = () => {
                                   </div>
                                 </div>
                               </td>
-                              <td className="px-6 py-4">
-                                <span className="text-sm text-slate-600 font-medium bg-slate-100 px-2 py-1 rounded-md">{c.claim_type_name}</span>
+                              <td className="px-6 py-4 xl:py-6">                                <span className="text-sm text-slate-600 font-medium bg-slate-100 px-2 py-1 rounded-md">{c.claim_type_name}</span>
                               </td>
-                              <td className="px-6 py-4">
+                              <td className="px-6 py-4 xl:py-6">
                                 <div className="text-sm font-black text-slate-900">₹{c.totalAmount.toLocaleString()}</div>
                               </td>
-                              <td className="px-6 py-4">
+                              <td className="px-6 py-4 xl:py-6">
                                 <div className="space-y-1">
                                   <div className="flex items-center text-[11px] text-slate-400">
                                     <Calendar className="w-3 h-3 mr-1.5 opacity-70" />
@@ -229,8 +229,7 @@ const StatCard = ({ label, value, icon, color, isMono }) => (
     </div>
     <div>
       <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">{label}</p>
-      <p className={`text-lg font-bold text-slate-800 ${isMono ? 'font-mono' : ''}`}>{value}</p>
-    </div>
+      <p className={`text-lg xl:text-2xl font-bold text-slate-800 ${isMono ? 'font-mono' : ''}`}>{value}</p>    </div>
   </div>
 );
 
