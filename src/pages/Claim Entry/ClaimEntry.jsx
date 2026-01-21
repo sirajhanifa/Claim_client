@@ -95,7 +95,7 @@ const ClaimEntry = () => {
 
   });
 
-  const isStaffFetched = Boolean(form.staff_id);
+  const isStaffFetched = Boolean(form.staff_name);
 
 
   useEffect(() => {
