@@ -349,12 +349,12 @@ return (
             ].map((field) => {
 
               // HIDE only for EXTERNAL
-              if (
-                formData.employment_type === "EXTERNAL" &&
-                ["staff_id"].includes(field)
-              ) {
-                return null;
-              }
+              // if (
+              //   formData.employment_type === "EXTERNAL" &&
+              //   ["staff_id"].includes(field)
+              // ) {
+              //   return null;
+              // }
 
               // Camel Case Label
               const camelCaseLabel = field
