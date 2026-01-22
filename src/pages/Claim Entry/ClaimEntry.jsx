@@ -95,7 +95,12 @@ const ClaimEntry = () => {
 
   });
 
-  const isStaffFetched = Boolean(form.staff_name);
+  const isStaffFetched = Boolean(
+    form.staff_name ||
+    form.staff_phone ||
+    form.staff_email ||
+    form.staff_id
+  );
 
 
   useEffect(() => {
@@ -751,7 +756,7 @@ const ClaimEntry = () => {
             <button
               type="submit"
               tabIndex={isStaffFetched ? 4 : -1}
-              disabled={isSubmitting || !isStaffFetched}
+              // disabled={isSubmitting || !isStaffFetched}
               className={`group relative flex items-center gap-3 px-10 py-4 rounded-2xl font-black text-white transition-all duration-300 shadow-xl
     ${isSubmitting || !isStaffFetched
                   ? "bg-slate-400 cursor-not-allowed shadow-none"
