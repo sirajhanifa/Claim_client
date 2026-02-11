@@ -1,107 +1,98 @@
 import React from 'react';
 import ClaimCard from '../../components/dashboard/ClaimCard';
-import ClaimSummaryTable from '../../components/dashboard/ClaimTable';
 import ClaimPieChart from '../../components/dashboard/ClaimPieChart';
 import useFetch from '../../hooks/useFetch';
 
 const Dashboard = () => {
-  const apiUrl = import.meta.env.VITE_API_URL;
 
-  // Hooks (Data fetching stays exactly the same)
-  const { data } = useFetch(`${apiUrl}/api/totalclaimscount`);
-  const { data: staffCounts } = useFetch(`${apiUrl}/api/staffcount`);
-  const { data: creditedCounts } = useFetch(`${apiUrl}/api/creditedclaims`);
-  const { data: pendingCounts } = useFetch(`${apiUrl}/api/pendingclaims`);
-  const { data: awaitingCounts } = useFetch(`${apiUrl}/api/awaitingclaims`);
-  const { data: claimIE } = useFetch(`${apiUrl}/api/internalexternalclaims`);
+	const apiUrl = import.meta.env.VITE_API_URL;
+	const { data } = useFetch(`${apiUrl}/api/totalclaimscount`);
+	const { data: staffCounts } = useFetch(`${apiUrl}/api/staffcount`);
+	const { data: creditedCounts } = useFetch(`${apiUrl}/api/creditedclaims`);
+	const { data: pendingCounts } = useFetch(`${apiUrl}/api/pendingclaims`);
+	const { data: awaitingCounts } = useFetch(`${apiUrl}/api/awaitingclaims`);
+	const { data: claimIE } = useFetch(`${apiUrl}/api/internalexternalclaims`);
 
-  return (
-    <div className="min-h-screen bg-gray-50/50 p-6 lg:p-8">
-      {/* 1. Dashboard Header */}
-      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="mb-10 border-l-4 border-blue-600 pl-6">
-          <h1 className="text-4xl font-black tracking-tight italic">
-            <span className="text-blue-600">Claims</span>
-            <span className="text-slate-900 ml-2">Overview</span>
-          </h1>
-          <p className="mt-1 text-slate-500 font-medium text-sm">
-            Monitor and manage insurance claims performance.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 text-xs font-medium text-gray-400 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100 w-fit">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-          </span>
-          Live Data Updates
-        </div>
-      </div>
+	return (
+		<div className="min-h-screen bg-[#f8fafc]">
 
-      {/* 2. Claim Summary Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <ClaimCard
-          title="Total Claims Updated"
-          count={data?.totalClaims || 0}
-          amount={data?.totalAmount || 0}
-          color="blue"
-        />
-        <ClaimCard
-          title="Total Claims Sanctioned"
-          count={creditedCounts?.creditedClaims || 0}
-          amount={creditedCounts?.creditedAmount || 0}
-          color="green"
-        />
-        <ClaimCard
-          title="Pending Claims"
-          count={pendingCounts?.pendingClaims || 0}
-          amount={pendingCounts?.pendingAmount || 0}
-          color="yellow"
-        />
-        <ClaimCard
-          title="Awaiting Sanction (>7 days)"
-          count={awaitingCounts?.awaitingClaims || 0}
-          amount={awaitingCounts?.awaitingAmount || 0}
-          color="red"
-        />
-      </div>
+			{/* Header */}
+			<header className="max-w-7xl mx-auto mb-10">
+				<div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+					<div>
+						<div className="flex items-center gap-2 mb-2">
+							<span className="h-2 w-8 bg-blue-600 rounded-full" />
+							<span className="text-xs font-bold text-blue-600 uppercase tracking-widest">Executive Portal</span>
+						</div>
+						<h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">
+							Claims <span className="text-slate-400 font-light">Dashboard</span>
+						</h1>
+					</div>
 
-      {/* 3. Visualizations Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Claims Breakdown Chart Card */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-          <div className="mb-4 border-b border-gray-50 pb-4">
-            <h3 className="font-semibold text-gray-700">Claims Distribution</h3>
-          </div>
-          <ClaimPieChart
-            title="Internal vs External"
-            data={[
-              { name: "Internal Claims", value: claimIE?.internal || 0 },
-              { name: "External Claims", value: claimIE?.external || 0 }
-            ]}
-          />
-        </div>
+					<div className="flex items-center gap-4 bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
+						<div className="flex items-center gap-2 px-3">
+							<div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+							<span className="text-sm font-semibold text-slate-600 text-nowrap">Live Systems Operational</span>
+						</div>
+					</div>
+				</div>
+			</header>
 
-        {/* Staff Overview Chart Card */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-          <div className="mb-4 border-b border-gray-50 pb-4">
-            <h3 className="font-semibold text-gray-700">Workforce Composition</h3>
-          </div>
-          <ClaimPieChart
-            title="Staffing Overview"
-            data={[
-              { name: "Internal Staff", value: staffCounts?.internal || 0 },
-              { name: "External Staff", value: staffCounts?.external || 0 }
-            ]}
-          />
-        </div>
-      </div>
+			<main className="mx-auto space-y-8">
+				<section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+					<ClaimCard
+						title="Updated Claims"
+						count={data?.totalClaims || 0}
+						amount={data?.totalAmount || 0}
+						color="blue"
+					/>
+					<ClaimCard
+						title="Sanctioned"
+						count={creditedCounts?.creditedClaims || 0}
+						amount={creditedCounts?.creditedAmount || 0}
+						color="green"
+					/>
+					<ClaimCard
+						title="Pending Review"
+						count={pendingCounts?.pendingClaims || 0}
+						amount={pendingCounts?.pendingAmount || 0}
+						color="yellow"
+					/>
+					<ClaimCard
+						title="Awaiting (>7D)"
+						count={awaitingCounts?.awaitingClaims || 0}
+						amount={awaitingCounts?.awaitingAmount || 0}
+						color="red"
+						showAlert={true}
+					/>
+				</section>
 
-      {/* Placeholder for Table if needed later */}
-      <div className="mt-8">
-        {/* <ClaimSummaryTable /> */}
-      </div>
-    </div>
-  );
+				{/* Charts Row */}
+				<section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+					<div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+						<ClaimPieChart
+							title="Distribution by Source"
+							data={[
+								{ name: "Internal", value: claimIE?.internal || 0 },
+								{ name: "External", value: claimIE?.external || 0 }
+							]}
+							colors={['#1e293b', '#3b82f6']}
+						/>
+					</div>
+					<div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+						<ClaimPieChart
+							title="Workforce Composition"
+							data={[
+								{ name: "Permanent Staff", value: staffCounts?.internal || 0 },
+								{ name: "Contractual", value: staffCounts?.external || 0 }
+							]}
+							colors={['#0f172a', '#94a3b8']}
+						/>
+					</div>
+				</section>
+			</main>
+		</div>
+	);
 };
 
 export default Dashboard;

@@ -6,302 +6,306 @@ import usePost from '../../hooks/usePost';
 import useDelete from '../../hooks/useDelete';
 
 const ClaimManage = () => {
-  const apiUrl = import.meta.env.VITE_API_URL;
-  const [showModal, setShowModal] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
-  const [form, setForm] = useState({
-    name: '',
-    description: '',
-    amount_settings: {
-      scrutiny_ug_rate: '',
-      scrutiny_pg_rate: '',
-      scrutiny_day_rate: '',
-      qps_rate: '',
-      cia_rate: ''
-    }
-  });
+	const apiUrl = import.meta.env.VITE_API_URL;
+	const [showModal, setShowModal] = useState(false);
+	const [editingId, setEditingId] = useState(null);
+	const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
-  const { data, loading, error, refetch } = useFetch(`${apiUrl}/api/getClaim`);
-  const { postData } = usePost();
-  const { deleteData } = useDelete();
+	const [form, setForm] = useState({
+		name: '',
+		description: '',
+		amount_settings: {
+			scrutiny_ug_rate: '',
+			scrutiny_pg_rate: '',
+			scrutiny_day_rate: '',
+			qps_rate: '',
+			cia_rate: ''
+		}
+	});
 
-  const resetForm = () => {
-    setForm({
-      name: '',
-      description: '',
-      amount_settings: {
-        scrutiny_ug_rate: '',
-        scrutiny_pg_rate: '',
-        scrutiny_day_rate: '',
-        qps_rate: '',
-        cia_rate: ''
-      }
-    });
-  };
+	const { data, loading, error, refetch } = useFetch(`${apiUrl}/api/getClaim`);
+	const { postData } = usePost();
+	const { deleteData } = useDelete();
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+	const resetForm = () => {
+		setForm({
+			name: '',
+			description: '',
+			amount_settings: {
+				scrutiny_ug_rate: '',
+				scrutiny_pg_rate: '',
+				scrutiny_day_rate: '',
+				qps_rate: '',
+				cia_rate: ''
+			}
+		});
+	};
 
-  const handleAmountChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      amount_settings: { ...prev.amount_settings, [name]: value }
-    }));
-  };
+	const handleChange = (e) => {
+		setForm({ ...form, [e.target.name]: e.target.value });
+	};
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const endpoint = editingId
-      ? `${apiUrl}/api/updateClaim/${editingId}`
-      : `${apiUrl}/api/addclaim`;
+	const handleAmountChange = (e) => {
+		const { name, value } = e.target;
+		setForm((prev) => ({
+			...prev,
+			amount_settings: { ...prev.amount_settings, [name]: value }
+		}));
+	};
 
-    const payload = editingId
-      ? form
-      : { name: form.name, description: form.description };
+	const handleSubmit = async (e) => {
+		e.preventDefault();
+		const endpoint = editingId
+			? `${apiUrl}/api/updateClaim/${editingId}`
+			: `${apiUrl}/api/addclaim`;
 
-    await postData(endpoint, payload);
-    refetch();
-    setShowModal(false);
-    setEditingId(null);
-    resetForm();
-  };
+		const payload = editingId
+			? form
+			: { name: form.name, description: form.description };
 
-  const handleEdit = (claim) => {
-    setForm({
-      name: claim.claim_type_name,
-      description: claim.description,
-      amount_settings: claim.amount_settings || {}
-    });
-    setEditingId(claim._id);
-    setShowModal(true);
-  };
+		await postData(endpoint, payload);
+		refetch();
+		setShowModal(false);
+		setEditingId(null);
+		resetForm();
+	};
 
-  const handleDelete = async (id) => {
-    await deleteData(`${apiUrl}/api/deleteClaim/${id}`);
-    refetch();
-    setConfirmDeleteId(null);
-  };
+	const handleEdit = (claim) => {
+		setForm({
+			name: claim.claim_type_name,
+			description: claim.description,
+			amount_settings: claim.amount_settings || {}
+		});
+		setEditingId(claim._id);
+		setShowModal(true);
+	};
 
-  return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold text-blue-900 tracking-tight">
-          🎯 Claim Types
-        </h2>
-        <Button
-          variant="primary"
-          size="md"
-          icon={Plus}
-          onClick={() => {
-            resetForm();
-            setEditingId(null);
-            setShowModal(true);
-          }}
-        >
-          Add Claim
-        </Button>
-      </div>
+	const handleDelete = async (id) => {
+		await deleteData(`${apiUrl}/api/deleteClaim/${id}`);
+		refetch();
+		setConfirmDeleteId(null);
+	};
 
-      {/* Loading / Error */}
-      {loading && (
-        <div className="text-blue-600 font-medium animate-pulse">
-          Loading claim types...
-        </div>
-      )}
-      {error && (
-        <p className="text-red-600 font-medium">
-          Failed to load claim types. Try again!
-        </p>
-      )}
+	return (
+		<div className="bg-slate-50 min-h-screen space-y-6">
 
-      {/* Claim Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {data && data.length > 0 ? (
-          data.map((claim, index) => (
-            <div
-              key={claim._id}
-              className="bg-white rounded-xl border border-gray-200 shadow hover:shadow-lg transition-all duration-300 p-5 relative overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 bg-blue-100 text-blue-800 px-3 py-1 text-xs rounded-bl-xl font-semibold">
-                #{index + 1}
-              </div>
+			<header className="flex flex-col lg:flex-row justify-between items-center gap-6">
+				<div className="space-y-2">
+					<div className="flex items-center gap-2 text-blue-600 font-semibold text-sm uppercase tracking-wider">
+						<div className="h-1 w-8 bg-blue-600 rounded-full" />
+						System Configuration
+					</div>
+					<h1 className="text-4xl xl:text-4xl font-extrabold text-slate-900 tracking-tight">
+						Claim <span className="text-slate-400 font-light">Categories</span>
+					</h1>
+				</div>
 
-              <h3 className="text-xl font-semibold text-gray-900 mb-1">
-                {claim.claim_type_name}
-              </h3>
+				{/* Right Section: Actions */}
+				<div className="flex items-center gap-3">
+					<Button
+						variant="primary"
+						className="group flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-sm active:scale-95"
+						onClick={() => {
+							resetForm();
+							setEditingId(null);
+							setShowModal(true);
+						}}
+					>
+						<Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
+						<span>Add Category</span>
+					</Button>
+				</div>
+			</header>
 
-              <p className="text-sm text-gray-600 mb-3">
-                {claim.description || 'No description'}
-              </p>
+			{/* Main Content */}
+			<div className="max-w-7xl mx-auto">
 
-              <div className="space-y-1 text-sm">
-                {claim.amount_settings ? (
-                  Object.entries(claim.amount_settings).map(([key, val]) => (
-                    <div key={key} className="flex justify-between">
-                      <span className="font-medium capitalize text-gray-700">
-                        {key.replace(/_/g, ' ')}
-                      </span>
-                      <span className="font-semibold text-blue-700">
-                        ₹{val}
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <span className="text-gray-400 text-sm">No amount settings</span>
-                )}
-              </div>
+				{loading && (
+					<div className="flex items-center gap-2 text-sm font-bold text-blue-600 animate-pulse mb-4 bg-blue-50 w-fit px-4 py-2 rounded-full border border-blue-100">
+						<div className="w-2 h-2 bg-blue-600 rounded-full animate-ping" />
+						UPDATING REGISTRY...
+					</div>
+				)}
 
-              <div className="flex justify-end gap-2 mt-4">
-                {/* Edit Button */}
-                <button
-                  className="px-3 py-1.5 text-sm rounded-md flex items-center gap-1
-               bg-blue-600 text-white border
-               hover:bg-blue-700 font-bold transition"
-                  onClick={() => handleEdit(claim)}
-                >
-                  <Pencil size={15} /> Edit
-                </button>
+				{/* Optimized Grid - 3 Columns for better readability */}
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+					{data && data.length > 0 ? (
+						data.map((claim, index) => (
+							<div
+								key={claim._id}
+								className="group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-400 transition-all duration-300 relative overflow-hidden flex flex-col"
+							>
+								<div className="p-6 flex-grow">
+									<div className="flex justify-between items-center mb-4">
+										<span className="bg-slate-100 text-slate-500 text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-widest">
+											Claim #{index + 1}
+										</span>
+										<div className="flex gap-2">
+											<button
+												onClick={() => handleEdit(claim)}
+												className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+											>
+												<Pencil size={14} />
+											</button>
+											<button
+												onClick={() => setConfirmDeleteId(claim._id)}
+												className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-all shadow-sm"
+											>
+												<Trash size={14} />
+											</button>
+										</div>
+									</div>
 
-                {/* Delete Button */}
-                <button
-                  className="px-3 py-1.5 text-sm rounded-md flex items-center gap-1
-               bg-red-600 text-white
-               hover:bg-red-700 font-bold transition"
-                  onClick={() => setConfirmDeleteId(claim._id)}
-                >
-                  <Trash size={15} /> Delete
-                </button>
-              </div>
+									<h3 className="text-xl font-black text-slate-800 mb-2 leading-tight">
+										{claim.claim_type_name}
+									</h3>
 
-            </div>
-          ))
-        ) : (
-          <p className="text-gray-500 text-center col-span-full">
-            No claim types found.
-          </p>
-        )}
-      </div>
+									<p className="text-sm text-slate-500 line-clamp-2 mb-6 font-medium leading-relaxed">
+										{claim.description || 'No detailed description available for this claim type.'}
+									</p>
 
-      {/* Delete Modal */}
-      {confirmDeleteId && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-sm animate-fadeIn">
-            <h2 className="text-lg font-semibold mb-3">
-              Confirm Delete
-            </h2>
-            <p className="text-gray-600 text-sm mb-6">
-              Are you sure you want to delete this claim type?
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setConfirmDeleteId(null)}
-                className="px-4 py-2 border bg-blue-600 font-bold hover:bg-blue-700 text-white rounded-md"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDelete(confirmDeleteId)}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-              >
-                Yes, Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+									{/* Amount Settings Section */}
+									<div className="space-y-2">
+										<p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] ml-1">Current Rates</p>
+										{claim.amount_settings ? (
+											Object.entries(claim.amount_settings).map(([key, val]) => (
+												<div key={key} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 group-hover:bg-white group-hover:border-blue-100 transition-colors">
+													<span className="text-xs font-bold uppercase text-slate-500">
+														{key.replace(/_/g, ' ')}
+													</span>
+													<span className="text-base font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">
+														₹{val.toLocaleString('en-IN')}
+													</span>
+												</div>
+											))
+										) : (
+											<div className="text-center py-3 bg-amber-50 rounded-xl border border-amber-100 text-amber-600 text-xs font-bold">
+												NO PRICING SET
+											</div>
+										)}
+									</div>
+								</div>
+							</div>
+						))
+					) : (
+						<div className="col-span-full py-20 text-center bg-white rounded-[2rem] border-2 border-dashed border-slate-200">
+							<p className="text-slate-400 font-bold text-lg italic tracking-tight">The registry is currently empty.</p>
+						</div>
+					)}
+				</div>
+			</div>
 
-      {/* Add/Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-md animate-slideUp">
-            <h2 className="text-xl font-bold mb-4 text-gray-900">
-              {editingId ? 'Edit Claim Type' : 'Add New Claim Type'}
-            </h2>
+			{/* Delete Modal - Clean & Bold */}
+			{confirmDeleteId && (
+				<div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+					<div className="bg-white rounded-[1rem] shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+						<div className="p-8 text-center">
+							<div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+								<Trash size={28} />
+							</div>
+							<h2 className="text-xl font-black text-slate-900">Remove Type?</h2>
+							<p className="text-sm text-slate-500 mt-2 font-medium">This configuration will be deleted permanently from the system.</p>
+						</div>
+						<div className="p-4 bg-slate-50 flex gap-3">
+							<button onClick={() => setConfirmDeleteId(null)} className="flex-1 py-3 text-sm font-bold text-slate-500 hover:bg-slate-200 rounded-xl transition">Go Back</button>
+							<button onClick={() => handleDelete(confirmDeleteId)} className="flex-1 py-3 bg-rose-600 text-white text-sm font-black rounded-xl hover:bg-rose-700 shadow-lg shadow-rose-100 transition">Delete</button>
+						</div>
+					</div>
+				</div>
+			)}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+			{/* Form Modal - Medium Pro Size */}
+			{showModal && (
+				<div className="fixed inset-0 bg-blue-900/30 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+					<div className="bg-white rounded-[1rem] shadow-2xl w-full max-w-xl overflow-hidden border-t-[5px] border-blue-600 animate-in slide-in-from-bottom-8 duration-300">
 
-              {/* Name */}
-              <div>
-                <label className="text-sm font-medium text-gray-700">Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={form.name}
-                  onChange={handleChange}
-                  className="w-full mt-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                  required
-                />
-              </div>
+						<div className="p-8 max-h-[85vh] overflow-y-auto scrollbar-hide" style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
+							<style dangerouslySetInnerHTML={{
+								__html: `
+								.scrollbar-hide::-webkit-scrollbar { display: none; }
+								`}} />
 
-              {/* Description */}
-              <div>
-                <label className="text-sm font-medium text-gray-700">
-                  Description
-                </label>
-                <textarea
-                  name="description"
-                  rows={3}
-                  value={form.description}
-                  onChange={handleChange}
-                  className="w-full mt-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                ></textarea>
-              </div>
+							<h2 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
+								<span className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+									{editingId ? <Pencil size={20} /> : <Plus size={24} />}
+								</span>
+								{editingId ? 'Modify Type' : 'New Type'}
+							</h2>
 
-              {/* Amount Settings */}
-              {editingId && (
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-800">
-                    Amount Settings
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4 mt-2">
-                    {Object.entries(form.amount_settings).map(([key, value]) => (
-                      <div key={key}>
-                        <label className="text-xs font-medium text-gray-600">
-                          {key.replace(/_/g, ' ').toUpperCase()}
-                        </label>
-                        <input
-                          type="number"
-                          name={key}
-                          value={value}
-                          onChange={handleAmountChange}
-                          className="w-full mt-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+							<form onSubmit={handleSubmit} className="space-y-5">
+								<div>
+									<label className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2.5 ml-1 block">
+										Category Name
+									</label>
+									<input
+										type="text"
+										name="name"
+										value={form.name}
+										onChange={handleChange}
+										className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 text-base focus:border-blue-500 focus:bg-white outline-none font-bold transition-all"
+										required
+									/>
+								</div>
 
-              {/* Buttons */}
-              <div className="flex justify-end gap-3 pt-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    setEditingId(null);
-                  }}
-                  className="px-4 py-2 text-sm border rounded-md hover:bg-gray-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  {editingId ? 'Update' : 'Save'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+								<div>
+									<label className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2.5 ml-1 block">
+										Description
+									</label>
+									<textarea
+										name="description"
+										rows={2}
+										value={form.description}
+										onChange={handleChange}
+										className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 text-sm font-medium focus:border-blue-500 focus:bg-white outline-none transition-all"
+									></textarea>
+								</div>
+								<div className="bg-emerald-50 p-5 rounded-2xl border border-emerald-100">
+									<h3 className="text-[10px] font-black text-emerald-700 uppercase tracking-[0.2em] mb-4">
+										Price Settings (₹)
+									</h3>
+									<div className="grid grid-cols-2 gap-4">
+										{Object.entries(form.amount_settings).map(([key, value]) => (
+											<div key={key}>
+												<label className="text-[10px] font-bold text-emerald-600 uppercase block mb-1 ml-1">
+													{key.replace(/_/g, ' ')}
+												</label>
+												<input
+													type="number"
+													name={key}
+													value={value}
+													onChange={handleAmountChange}
+													className="w-full bg-white border-2 mt-2 border-emerald-200 rounded-xl px-3 py-2 text-sm font-black text-emerald-800 outline-none focus:border-emerald-500 transition-all"
+												/>
+											</div>
+										))}
+									</div>
+								</div>
+								<div className="flex gap-4 pt-4 sticky bottom-0 bg-white pb-2">
+									<button
+										type="button"
+										onClick={() => {
+											setShowModal(false);
+											setEditingId(null);
+										}}
+										className="flex-1 py-3 text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors"
+									>
+										Discard
+									</button>
+									<button
+										type="submit"
+										className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl text-base font-black shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95"
+									>
+										{editingId ? 'UPDATE' : 'CREATE TYPE'}
+									</button>
+								</div>
+							</form>
+						</div>
+					</div>
+				</div>
+			)}
+		</div>
+	);
 };
 
 export default ClaimManage;
