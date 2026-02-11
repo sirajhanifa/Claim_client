@@ -89,7 +89,7 @@ const ClaimManage = () => {
 
 	return (
 		<div className="bg-slate-50 min-h-screen space-y-6">
-
+			{/* Header */}
 			<header className="flex flex-col lg:flex-row justify-between items-center gap-6">
 				<div className="space-y-2">
 					<div className="flex items-center gap-2 text-blue-600 font-semibold text-sm uppercase tracking-wider">
@@ -218,22 +218,20 @@ const ClaimManage = () => {
 			{/* Form Modal - Medium Pro Size */}
 			{showModal && (
 				<div className="fixed inset-0 bg-blue-900/30 backdrop-blur-md flex items-center justify-center z-[100] p-4">
-					<div className="bg-white rounded-[1rem] shadow-2xl w-full max-w-xl overflow-hidden border-t-[5px] border-blue-600 animate-in slide-in-from-bottom-8 duration-300">
-
-						<div className="p-8 max-h-[85vh] overflow-y-auto scrollbar-hide" style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
-							<style dangerouslySetInnerHTML={{
-								__html: `
-								.scrollbar-hide::-webkit-scrollbar { display: none; }
-								`}} />
-
-							<h2 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
+					<div className="bg-white rounded-[1.5rem] shadow-2xl w-full max-w-xl overflow-hidden border-t-[5px] border-blue-600 animate-in slide-in-from-bottom-8 duration-300 flex flex-col max-h-[85vh]">
+						<div className="p-8 pb-4 bg-white z-10">
+							<h2 className="text-xl font-black text-slate-900 flex items-center gap-3">
 								<span className="p-2 bg-blue-50 text-blue-600 rounded-lg">
 									{editingId ? <Pencil size={20} /> : <Plus size={24} />}
 								</span>
 								{editingId ? 'Modify Type' : 'New Type'}
 							</h2>
-
-							<form onSubmit={handleSubmit} className="space-y-5">
+						</div>
+						<div className="flex-1 overflow-y-auto px-8 scrollbar-hide">
+							<style
+								dangerouslySetInnerHTML={{ __html: `.scrollbar-hide::-webkit-scrollbar { display: none; }` }}
+							/>
+							<form onSubmit={handleSubmit} id="type-form" className="space-y-5 pb-5">
 								<div>
 									<label className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2.5 ml-1 block">
 										Category Name
@@ -243,6 +241,7 @@ const ClaimManage = () => {
 										name="name"
 										value={form.name}
 										onChange={handleChange}
+										placeholder="Enter category name"
 										className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 text-base focus:border-blue-500 focus:bg-white outline-none font-bold transition-all"
 										required
 									/>
@@ -257,9 +256,11 @@ const ClaimManage = () => {
 										rows={2}
 										value={form.description}
 										onChange={handleChange}
+										placeholder="Briefly describe this type..."
 										className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 text-sm font-medium focus:border-blue-500 focus:bg-white outline-none transition-all"
 									></textarea>
 								</div>
+
 								<div className="bg-emerald-50 p-5 rounded-2xl border border-emerald-100">
 									<h3 className="text-[10px] font-black text-emerald-700 uppercase tracking-[0.2em] mb-4">
 										Price Settings (₹)
@@ -281,25 +282,28 @@ const ClaimManage = () => {
 										))}
 									</div>
 								</div>
-								<div className="flex gap-4 pt-4 sticky bottom-0 bg-white pb-2">
-									<button
-										type="button"
-										onClick={() => {
-											setShowModal(false);
-											setEditingId(null);
-										}}
-										className="flex-1 py-3 text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors"
-									>
-										Discard
-									</button>
-									<button
-										type="submit"
-										className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl text-base font-black shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95"
-									>
-										{editingId ? 'UPDATE' : 'CREATE TYPE'}
-									</button>
-								</div>
 							</form>
+						</div>
+
+						{/* 3. FIXED FOOTER BUTTONS */}
+						<div className="p-8 pt-4 border-t border-slate-50 bg-white flex gap-4">
+							<button
+								type="button"
+								onClick={() => {
+									setShowModal(false);
+									setEditingId(null);
+								}}
+								className="flex-1 py-3 text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors"
+							>
+								Discard
+							</button>
+							<button
+								type="submit"
+								form="type-form"
+								className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl text-base font-black shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95"
+							>
+								{editingId ? 'UPDATE' : 'CREATE TYPE'}
+							</button>
 						</div>
 					</div>
 				</div>

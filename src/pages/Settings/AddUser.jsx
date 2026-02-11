@@ -121,72 +121,95 @@ const AddUser = () => {
 
 			{/* Professional Modal */}
 			{openModal && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-					<div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={() => setOpenModal(false)} />
-
-					<div className="relative bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200">
+				<div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+					<div className="absolute inset-0" onClick={() => setOpenModal(false)} />
+					<div className="relative bg-white rounded-[1.5rem] shadow-2xl w-full max-w-2xl overflow-hidden border-t-[6px] border-blue-600 animate-in slide-in-from-bottom-8 duration-300">
 						<div className="p-8">
-							<div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6">
-								<UserPlus className="text-blue-600 w-6 h-6" />
+							
+							{/* Header Section */}
+							<div className="flex items-center gap-4 mb-6">
+								<div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+									<UserPlus size={28} />
+								</div>
+								<div>
+									<h2 className="text-xl font-black text-slate-900 leading-tight">Create Account</h2>
+									<p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Credentials Setup</p>
+								</div>
 							</div>
 
-							<h2 className="text-2xl font-bold text-slate-900 mb-1">Create Account</h2>
-							<p className="text-slate-500 text-sm mb-8">Set up login credentials for the new user.</p>
+							<p className="text-slate-500 text-sm mb-8 font-medium">
+								Set up unique login credentials for the new user. These will be required for system access.
+							</p>
 
-							<form onSubmit={handleSubmit} className="space-y-5">
-								<div className="space-y-1.5">
-									<label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Username</label>
+							<form onSubmit={handleSubmit} className="space-y-6">
+								{/* Username Field */}
+								<div className="flex flex-col">
+									<label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.1em] mb-2 ml-1">
+										Username
+									</label>
 									<div className="relative">
-										<User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+										<User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
 										<input
 											type="text"
 											name="username"
 											value={formData.username}
 											onChange={handleChange}
 											required
-											className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-sm"
+											className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold text-slate-700 focus:border-blue-500 focus:bg-white outline-none transition-all placeholder:text-slate-300"
 											placeholder="e.g. john_doe"
 										/>
 									</div>
 								</div>
 
-								<div className="space-y-1.5">
-									<label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
+								{/* Password Field */}
+								<div className="flex flex-col">
+									<label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.1em] mb-2 ml-1">
+										Secure Password
+									</label>
 									<div className="relative">
-										<Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+										<Shield className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
 										<input
 											type="password"
 											name="password"
 											value={formData.password}
 											onChange={handleChange}
 											required
-											className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-sm"
+											className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold text-slate-700 focus:border-blue-500 focus:bg-white outline-none transition-all placeholder:text-slate-300"
 											placeholder="••••••••"
 										/>
 									</div>
 								</div>
 
+								{/* Error Handling */}
 								{postError && (
-									<div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg text-xs font-medium">
-										<AlertCircle className="w-4 h-4" />
-										{postError}
+									<div className="flex items-center gap-3 text-red-600 bg-red-50 p-4 rounded-2xl border border-red-100 animate-in fade-in duration-200">
+										<AlertCircle className="w-5 h-5 shrink-0" />
+										<span className="text-xs font-bold uppercase tracking-tight">{postError}</span>
 									</div>
 								)}
 
-								<div className="flex gap-3 pt-4">
+								{/* Actions */}
+								<div className="flex items-center gap-4 pt-4">
 									<button
 										type="button"
 										onClick={() => setOpenModal(false)}
-										className="flex-1 px-4 py-3 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-colors"
+										className="flex-1 py-4 text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors"
 									>
-										Cancel
+										Discard
 									</button>
 									<button
 										type="submit"
 										disabled={postLoading}
-										className="flex-1 px-4 py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-lg shadow-blue-100 disabled:opacity-50 transition-all"
+										className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl text-sm font-black shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
 									>
-										{postLoading ? 'Processing...' : 'Create Account'}
+										{postLoading ? (
+											<span className="flex items-center justify-center gap-2">
+												<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+												PROCESSING...
+											</span>
+										) : (
+											'CREATE ACCOUNT'
+										)}
 									</button>
 								</div>
 							</form>
