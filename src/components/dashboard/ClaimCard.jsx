@@ -40,7 +40,7 @@ const ClaimCard = ({ title, count = 0, amount = 0, color = 'blue' }) => {
 			</div>
 
 			<div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-				<span className="text-xs font-bold text-slate-400 uppercase">Valuation</span>
+				<span className="text-xs font-bold text-slate-400 uppercase">Amount</span>
 				<div className="flex items-center gap-2">
 					<FaMoneyBillWave className={`${theme.text} text-sm`} />
 					<span className="text-xl font-black text-slate-800">
