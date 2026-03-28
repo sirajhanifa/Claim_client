@@ -156,6 +156,9 @@ const PaymentProcess = () => {
               {pr.payment_report_id}
             </h4>
             <p className="text-gray-700">{pr.count} claims</p>
+            <p className="text-sm font-semibold text-green-700 mt-1">
+              ₹{Number(pr.totalAmount || 0).toLocaleString('en-IN')}
+            </p>
           </div>
         ))}
       </div>
