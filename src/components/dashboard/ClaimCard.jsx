@@ -30,7 +30,7 @@ const ClaimCard = ({ title, count = 0, amount = 0, color = 'blue' }) => {
 						{count.toLocaleString('en-IN')}
 					</p>
 					<p className="text-xs font-medium text-slate-400 mt-1 uppercase tracking-tighter">
-						Total Records
+						Total Claims
 					</p>
 				</div>
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import ClaimCard from '../../components/dashboard/ClaimCard';
 import ClaimPieChart from '../../components/dashboard/ClaimPieChart';
+import ClaimBarChart from '../../components/dashboard/ClaimBarChart';
 import useFetch from '../../hooks/useFetch';
 
 const Dashboard = () => {
@@ -12,6 +13,9 @@ const Dashboard = () => {
 	const { data: pendingCounts } = useFetch(`${apiUrl}/api/pendingclaims`);
 	const { data: awaitingCounts } = useFetch(`${apiUrl}/api/awaitingclaims`);
 	const { data: claimIE } = useFetch(`${apiUrl}/api/internalexternalclaims`);
+	const { data: claimTypeAmounts } = useFetch(`${apiUrl}/api/claimtypeamounts`);
+
+	const barChartData = claimTypeAmounts || [];
 
 	return (
 		<div className="min-h-screen bg-[#f8fafc]">
@@ -41,7 +45,7 @@ const Dashboard = () => {
 			<main className="mx-auto space-y-8">
 				<section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 					<ClaimCard
-						title="Updated Claims"
+						title="Submitted Claims"
 						count={data?.totalClaims || 0}
 						amount={data?.totalAmount || 0}
 						color="blue"
@@ -53,7 +57,7 @@ const Dashboard = () => {
 						color="green"
 					/>
 					<ClaimCard
-						title="Pending Review"
+						title="Unsubmitted Claims"
 						count={pendingCounts?.pendingClaims || 0}
 						amount={pendingCounts?.pendingAmount || 0}
 						color="yellow"
@@ -65,6 +69,11 @@ const Dashboard = () => {
 						color="red"
 						showAlert={true}
 					/>
+				</section>
+
+				{/* Bar Chart */}
+				<section className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+					<ClaimBarChart data={barChartData} />
 				</section>
 
 				{/* Charts Row */}

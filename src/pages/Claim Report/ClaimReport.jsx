@@ -623,6 +623,12 @@ const ClaimReport = () => {
 													<span className="text-slate-400 uppercase">Sub:</span>
 													<span className="text-slate-700 font-bold">{claim.submission_date ? new Date(claim.submission_date).toLocaleDateString('en-GB') : '-'}</span>
 												</div>
+												<div className="flex justify-between gap-4">
+													<span className="text-slate-400 uppercase">Credited:</span>
+													<span className={`font-bold ${claim.credited_date ? 'text-green-600' : 'text-slate-400'}`}>
+														{claim.credited_date ? new Date(claim.credited_date).toLocaleDateString('en-GB') : '-'}
+													</span>
+												</div>
 											</div>
 										</td>
 
