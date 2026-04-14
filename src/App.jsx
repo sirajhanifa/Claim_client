@@ -13,32 +13,34 @@ import PaymentProcess from './pages/PaymentProcessing/PaymentProcess';
 import Logout from './components/Logout';
 import PaymentStatus from './pages/Payment Status/PaymentStatus';
 import AdminYearDelete from './pages/Settings/AdminYearDelete';
+import Guidelines from './pages/Guidelines/Guidelines';
 
 function App() {
 
-	return (
-		<BrowserRouter>
-			<Routes>
-				<Route path="/" element={<Login />} />
-				<Route path="/logout" element={<Logout />} />
-				<Route path="layout/:username" element={
-					<ProtectedRoute>
-						<Layout />
-					</ProtectedRoute>
-				}>
-					<Route path="settings/deleteclaim" element={<AdminYearDelete />} />
-					<Route path="dashboard" element={<Dashboard />} />
-					<Route path="staffmanage" element={<StaffManage />} />
-					<Route path="paymentstatus" element={<PaymentStatus />} />
-					<Route path="claimentry" element={<ClaimEntry />} />
-					<Route path="claimmanage" element={<ClaimManage />} />
-					<Route path="claimreport" element={<ClaimReport />} />
-					<Route path="settings/adduser" element={<AddUser />} />
-					<Route path="paymentprocessing" element={<PaymentProcess />} />
-				</Route>
-			</Routes>
-		</BrowserRouter>
-	)
+    return (
+        <BrowserRouter>
+            <Routes>
+                <Route path="/" element={<Login />} />
+                <Route path="/logout" element={<Logout />} />
+                <Route path="layout/:username" element={
+                    <ProtectedRoute>
+                        <Layout />
+                    </ProtectedRoute>
+                }>
+                    <Route path="settings/deleteclaim" element={<AdminYearDelete />} />
+                    <Route path="dashboard" element={<Dashboard />} />
+                    <Route path="staffmanage" element={<StaffManage />} />
+                    <Route path="paymentstatus" element={<PaymentStatus />} />
+                    <Route path="guidelines" element={<Guidelines />} />
+                    <Route path="claimentry" element={<ClaimEntry />} />
+                    <Route path="claimmanage" element={<ClaimManage />} />
+                    <Route path="claimreport" element={<ClaimReport />} />
+                    <Route path="settings/adduser" element={<AddUser />} />
+                    <Route path="paymentprocessing" element={<PaymentProcess />} />
+                </Route>
+            </Routes>
+        </BrowserRouter>
+    )
 }
 
 export default App;
