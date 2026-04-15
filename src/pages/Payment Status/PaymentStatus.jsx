@@ -16,6 +16,7 @@ const PaymentStatus = () => {
     const [claims, setClaims] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [tableSearchTerm, setTableSearchTerm] = useState("");
 
     const fetchPrIds = async () => {
         try {
@@ -70,6 +71,25 @@ const PaymentStatus = () => {
         [displayedClaims]
     );
 
+    const filteredDisplayedClaims = useMemo(() =>
+        displayedClaims.filter(claim => {
+            const search = tableSearchTerm.toLowerCase();
+            return (
+                claim.staff_name.toLowerCase().includes(search) ||
+                claim.claim_type_name.toLowerCase().includes(search) ||
+                claim.totalAmount.toString().includes(search) ||
+                (claim.submission_date && new Date(claim.submission_date).toLocaleDateString().toLowerCase().includes(search)) ||
+                (claim.credited_date && new Date(claim.credited_date).toLocaleDateString().toLowerCase().includes(search)) ||
+                claim.status.toLowerCase().includes(search)
+            );
+        }), [displayedClaims, tableSearchTerm]
+    );
+
+    const filteredTotalPrAmount = useMemo(() =>
+        filteredDisplayedClaims.reduce((sum, c) => sum + c.totalAmount, 0),
+        [filteredDisplayedClaims]
+    );
+
     return (
         <div className="font-sans text-slate-900">
             <div className="space-y-8">
@@ -85,18 +105,6 @@ const PaymentStatus = () => {
                             Payment <span className="text-slate-400 font-light">Reports</span>
                         </h1>
                     </div>
-
-                    <div className="flex items-center gap-3">
-                        <div className="relative group">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                            <input
-                                type="text"
-                                placeholder="Search Report ID..."
-                                className="pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full md:w-80 text-md transition-all outline-none"
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                    </div>
                 </header>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -104,11 +112,22 @@ const PaymentStatus = () => {
                     {/* Sidebar */}
                     <aside className="lg:col-span-3 space-y-4">
                         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[700px]">
-                            <div className="p-5 border-b border-slate-100 flex justify-between items-center">
-                                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Batches</h3>
-                                <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-full font-bold">
-                                    {filteredPrList.length}
-                                </span>
+                            <div className="p-5 border-b border-slate-100 space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Batches</h3>
+                                    <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-full font-bold">
+                                        {filteredPrList.length}
+                                    </span>
+                                </div>
+                                <div className="relative group">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search Report ID..."
+                                        className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full text-sm transition-all outline-none"
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
                             </div>
                             <div className="flex-1 overflow-y-auto overflow-x-hidden">
                                 {filteredPrList.length > 0 ? (
@@ -147,8 +166,8 @@ const PaymentStatus = () => {
 
                                 {/* Dashboard Stats */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <StatCard label="Batch Total" value={`₹${totalPrAmount.toLocaleString()}`} icon={<IndianRupee />} theme="indigo" />
-                                    <StatCard label="Processed Claims" value={displayedClaims.length} icon={<Layers />} theme="blue" />
+                                    <StatCard label="Batch Total" value={`₹${filteredTotalPrAmount.toLocaleString()}`} icon={<IndianRupee />} theme="indigo" />
+                                    <StatCard label="Processed Claims" value={filteredDisplayedClaims.length} icon={<Layers />} theme="blue" />
                                     <StatCard label="Report Reference" value={selectedPrId} icon={<ArrowUpRight />} theme="slate" isMono />
                                 </div>
 
@@ -156,6 +175,15 @@ const PaymentStatus = () => {
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                                     <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
                                         <h3 className="font-bold text-slate-800">Claim Breakdown</h3>
+                                        <div className="relative group">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                                            <input
+                                                type="text"
+                                                placeholder="Search claims..."
+                                                className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64 text-sm transition-all outline-none"
+                                                onChange={(e) => setTableSearchTerm(e.target.value)}
+                                            />
+                                        </div>
                                     </div>
 
                                     {loading ? (
@@ -181,7 +209,7 @@ const PaymentStatus = () => {
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-100">
-                                                    {displayedClaims.map((c, i) => (
+                                                    {filteredDisplayedClaims.map((c, i) => (
                                                         <tr key={i} className="hover:bg-slate-50 transition-colors group">
                                                             <td className="px-6 py-5">
                                                                 <div>
@@ -204,10 +232,12 @@ const PaymentStatus = () => {
                                                             <td className="px-6 py-5">
                                                                 <div className="flex flex-col justify-center items-center gap-1">
                                                                     <div className="flex items-center text-[10px] text-slate-400 font-bold">
-                                                                        <Calendar className="w-3 h-3 mr-1.5" /> {c.submission_date ? new Date(c.submission_date).toLocaleDateString() : "--"}
+                                                                        <span className="text-slate-400 uppercase">Sub: </span>
+                                                                        {c.submission_date ? new Date(c.submission_date).toLocaleDateString() : "--"}
                                                                     </div>
                                                                     <div className="flex items-center text-[10px] text-emerald-600 font-bold">
-                                                                        <CheckCircle2 className="w-3 h-3 mr-1.5" /> {c.credited_date ? new Date(c.credited_date).toLocaleDateString() : "Processing"}
+                                                                        <span className="text-slate-400 uppercase">Cre: </span>
+                                                                        {c.credited_date ? new Date(c.credited_date).toLocaleDateString() : "Processing"}
                                                                     </div>
                                                                 </div>
                                                             </td>

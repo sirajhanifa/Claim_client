@@ -383,7 +383,7 @@ const ClaimReport = () => {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                    {filter === 'all' && (
+                    {(filter === 'all' || (filter === 'unsubmitted' && displayedClaims.length > 0)) && (
                         <button
                             onClick={handleDownloadClaimTypePDF}
                             disabled={isSubmitting}
@@ -393,9 +393,10 @@ const ClaimReport = () => {
                             Download PDF
                         </button>
                     )}
+
                     <button
                         onClick={handleDownloadExcel}
-                        className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-5 py-2.5 rounded-xl font-bold hover:bg-slate-50 transition-all shadow-sm active:scale-95"
+                        className="flex items-center gap-2 bg-green-700 border border-slate-200 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-800 transition-all shadow-sm active:scale-95"
                     >
                         <Download className="w-4 h-4" />
                         Download Excel
@@ -513,7 +514,7 @@ const ClaimReport = () => {
 
             {/* Search Filter */}
             <div className="flex justify-end gap-4 w-full xl:w-auto">
-                <div className="xl:w-96 border border-slate-300 rounded-[12px]">
+                <div className="xl:w-96 border border-slate-300 rounded-[12px] relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                         type="text"
@@ -685,18 +686,6 @@ const ClaimReport = () => {
             {/* Buttons */}
             {filter === 'unsubmitted' && displayedClaims.length > 0 && (
                 <div className="mt-5 text-center flex justify-end gap-4">
-                    {/* Download PDF */}
-                    <button
-                        className="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-medium px-5 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
-                        onClick={handleDownloadClaimTypePDF}
-                        disabled={isSubmitting}
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Download PDF
-                    </button>
-
                     {/* Submit claims */}
                     <button
                         className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
