@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 import useFetch from '../hooks/useFetch';
@@ -9,12 +9,19 @@ import ScrutinyField from '../components/claimentry/ScrutinyField';
 import CentralValuation from '../components/claimentry/CentralValuation';
 import PracticalFields from '../components/claimentry/PracticalFields';
 import AbilityEnhancementClaim from '../components/claimentry/AbilityEnhancementClaim';
-import SkilledClaim from '../components/claimentry/SkilledClaim';
 
 const ClaimEntry = () => {
 
     const apiUrl = import.meta.env.VITE_API_URL;
     const { data: claimTypes } = useFetch(`${apiUrl}/api/getClaim`);
+    const sortedClaimTypes = useMemo(() => {
+        if (!Array.isArray(claimTypes)) return [];
+        return [...claimTypes].sort((a, b) => {
+            const nameA = (a.claim_type_name || '').toString().toUpperCase();
+            const nameB = (b.claim_type_name || '').toString().toUpperCase();
+            return nameA.localeCompare(nameB);
+        });
+    }, [claimTypes]);
     const { postData } = usePost();
     const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -393,7 +400,7 @@ const ClaimEntry = () => {
         <div className="min-h-screen bg-[#f8fafc]">
             <div className="mx-auto">
                 <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10">
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm uppercase tracking-wider">
                             <div className="h-1 w-8 bg-blue-600 rounded-full" />
                             Claims Management
@@ -407,16 +414,16 @@ const ClaimEntry = () => {
                     onSubmit={handleSubmit}
                     className="grid gap-8 md:grid-cols-2 bg-white p-6 md:p-10 rounded-2xl shadow-sm border border-gray-200"
                 >
-                    <div className="flex flex-col space-y-2">
+                    <div className="flex flex-col space-y-3">
                         <label className="text-sm font-bold text-slate-700">Claim Type</label>
                         <select
                             tabIndex={1}
                             value={form.claim_type_name}
                             onChange={(e) => setForm({ ...form, claim_type_name: e.target.value })}
-                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none appearance-none cursor-pointer"
+                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-slate-900 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none appearance-none cursor-pointer"
                         >
                             <option value="">Select Type</option>
-                            {claimTypes?.map((c) => (
+                            {sortedClaimTypes.map((c) => (
                                 <option key={c._id} value={c.claim_type_name}>
                                     {c.claim_type_name}
                                 </option>
@@ -424,7 +431,7 @@ const ClaimEntry = () => {
                         </select>
                     </div>
 
-                    <div className="flex flex-col space-y-2">
+                    <div className="flex flex-col space-y-3">
                         <label className="text-sm font-bold text-slate-700">Phone Number</label>
                         <div className="flex gap-6">
                             <div className="flex-1 relative">
@@ -441,7 +448,7 @@ const ClaimEntry = () => {
                                     disabled={!form.claim_type_name}
                                     className={`w-full px-4 py-2.5 border rounded-lg font-semibold transition-all outline-none
                                         ${form.claim_type_name
-                                            ? "bg-gray-50 border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            ? "bg-gray-50 border-gray-300 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                                             : "bg-gray-100 cursor-not-allowed border-gray-200 text-gray-400"
                                         }`}
                                     onKeyDown={(e) => {
@@ -512,7 +519,7 @@ const ClaimEntry = () => {
                         </div>
                     </div>
 
-                    <div className="md:col-span-2 bg-blue-50/50 border border-blue-100 rounded-xl p-6">
+                    <div className="md:col-span-2 bg-blue-50/40 border border-blue-100 rounded-xl p-6">
                         <h3 className="text-lg font-bold text-blue-900 mb-6 flex items-center gap-2">
                             <span>🧾</span> Claim Details
                         </h3>
@@ -523,8 +530,7 @@ const ClaimEntry = () => {
                             {form.claim_type_name === "CENTRAL VALUATION" && <CentralValuation form={form} setForm={setForm} />}
                             {form.claim_type_name === "PRACTICAL EXAM CLAIM" && <PracticalFields form={form} setForm={setForm} />}
                             {form.claim_type_name === "ABILITY ENHANCEMENT CLAIM" && <AbilityEnhancementClaim form={form} setForm={setForm} />}
-                            {form.claim_type_name === "SKILLED CLAIM" && <SkilledClaim form={form} setForm={setForm} />}
-                            <div className="flex flex-col space-y-2">
+                            <div className="flex flex-col space-y-3">
                                 <label className="text-sm font-bold text-slate-700">Amount</label>
                                 <div className="relative">
                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
@@ -534,7 +540,7 @@ const ClaimEntry = () => {
                                         autoComplete="off"
                                         value={form.amount}
                                         onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                                        className={`w-full pl-8 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all font-bold outline-none
+                                        className={`w-full pl-8 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 transition-all font-bold outline-none
                                         ${form.claim_type_name === "QPS" ? "bg-gray-100" : "bg-white"}`}
                                         required
                                         onWheel={(e) => e.target.blur()}
@@ -570,7 +576,7 @@ const ClaimEntry = () => {
                                     <label className="text-xs font-bold text-blue-500 uppercase mb-2">{label} : </label>
                                     <input
                                         type="text"
-                                        value={form[key]}
+                                        value={form[key] || "-"}
                                         readOnly
                                         className="w-full py-2 uppercase rounded text-sm font-bold text-slate-700 cursor-not-allowed outline-none"
                                     />
@@ -579,7 +585,7 @@ const ClaimEntry = () => {
                         </div>
                     </div>
 
-                    <div className="md:col-span-1 flex flex-col space-y-2">
+                    <div className="md:col-span-1 flex flex-col space-y-3">
                         <label className="text-sm font-bold text-slate-700">Entry Date</label>
                         <input
                             type="date"
@@ -589,14 +595,14 @@ const ClaimEntry = () => {
                         />
                     </div>
 
-                    <div className="md:col-span-2 flex flex-col space-y-2">
+                    <div className="md:col-span-2 flex flex-col space-y-3">
                         <label className="text-sm font-bold text-slate-700">Remarks</label>
                         <textarea
                             value={form.remarks}
                             onChange={(e) => setForm({ ...form, remarks: e.target.value })}
                             rows="2"
                             placeholder="Optional notes..."
-                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all outline-none font-medium"
+                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 transition-all outline-none font-medium"
                         />
                     </div>
 

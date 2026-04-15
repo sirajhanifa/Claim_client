@@ -63,7 +63,7 @@ const Dashboard = () => {
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="h-2 w-8 bg-blue-600 rounded-full" />
+                            <span className="h-1 w-8 bg-blue-600 rounded-full" />
                             <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">Executive Portal</span>
                         </div>
                         <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">
