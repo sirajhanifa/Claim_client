@@ -612,17 +612,17 @@ const ClaimReport = () => {
 
                                         {/* Dates Grouped */}
                                         <td className="px-6 py-4 text-center">
-                                            <div className="flex flex-col gap-1 text-[11px]">
-                                                <div className="flex justify-between gap-4">
-                                                    <span className="text-slate-400 uppercase">Entry:</span>
+                                            <div className="flex flex-col gap-1 text-[11px] w-32">
+                                                <div className="flex justify-between gap-2">
+                                                    <span className="text-slate-400 uppercase">Entry :</span>
                                                     <span className="text-slate-700 font-bold">{new Date(claim.entry_date).toLocaleDateString('en-GB')}</span>
                                                 </div>
-                                                <div className="flex justify-between gap-4">
-                                                    <span className="text-slate-400 uppercase">Sub:</span>
+                                                <div className="flex justify-between gap-2">
+                                                    <span className="text-slate-400 uppercase">Sub :</span>
                                                     <span className="text-slate-700 font-bold">{claim.submission_date ? new Date(claim.submission_date).toLocaleDateString('en-GB') : '-'}</span>
                                                 </div>
-                                                <div className="flex justify-between gap-4">
-                                                    <span className="text-slate-400 uppercase">Credited:</span>
+                                                <div className="flex justify-between">
+                                                    <span className="text-slate-400 uppercase">Credited :</span>
                                                     <span className={`font-bold ${claim.credited_date ? 'text-green-600' : 'text-slate-400'}`}>
                                                         {claim.credited_date ? new Date(claim.credited_date).toLocaleDateString('en-GB') : '-'}
                                                     </span>

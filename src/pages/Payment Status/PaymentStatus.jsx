@@ -18,6 +18,16 @@ const PaymentStatus = () => {
     const [error, setError] = useState(null);
     const [tableSearchTerm, setTableSearchTerm] = useState("");
 
+    const formatDate = (dateString) => {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        if (Number.isNaN(date.getTime())) return "";
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    };
+
     const fetchPrIds = async () => {
         try {
             const res = await axios.get(`${API_URL}/api/admin/payment-status/pr-ids`);
@@ -78,8 +88,8 @@ const PaymentStatus = () => {
                 claim.staff_name.toLowerCase().includes(search) ||
                 claim.claim_type_name.toLowerCase().includes(search) ||
                 claim.totalAmount.toString().includes(search) ||
-                (claim.submission_date && new Date(claim.submission_date).toLocaleDateString().toLowerCase().includes(search)) ||
-                (claim.credited_date && new Date(claim.credited_date).toLocaleDateString().toLowerCase().includes(search)) ||
+                (claim.submission_date && formatDate(claim.submission_date).toLowerCase().includes(search)) ||
+                (claim.credited_date && formatDate(claim.credited_date).toLowerCase().includes(search)) ||
                 claim.status.toLowerCase().includes(search)
             );
         }), [displayedClaims, tableSearchTerm]
@@ -232,12 +242,12 @@ const PaymentStatus = () => {
                                                             <td className="px-6 py-5">
                                                                 <div className="flex flex-col justify-center items-center gap-1">
                                                                     <div className="flex items-center text-[10px] text-slate-400 font-bold">
-                                                                        <span className="text-slate-400 uppercase">Sub: </span>
-                                                                        {c.submission_date ? new Date(c.submission_date).toLocaleDateString() : "--"}
+                                                                        <span className="text-slate-400 uppercase mr-1">Sub : </span>
+                                                                        {c.submission_date ? formatDate(c.submission_date) : "--"}
                                                                     </div>
                                                                     <div className="flex items-center text-[10px] text-emerald-600 font-bold">
-                                                                        <span className="text-slate-400 uppercase">Cre: </span>
-                                                                        {c.credited_date ? new Date(c.credited_date).toLocaleDateString() : "Processing"}
+                                                                        <span className="text-slate-400 uppercase mr-1">Cre : </span>
+                                                                        {c.credited_date ? formatDate(c.credited_date) : "Processing"}
                                                                     </div>
                                                                 </div>
                                                             </td>

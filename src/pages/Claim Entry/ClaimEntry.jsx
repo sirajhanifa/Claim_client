@@ -12,26 +12,18 @@ import AbilityEnhancementClaim from './AbilityEnhancementClaim';
 import SkilledClaim from './SkilledClaim';
 
 const ClaimEntry = () => {
+
     const apiUrl = import.meta.env.VITE_API_URL;
     const { data: claimTypes } = useFetch(`${apiUrl}/api/getClaim`);
     const { postData } = usePost();
     const navigate = useNavigate();
-
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-
     const [phoneSuggestions, setPhoneSuggestions] = useState([]);
     const [activeIndex, setActiveIndex] = useState(-1);
-
-
-
-
-
     const { username } = useParams();
-
     const [phoneNumber, setPhoneNumber] = useState('');
+
     const [form, setForm] = useState({
-        // 🔷 General Claim Info
         claim_type_name: '',
         staff_id: '',
         staff_name: '',
@@ -52,47 +44,33 @@ const ClaimEntry = () => {
         branch_code: '',
         ifsc_code: '',
         account_no: '',
-
-        // 🔷 QPS Claim
         no_of_qps_ug: '',
         no_of_qps_pg: '',
-        no_of_scheme: '',        // No. of Scheme
-
-        // 🔷 Scrutiny Claim
+        no_of_scheme: '',
         no_of_ug_papers: '',
         no_of_pg_papers: '',
         scrutiny_days: 1,
-
-        // 🔷 Practical Exam Claim
-        qps_paper_setting: '',        // QPS Paper Setting
-        total_students: '',           // Total No. of Students
-        days_halted: 1,              // No. of Days Halted
-        travelling_allowance: 0,     // Travelling Allowance
-        degree_level: '', // UG / PG for Practical Exam Claim
-        tax_type: '',                 // Dropdown: Aided / SF / AICTE
-        tax_amount: '',               // Optional Tax Amount
+        qps_paper_setting: '',
+        total_students: '',
+        days_halted: 1,
+        travelling_allowance: 0,
+        degree_level: '',
+        tax_type: '',
+        tax_amount: '',
         dearness_allowance: 200,
-
-        // 🔷 CIA Reappear Claim
         cia_no_of_papers: '',
         cia_role_type: '',
-
-        // 🔷 Central Valuation Claim
         central_role: '',
         central_total_scripts_ug: '',
         central_total_scripts_pg: '',
         central_days_halted: 1,
         central_travel_allowance: 0,
         central_tax_applicable: '',
-        central_dearness_allowance: 200,    // added DA per day
-
-
-        // 🔷 Ability Enhancement Claim ✅
-        ability_total_no_students: '',     // Total No. of Students
-        ability_no_of_days_halted: 1,     // No. of Days Halted
-        ability_tax_type: '',              // Aided / AICTE only
-        ability_dearness_allowance: 200, // ✅ ADD THIS
-
+        central_dearness_allowance: 200,
+        ability_total_no_students: '',
+        ability_no_of_days_halted: 1,
+        ability_tax_type: '',
+        ability_dearness_allowance: 200,
     });
 
     const isStaffFetched = Boolean(
@@ -102,26 +80,13 @@ const ClaimEntry = () => {
         form.staff_id
     );
 
-
     useEffect(() => {
         const fetchAmount = async () => {
             const {
                 claim_type_name,
-                no_of_qps_pg,
-                no_of_qps_ug,
-                no_of_scheme,
-                no_of_papers,
-                scrutiny_level,
-                scrutiny_no_of_papers,
-                scrutiny_days,
-                central_total_scripts_ug_pg,
-                central_days_halted,
-                central_travel_allowance,
-                central_tax_applicable,
                 qps_paper_setting,
                 total_students,
                 days_halted,
-                travelling_allowance,
                 tax_type,
                 degree_level,
                 ability_no_of_days_halted,
@@ -129,7 +94,6 @@ const ClaimEntry = () => {
                 ability_total_no_students
             } = form;
 
-            // QPS logic
             if (
                 claim_type_name === "QPS" &&
                 (!isNaN(parseInt(form.no_of_qps_ug)) || !isNaN(parseInt(form.no_of_qps_pg)) || !isNaN(parseInt(form.no_of_scheme)))
@@ -151,9 +115,6 @@ const ClaimEntry = () => {
                 }
             }
 
-
-
-            // CIA Reappear logic
             if (
                 form.claim_type_name === "CIA REAPEAR CLAIM" &&
                 form.cia_no_of_papers &&
@@ -176,15 +137,11 @@ const ClaimEntry = () => {
                 }
             }
 
-
-            // Scrutiny logic
-
-            // Scrutiny logic
             if (claim_type_name?.trim().toUpperCase() === "SCRUTINY CLAIM") {
                 const ugPapers = parseInt(form.no_of_ug_papers) || 0;
                 const pgPapers = parseInt(form.no_of_pg_papers) || 0;
 
-                if (ugPapers === 0 && pgPapers === 0) return; // skip if both are 0
+                if (ugPapers === 0 && pgPapers === 0) return;
 
                 try {
                     const response = await axios.post(`${apiUrl}/api/calculateAmount`, {
@@ -203,8 +160,6 @@ const ClaimEntry = () => {
                 }
             }
 
-
-            // ✅ Central Valuation logic
             if (
                 claim_type_name === "CENTRAL VALUATION" &&
                 (form.central_total_scripts_ug || form.central_total_scripts_pg) &&
@@ -224,12 +179,10 @@ const ClaimEntry = () => {
 
                     const { baseAmount, taxPercent } = response.data;
 
-                    // ✅ Calculate DA in frontend
                     const daAmount = Number(form.central_days_halted || 0) * Number(form.central_dearness_allowance || 0);
 
                     const subTotal = baseAmount + daAmount;
 
-                    // ✅ Apply tax on frontend
                     const taxAmount = subTotal * (taxPercent || 0);
                     const finalAmount = subTotal - taxAmount;
 
@@ -240,8 +193,6 @@ const ClaimEntry = () => {
                 }
             }
 
-
-            // Practical Exam Claim logic ✅ UPDATED
             if (
                 claim_type_name === "PRACTICAL EXAM CLAIM" &&
                 qps_paper_setting &&
@@ -262,7 +213,6 @@ const ClaimEntry = () => {
                         degree_level
                     });
 
-
                     const { baseAmount, taxPercent } = response.data;
 
                     const daAmount =
@@ -270,12 +220,9 @@ const ClaimEntry = () => {
 
                     const subTotal = Number(baseAmount) + daAmount;
 
-                    // ✅ apply tax AFTER adding DA
-                    const taxRate = (taxPercent || 0) / 100;   // 🔥 FIX
+                    const taxRate = (taxPercent || 0) / 100;
                     const taxAmount = subTotal * taxRate;
                     const finalAmount = Math.max(subTotal - taxAmount, 0);
-
-
 
                     setForm(prev => ({
                         ...prev,
@@ -287,8 +234,6 @@ const ClaimEntry = () => {
                 }
             }
 
-
-            // 🔷 Ability Enhancement Claim logic (FINAL)
             if (
                 claim_type_name === "ABILITY ENHANCEMENT CLAIM" &&
                 ability_total_no_students &&
@@ -305,19 +250,15 @@ const ClaimEntry = () => {
 
                     const { baseAmount, taxPercent } = response.data;
 
-                    // ✅ DA calculation (frontend only)
                     const daPerDay = Number(form.ability_dearness_allowance || 0);
                     const haltedDays = Number(ability_no_of_days_halted || 0);
                     const daAmount = daPerDay * haltedDays;
 
-                    // ✅ Subtotal = Base + DA
                     const subTotal = Number(baseAmount) + daAmount;
 
-                    // ✅ Tax applied AFTER DA
                     const taxRate = (taxPercent || 0) / 100;
                     const taxAmount = subTotal * taxRate;
 
-                    // ✅ Final amount
                     const finalAmount = subTotal - taxAmount;
 
                     setForm(prev => ({
@@ -347,12 +288,12 @@ const ClaimEntry = () => {
         form.central_days_halted,
         form.central_travel_allowance,
         form.central_tax_applicable,
-        form.qps_paper_setting,       // ✅ Added
-        form.total_students,          // ✅ Added
-        form.days_halted,             // ✅ Added
-        form.travelling_allowance,    // ✅ Added
-        form.tax_type,                // ✅ Added
-        form.degree_level,             // ✅ Added
+        form.qps_paper_setting,
+        form.total_students,
+        form.days_halted,
+        form.travelling_allowance,
+        form.tax_type,
+        form.degree_level,
         form.ability_no_of_days_halted,
         form.ability_total_no_students,
         form.ability_tax_type,
@@ -360,27 +301,17 @@ const ClaimEntry = () => {
         form.cia_role_type,
         form.dearness_allowance,
         form.ability_dearness_allowance,
-
-
-
     ]);
 
-
-
-
-
-    //today date
     useEffect(() => {
         const today = new Date().toISOString().split('T')[0];
         setForm((prev) => ({ ...prev, entry_date: today }));
     }, []);
 
-
-    //fetch Staff by using phone Number
     const handleFetchStaff = async (phone = null) => {
+
         const lookupPhone = phone ?? phoneNumber;
         if (!lookupPhone) return alert("Enter a phone number");
-
         try {
             const res = await fetch(`${apiUrl}/api/getStaffByPhone/${encodeURIComponent(lookupPhone)}`);
             const data = await res.json();
@@ -416,21 +347,20 @@ const ClaimEntry = () => {
         }
     };
 
-    //Submit the Claim data
     const handleSubmit = async (e) => {
+
         e.preventDefault();
 
-        if (isSubmitting) return; // Prevent double click
+        if (isSubmitting) return;
 
-        setIsSubmitting(true);  // Disable button
+        setIsSubmitting(true);
 
         try {
             await postData(`${apiUrl}/api/postClaim`, form);
             alert("Claim submitted successfully");
 
-            // Reset form (keep claim type if you want)
             setForm({
-                claim_type_name: form.claim_type_name, // optional: keep selected claim type
+                claim_type_name: form.claim_type_name,
                 staff_id: '',
                 staff_name: '',
                 department: '',
@@ -450,18 +380,12 @@ const ClaimEntry = () => {
                 branch_code: '',
                 ifsc_code: '',
                 account_no: '',
-
-                // QPS
                 no_of_qps_ug: '',
                 no_of_qps_pg: '',
                 no_of_scheme: '',
-
-                // Scrutiny
                 scrutiny_level: '',
                 scrutiny_no_of_papers: '',
                 scrutiny_days: '',
-
-                // Practical Claim
                 qps_paper_setting: '',
                 total_students: '',
                 days_halted: '',
@@ -469,28 +393,18 @@ const ClaimEntry = () => {
                 tax_type: '',
                 degree_level: '',
                 dearness_allowance: 200,
-
-
-                // CIA Reappear
                 cia_no_of_papers: '',
                 cia_role_type: '',
-
-                // Central Valuation
                 central_role: '',
                 central_total_scripts_ug: '',
                 central_total_scripts_pg: '',
                 central_days_halted: '',
                 central_travel_allowance: '',
                 central_tax_applicable: '',
-
-                // Ability Enhancement
                 ability_total_no_students: '',
                 ability_no_of_days_halted: '',
                 ability_tax_type: '',
                 ability_dearness_allowance: 200,
-
-
-                // Skilled
                 skilled_no_of_students: '',
                 skilled_days_halted: '',
                 skilled_tax_type: '',
@@ -498,17 +412,14 @@ const ClaimEntry = () => {
 
             setPhoneNumber('');
 
-            // ✅ Re-enable the submit button
             setIsSubmitting(false);
 
         } catch (err) {
             alert("Failed to submit claim");
-            setIsSubmitting(false); // Re-enable only on error
+            setIsSubmitting(false);
         }
     };
 
-
-    //fetch phone number suggestion
     const fetchPhoneSuggestions = async (query) => {
         if (query.length < 2) {
             setPhoneSuggestions([]);
@@ -522,8 +433,6 @@ const ClaimEntry = () => {
             console.error("Phone suggestion error:", err);
         }
     };
-
-
 
     return (
         <div className="min-h-screen bg-slate-50/50">
@@ -581,7 +490,7 @@ const ClaimEntry = () => {
                                     placeholder="Enter 10-digit number"
                                     disabled={!form.claim_type_name}
                                     className={`w-full px-4 py-3 border rounded-xl font-bold transition-all duration-200 outline-none
-                  ${form.claim_type_name
+                                        ${form.claim_type_name
                                             ? "bg-slate-50 border-slate-200 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
                                             : "bg-slate-100 cursor-not-allowed border-slate-200 text-slate-400"
                                         }`}
@@ -631,7 +540,7 @@ const ClaimEntry = () => {
                                                     handleFetchStaff(item.phone_no);
                                                 }}
                                                 className={`px-4 py-2.5 cursor-pointer text-sm font-medium transition-colors
-                        ${index === activeIndex ? "bg-blue-600 text-white" : "text-slate-700 hover:bg-blue-50"}`}
+                                                ${index === activeIndex ? "bg-blue-600 text-white" : "text-slate-700 hover:bg-blue-50"}`}
                                             >
                                                 {item.phone_no}
                                             </li>
@@ -646,7 +555,7 @@ const ClaimEntry = () => {
                                 onClick={() => handleFetchStaff()}
                                 disabled={!form.claim_type_name}
                                 className={`px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-200/50 transition-all duration-200 active:scale-95
-                ${form.claim_type_name
+                                    ${form.claim_type_name
                                         ? "bg-blue-600 text-white hover:bg-blue-700"
                                         : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
                                     }`}
@@ -683,7 +592,7 @@ const ClaimEntry = () => {
                                         value={form.amount}
                                         onChange={(e) => setForm({ ...form, amount: e.target.value })}
                                         className={`w-full pl-8 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold outline-none
-                    ${form.claim_type_name === "QPS" ? "bg-slate-100" : "bg-white"}`}
+                                        ${form.claim_type_name === "QPS" ? "bg-slate-100" : "bg-white"}`}
                                         required
                                         onWheel={(e) => e.target.blur()}
                                     />
@@ -756,9 +665,8 @@ const ClaimEntry = () => {
                         <button
                             type="submit"
                             tabIndex={isStaffFetched ? 4 : -1}
-                            // disabled={isSubmitting || !isStaffFetched}
                             className={`group relative flex items-center gap-3 px-10 py-4 rounded-2xl font-black text-white transition-all duration-300 shadow-xl
-    ${isSubmitting || !isStaffFetched
+                                ${isSubmitting || !isStaffFetched
                                     ? "bg-slate-400 cursor-not-allowed shadow-none"
                                     : "bg-green-600 hover:bg-green-700 hover:shadow-green-200 hover:-translate-y-1 active:translate-y-0"
                                 }`}
