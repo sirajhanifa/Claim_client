@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import useFetch from '../../hooks/useFetch';
+import useFetch from '../hooks/useFetch';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Trash2, Search, Phone, Download, FileText, Filter, ChevronDown, Layers, Calendar, Landmark } from "lucide-react";
 import axios from 'axios';
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import logo1 from '../../assets/75.jpeg';
-import logo2 from '../../assets/logo.jpeg'
+import logo1 from '../assets/75.jpeg';
+import logo2 from '../assets/logo.jpeg'
 
 const ClaimReport = () => {
 

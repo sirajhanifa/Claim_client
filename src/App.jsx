@@ -1,19 +1,19 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Login from './pages/login/Login';
-import Dashboard from './pages/dashboard/Dashboard';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
 import Layout from './layout/Layout';
-import StaffManage from './pages/staff/StaffManage';
-import ClaimEntry from './pages/Claim Entry/ClaimEntry';
-import ClaimManage from './pages/ClaimManage/ClaimManage';
-import ClaimReport from './pages/Claim Report/ClaimReport';
+import StaffManage from './pages/StaffManage';
+import ClaimEntry from './pages/ClaimEntry';
+import ClaimManage from './pages/ClaimManage';
+import ClaimReport from './pages/ClaimReport';
 import ProtectedRoute from './components/ProtectedRoute';
-import AddUser from './pages/Settings/AddUser';
-import PaymentProcess from './pages/PaymentProcessing/PaymentProcess';
+import AddUser from './pages/AddUser';
+import PaymentProcess from './pages/PaymentProcess';
 import Logout from './components/Logout';
-import PaymentStatus from './pages/Payment Status/PaymentStatus';
-import AdminYearDelete from './pages/Settings/AdminYearDelete';
-import Guidelines from './pages/Guidelines/Guidelines';
+import PaymentStatus from './pages/PaymentStatus';
+import AdminYearDelete from './pages/AdminYearDelete';
+import Guidelines from './pages/Guidelines';
 
 function App() {
 

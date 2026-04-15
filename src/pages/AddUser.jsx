@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { UserPlus, Shield, User, Trash2, Edit3, Search, AlertCircle, Loader2 } from 'lucide-react';
-import useFetch from '../../hooks/useFetch';
-import usePost from '../../hooks/usePost';
-import usePut from '../../hooks/usePut';
-import useDelete from '../../hooks/useDelete';
+import useFetch from '../hooks/useFetch';
+import usePost from '../hooks/usePost';
+import usePut from '../hooks/usePut';
+import useDelete from '../hooks/useDelete';
 
 const AddUser = () => {
 

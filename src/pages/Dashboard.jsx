@@ -1,8 +1,8 @@
 import React from 'react';
-import ClaimCard from '../../components/dashboard/ClaimCard';
-import ClaimPieChart from '../../components/dashboard/ClaimPieChart';
-import ClaimBarChart from '../../components/dashboard/ClaimBarChart';
-import useFetch from '../../hooks/useFetch';
+import ClaimCard from '../components/dashboard/ClaimCard';
+import ClaimPieChart from '../components/dashboard/ClaimPieChart';
+import ClaimBarChart from '../components/dashboard/ClaimBarChart';
+import useFetch from '../hooks/useFetch';
 
 const Dashboard = () => {
     const apiUrl = import.meta.env.VITE_API_URL;
@@ -43,10 +43,10 @@ const Dashboard = () => {
 
     const barChartData = [
         { name: 'QPS', amount: groupedBarChartData.QPS },
-        { name: 'Examination Duty Claims', amount: groupedBarChartData['Practical Exam Claim + Skilled Assistant + Hall Superintendent + Lab Assistant'] },
+        { name: 'Practicals', amount: groupedBarChartData['Practical Exam Claim + Skilled Assistant + Hall Superintendent + Lab Assistant'] },
         { name: 'AEC', amount: groupedBarChartData.AEC },
         { name: 'Scrutiny', amount: groupedBarChartData.Scrutiny },
-        { name: 'Central Valuation', amount: groupedBarChartData['Central Valuation'] },
+        { name: 'CV', amount: groupedBarChartData['Central Valuation'] },
         { name: 'Others', amount: groupedBarChartData.Others }
     ];
 
@@ -92,19 +92,19 @@ const Dashboard = () => {
                 <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
                         <ClaimPieChart
-                            title="Claim Amount by Type"
-                            data={pieChartData}
-                            colors={pieColors}
-                        />
-                    </div>
-                    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-                        <ClaimPieChart
                             title="Distribution by Staff"
                             data={[
                                 { name: "Internal", value: claimIE?.internal || 0 },
                                 { name: "External", value: claimIE?.external || 0 }
                             ]}
                             colors={['#10b981', '#ef4444']}
+                        />
+                    </div>
+                    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+                        <ClaimPieChart
+                            title="Claim Amount by Type"
+                            data={pieChartData}
+                            colors={pieColors}
                         />
                     </div>
                     <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
