@@ -387,7 +387,7 @@ const ClaimReport = () => {
                         <button
                             onClick={handleDownloadClaimTypePDF}
                             disabled={isSubmitting}
-                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-100 active:scale-95 disabled:opacity-50"
+                            className="flex items-center gap-2 bg-blue-600 pointer hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-100 active:scale-95 disabled:opacity-50"
                         >
                             <FileText className="w-4 h-4" />
                             Download PDF
@@ -513,7 +513,7 @@ const ClaimReport = () => {
 
             {/* Search Filter */}
             <div className="flex justify-end gap-4 w-full xl:w-auto">
-                <div className="xl:w-84">
+                <div className="xl:w-96 border border-slate-300 rounded-[12px]">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                         type="text"
