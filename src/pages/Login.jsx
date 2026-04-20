@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import JmcLogo from '../assets/logo.jpeg';
 import Jmc75 from '../assets/75.jpeg';
-import { User, Lock, Loader2 } from 'lucide-react';
+import { User, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
 
 const brandColor = '#192F5D';
 const hoverColor = '#0F1E40';
@@ -17,6 +17,7 @@ const Login = () => {
 
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const { postData } = usePost();
@@ -26,28 +27,22 @@ const Login = () => {
         setLoading(true);
 
         try {
-            const res = await postData(`${apiUrl}/api/login`, { username, password });
+            const res = await postData(`${apiUrl}/api/login`, { username, password }, {}, true);
 
-            if (res.message === 'Login successful!') {
+            if (res && res.message === 'Login successful!') {
                 const { token, user } = res;
                 localStorage.setItem('authToken', token);
                 localStorage.setItem('username', user.username);
 
                 Swal.fire('Success', 'Login Successful!', 'success');
                 navigate(`/layout/${user.username}/dashboard`);
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Authentication Failed',
-                    text: 'Incorrect Login Credentials.',
-                    confirmButtonColor: brandColor,
-                });
             }
         } catch (err) {
+            const errorMsg = err.response?.data?.message || 'Unable to connect to the server. Please check your network.';
             Swal.fire({
                 icon: 'error',
-                title: 'Critical Error',
-                text: 'Unable to connect to the server. Please check your network.',
+                title: err.response?.data?.message ? 'Authentication Failed' : 'Critical Error',
+                text: errorMsg,
                 confirmButtonColor: brandColor,
             });
         } finally {
@@ -151,13 +146,20 @@ const Login = () => {
                                     <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                                     <input
                                         id="password"
-                                        type="password"
+                                        type={showPassword ? "text" : "password"}
                                         placeholder="••••••••"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className={`w-full pl-10 pr-4 py-2.5 border-2 border-gray-300 rounded-lg bg-transparent text-gray-800 focus:border-0 focus:ring-2 focus:ring-[${accentColor}] focus:outline-none transition duration-200`}
+                                        className={`w-full pl-10 pr-10 py-2.5 border-2 border-gray-300 rounded-lg bg-transparent text-gray-800 focus:border-0 focus:ring-2 focus:ring-[${accentColor}] focus:outline-none transition duration-200`}
                                         required
                                     />
+                                    <button
+                                        type="button"
+                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                    >
+                                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
                                 </div>
                             </div>
                             <button
