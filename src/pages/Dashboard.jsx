@@ -5,6 +5,7 @@ import ClaimBarChart from '../components/dashboard/ClaimBarChart';
 import useFetch from '../hooks/useFetch';
 
 const Dashboard = () => {
+
     const apiUrl = import.meta.env.VITE_API_URL;
     const { data } = useFetch(`${apiUrl}/api/totalclaimscount`);
     const { data: staffCounts } = useFetch(`${apiUrl}/api/staffcount`);
