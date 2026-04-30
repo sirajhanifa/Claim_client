@@ -1,36 +1,53 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Trash2, AlertTriangle, Database, RefreshCcw } from "lucide-react";
+import { Trash2, AlertTriangle, Shield, RefreshCcw, Calendar } from "lucide-react";
+import useFetch from '../hooks/useFetch';
 
-const AdminYearDelete = () => {
+const DataDeletion = () => {
 
     const API_URL = import.meta.env.VITE_API_URL;
-    const [year, setYear] = useState("");
+    const [selectedLabel, setSelectedLabel] = useState("");
+    const [adminPassword, setAdminPassword] = useState("");
     const [loading, setLoading] = useState(false);
-    const [msg, setMsg] = useState("");
+    const [msg, setMsg] = useState(null);
+
+    const { data: academics = [], loading: fetchLoading } = useFetch(`${API_URL}/api/getAcademic`);
+
+    useEffect(() => {
+        if (academics.length > 0) {
+            setSelectedLabel(academics[0].academic_sem_label);
+        }
+    }, [academics]);
 
     const handleDelete = async () => {
 
-        if (!year) {
-            alert("Please specify a target year.");
+        if (!selectedLabel) {
+            setMsg({ type: 'error', text: "Please select an academic semester." });
+            return;
+        }
+
+        if (!adminPassword) {
+            setMsg({ type: 'error', text: "Admin password is required." });
             return;
         }
 
         const confirm = window.confirm(
-            `CRITICAL ACTION: Are you sure you want to PERMANENTLY DELETE all claim records for the year ${year}? This cannot be undone.`
+            `CRITICAL ACTION: Are you sure you want to PERMANENTLY DELETE all claim records for the semester "${selectedLabel}"? This cannot be undone.`
         );
         if (!confirm) return;
 
         setLoading(true);
-        setMsg("");
+        setMsg(null);
 
         try {
-            const res = await axios.delete(
-                `${API_URL}/api/admin/maintenance/delete-year/${year}`
+            const res = await axios.post(
+                `${API_URL}/api/data-deletion/delete-by-academic-sem`,
+                { academic_sem_label: selectedLabel, admin_password: adminPassword }
             );
             setMsg({ type: 'success', text: res.data.message });
+            setAdminPassword("");
         } catch (err) {
-            setMsg({ type: 'error', text: "Critical Error: Failed to purge data." });
+            setMsg({ type: 'error', text: err.response?.data?.message || "Critical Error: Failed to purge data." });
         } finally {
             setLoading(false);
         }
@@ -58,30 +75,55 @@ const AdminYearDelete = () => {
                     </div>
                     <div>
                         <h3 className="text-sm font-bold text-red-900 uppercase tracking-tight">Danger Zone</h3>
-                        <p className="text-xs text-red-700/70 font-medium">Bulk deletion of financial records is permanent.</p>
+                        <p className="text-xs text-red-700/70 font-medium">Bulk deletion of records is permanent.</p>
                     </div>
                 </div>
 
                 <div className="p-8 space-y-6">
                     <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
-                            Target Fiscal Year
+                            Target Academic Semester
                         </label>
                         <div className="relative mt-4">
-                            <Database className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <select
+                                value={selectedLabel}
+                                onChange={(e) => setSelectedLabel(e.target.value)}
+                                disabled={fetchLoading}
+                                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:bg-white outline-none transition-all text-sm font-bold appearance-none disabled:opacity-50"
+                            >
+                                {fetchLoading ? (
+                                    <option>Loading semesters...</option>
+                                ) : (
+                                    academics.map(academic => (
+                                        <option key={academic._id} value={academic.academic_sem_label}>
+                                            {academic.academic_sem_label}
+                                        </option>
+                                    ))
+                                )}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
+                            Admin Authorization Password
+                        </label>
+                        <div className="relative mt-4">
+                            <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <input
-                                type="number"
-                                value={year}
-                                onChange={(e) => setYear(e.target.value)}
+                                type="password"
+                                value={adminPassword}
+                                onChange={(e) => setAdminPassword(e.target.value)}
                                 className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:bg-white outline-none transition-all text-sm font-bold"
-                                placeholder="e.g. 2025"
+                                placeholder="••••••••"
                             />
                         </div>
                     </div>
 
                     <button
                         onClick={handleDelete}
-                        disabled={loading || !year}
+                        disabled={loading || !selectedLabel || !adminPassword}
                         className="group w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-slate-200 text-white py-4 rounded-xl font-bold transition-all shadow-red-100 active:scale-[0.98]"
                     >
                         {loading ? (
@@ -89,7 +131,7 @@ const AdminYearDelete = () => {
                         ) : (
                             <Trash2 className="w-5 h-5 group-hover:shake" />
                         )}
-                        <span>{loading ? "Processing Purge..." : "Purge Annual Records"}</span>
+                        <span>{loading ? "Processing Purge..." : "Purge Semester Records"}</span>
                     </button>
 
                     {msg && (
@@ -113,4 +155,4 @@ const AdminYearDelete = () => {
     );
 };
 
-export default AdminYearDelete;
+export default DataDeletion;
