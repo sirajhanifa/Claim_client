@@ -16,7 +16,6 @@ const Dashboard = () => {
     const { data: claimIE } = useFetch(`${apiUrl}/api/internalexternalclaims`);
     const { data: claimTypeAmounts } = useFetch(`${apiUrl}/api/claimtypeamounts`);
 
-    // Group data for bar chart (unchanged)
     const groupedBarChartData = (claimTypeAmounts || []).reduce((acc, item) => {
         const typeName = (item.name || '').trim().toUpperCase();
         if (typeName === 'QPS') {

@@ -90,7 +90,7 @@ const ClaimManage = () => {
     return (
         <div className="min-h-screen space-y-6">
             {/* Header */}
-            <header className="flex flex-col lg:flex-row justify-between items-center gap-6 mb-10">
+            <header className="flex flex-col lg:flex-row justify-between items-center gap-6 mb-8">
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm uppercase tracking-wider">
                         <div className="h-1 w-8 bg-blue-600 rounded-full" />
@@ -180,7 +180,7 @@ const ClaimManage = () => {
                                                 </div>
                                             ))
                                         ) : (
-                                            <div className="text-center py-3 bg-amber-50 rounded-xl border border-amber-100 text-amber-600 text-xs font-bold">
+                                            <div className="text-center mt-6 py-3 bg-amber-50 rounded-xl border border-amber-100 text-amber-600 text-xs font-bold">
                                                 NO PRICING SET
                                             </div>
                                         )}
