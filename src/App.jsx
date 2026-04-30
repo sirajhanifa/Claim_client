@@ -14,6 +14,7 @@ import Logout from './components/Logout';
 import PaymentStatus from './pages/PaymentStatus';
 import DataDeletion from './pages/DataDeletion';
 import Guidelines from './pages/Guidelines';
+import AcademicManage from './pages/AcademicManage';
 
 function App() {
 
@@ -37,6 +38,7 @@ function App() {
                     <Route path="claimreport" element={<ClaimReport />} />
                     <Route path="userControl" element={<UserControl />} />
                     <Route path="paymentprocessing" element={<PaymentProcess />} />
+                    <Route path="academicManage" element={<AcademicManage />} />
                 </Route>
             </Routes>
         </BrowserRouter>
