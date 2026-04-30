@@ -8,11 +8,11 @@ import ClaimEntry from './pages/ClaimEntry';
 import ClaimManage from './pages/ClaimManage';
 import ClaimReport from './pages/ClaimReport';
 import ProtectedRoute from './components/ProtectedRoute';
-import AddUser from './pages/AddUser';
+import UserControl from './pages/UserControl';
 import PaymentProcess from './pages/PaymentProcess';
 import Logout from './components/Logout';
 import PaymentStatus from './pages/PaymentStatus';
-import AdminYearDelete from './pages/AdminYearDelete';
+import DataDeletion from './pages/DataDeletion';
 import Guidelines from './pages/Guidelines';
 
 function App() {
@@ -27,7 +27,7 @@ function App() {
                         <Layout />
                     </ProtectedRoute>
                 }>
-                    <Route path="settings/deleteclaim" element={<AdminYearDelete />} />
+                    <Route path="dataDeletion" element={<DataDeletion />} />
                     <Route path="dashboard" element={<Dashboard />} />
                     <Route path="staffmanage" element={<StaffManage />} />
                     <Route path="paymentstatus" element={<PaymentStatus />} />
@@ -35,7 +35,7 @@ function App() {
                     <Route path="claimentry" element={<ClaimEntry />} />
                     <Route path="claimmanage" element={<ClaimManage />} />
                     <Route path="claimreport" element={<ClaimReport />} />
-                    <Route path="settings/adduser" element={<AddUser />} />
+                    <Route path="userControl" element={<UserControl />} />
                     <Route path="paymentprocessing" element={<PaymentProcess />} />
                 </Route>
             </Routes>

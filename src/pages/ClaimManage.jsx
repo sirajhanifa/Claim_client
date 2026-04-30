@@ -88,9 +88,9 @@ const ClaimManage = () => {
     };
 
     return (
-        <div className="bg-slate-50 min-h-screen space-y-6">
+        <div className="min-h-screen space-y-6">
             {/* Header */}
-            <header className="flex flex-col lg:flex-row justify-between items-center gap-6">
+            <header className="flex flex-col lg:flex-row justify-between items-center gap-6 mb-10">
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm uppercase tracking-wider">
                         <div className="h-1 w-8 bg-blue-600 rounded-full" />
@@ -119,7 +119,7 @@ const ClaimManage = () => {
             </header>
 
             {/* Main Content */}
-            <div className="max-w-7xl mx-auto">
+            <div className="">
 
                 {loading && (
                     <div className="flex items-center gap-2 text-sm font-bold text-blue-600 animate-pulse mb-4 bg-blue-50 w-fit px-4 py-2 rounded-full border border-blue-100">
@@ -129,7 +129,7 @@ const ClaimManage = () => {
                 )}
 
                 {/* Optimized Grid - 3 Columns for better readability */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
                     {data && data.length > 0 ? (
                         data.map((claim, index) => (
                             <div

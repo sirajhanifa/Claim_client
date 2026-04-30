@@ -7,8 +7,9 @@ import {
     FaFileInvoiceDollar,
     FaChartBar,
     FaUserCircle,
-    FaShieldAlt,
-    FaSignOutAlt
+    FaSignOutAlt,
+    FaUserCog,
+    FaTrashAlt
 } from 'react-icons/fa';
 import { FiChevronDown } from 'react-icons/fi';
 
@@ -25,14 +26,8 @@ const Layout = () => {
         { name: 'Payment Status', path: `/layout/${username}/paymentstatus`, icon: <FaFileInvoiceDollar /> },
         { name: 'Staff Manage', path: `/layout/${username}/staffmanage`, icon: <FaUsers /> },
         { name: 'Claim Manage', path: `/layout/${username}/claimmanage`, icon: <FaFileInvoiceDollar /> },
-        {
-            name: 'Settings',
-            icon: <FaShieldAlt />,
-            subMenu: [
-                { name: 'Add User', path: `/layout/${username}/settings/adduser` },
-                { name: 'Delete Claim', path: `/layout/${username}/settings/deleteclaim` }
-            ]
-        },
+        { name: 'User Control', path: `/layout/${username}/userControl`, icon: <FaUserCog /> },
+        { name: 'Data Deletion', path: `/layout/${username}/dataDeletion`, icon: <FaTrashAlt /> },
         {
             name: 'Guidelines',
             path: `/layout/${username}/guidelines`,

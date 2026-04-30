@@ -74,10 +74,14 @@ const ClaimEntry = () => {
         central_travel_allowance: 0,
         central_tax_applicable: '',
         central_dearness_allowance: 200,
+        central_total_value: '',
+        central_calculated_tds: '',
         ability_total_no_students: '',
         ability_no_of_days_halted: 1,
         ability_tax_type: '',
         ability_dearness_allowance: 200,
+        ability_total_value: '',
+        ability_calculated_tds: '',
         practical_total_value: '',
         practical_calculated_tds: '',
     });
@@ -182,9 +186,15 @@ const ClaimEntry = () => {
                     const { baseAmount, taxPercent } = response.data;
                     const daAmount = Number(form.central_days_halted || 0) * Number(form.central_dearness_allowance || 0);
                     const subTotal = baseAmount + daAmount;
-                    const taxAmount = subTotal * (taxPercent || 0);
-                    const finalAmount = subTotal - taxAmount;
-                    setForm(prev => ({ ...prev, amount: finalAmount.toString() }));
+                    const taxRate = (taxPercent || 0) / 100;
+                    const taxAmount = subTotal * taxRate;
+                    const finalAmount = Math.max(subTotal - taxAmount, 0);
+                    setForm(prev => ({
+                        ...prev,
+                        amount: finalAmount.toString(),
+                        central_total_value: subTotal.toString(),
+                        central_calculated_tds: taxAmount.toString()
+                    }));
                 } catch (error) {
                     console.error("Error calculating Central Valuation amount:", error.message);
                 }
@@ -215,8 +225,8 @@ const ClaimEntry = () => {
                     const taxRate = (taxPercent || 0) / 100;
                     const taxAmount = subTotal * taxRate;
                     const finalAmount = Math.max(subTotal - taxAmount, 0);
-                    setForm(prev => ({ 
-                        ...prev, 
+                    setForm(prev => ({
+                        ...prev,
                         amount: finalAmount.toString(),
                         practical_total_value: subTotal.toString(),
                         practical_calculated_tds: taxAmount.toString()
@@ -246,8 +256,13 @@ const ClaimEntry = () => {
                     const subTotal = Number(baseAmount) + daAmount;
                     const taxRate = (taxPercent || 0) / 100;
                     const taxAmount = subTotal * taxRate;
-                    const finalAmount = subTotal - taxAmount;
-                    setForm(prev => ({ ...prev, amount: finalAmount.toString() }));
+                    const finalAmount = Math.max(subTotal - taxAmount, 0);
+                    setForm(prev => ({
+                        ...prev,
+                        amount: finalAmount.toString(),
+                        ability_total_value: subTotal.toString(),
+                        ability_calculated_tds: taxAmount.toString()
+                    }));
                 } catch (error) {
                     console.error("Error calculating Ability Enhancement amount:", error.message);
                 }
@@ -281,6 +296,7 @@ const ClaimEntry = () => {
         form.cia_role_type,
         form.dearness_allowance,
         form.ability_dearness_allowance,
+        form.central_dearness_allowance,
     ]);
 
     useEffect(() => {
@@ -330,7 +346,17 @@ const ClaimEntry = () => {
         if (isSubmitting) return;
         setIsSubmitting(true);
         try {
-            await postData(`${apiUrl}/api/postClaim`, form);
+            let tds_amount = -1;
+            if (form.claim_type_name === "CENTRAL VALUATION") {
+                tds_amount = form.central_calculated_tds !== '' && form.central_calculated_tds !== undefined ? Number(form.central_calculated_tds) : 0;
+            } else if (form.claim_type_name === "PRACTICAL EXAM CLAIM") {
+                tds_amount = form.practical_calculated_tds !== '' && form.practical_calculated_tds !== undefined ? Number(form.practical_calculated_tds) : 0;
+            } else if (form.claim_type_name === "ABILITY ENHANCEMENT CLAIM") {
+                tds_amount = form.ability_calculated_tds !== '' && form.ability_calculated_tds !== undefined ? Number(form.ability_calculated_tds) : 0;
+            }
+
+            const payload = { ...form, tds_amount };
+            await postData(`${apiUrl}/api/postClaim`, payload);
             alert("Claim submitted successfully");
             setForm({
                 claim_type_name: form.claim_type_name,
@@ -374,10 +400,14 @@ const ClaimEntry = () => {
                 central_days_halted: '',
                 central_travel_allowance: '',
                 central_tax_applicable: '',
+                central_total_value: '',
+                central_calculated_tds: '',
                 ability_total_no_students: '',
                 ability_no_of_days_halted: '',
                 ability_tax_type: '',
                 ability_dearness_allowance: 200,
+                ability_total_value: '',
+                ability_calculated_tds: '',
                 skilled_no_of_students: '',
                 skilled_days_halted: '',
                 skilled_tax_type: '',
@@ -512,19 +542,6 @@ const ClaimEntry = () => {
                                     </ul>
                                 )}
                             </div>
-                            <button
-                                type="button"
-                                tabIndex={form.claim_type_name ? 3 : -1}
-                                onClick={() => handleFetchStaff()}
-                                disabled={!form.claim_type_name}
-                                className={`px-6 py-2.5 rounded-lg font-bold transition-all active:scale-95
-                                    ${form.claim_type_name
-                                        ? "bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-100"
-                                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                    }`}
-                            >
-                                Get
-                            </button>
                         </div>
                     </div>
 
@@ -540,7 +557,7 @@ const ClaimEntry = () => {
                             {form.claim_type_name === "PRACTICAL EXAM CLAIM" && <PracticalFields form={form} setForm={setForm} />}
                             {form.claim_type_name === "ABILITY ENHANCEMENT CLAIM" && <AbilityEnhancementClaim form={form} setForm={setForm} />}
                             <div className="flex flex-col space-y-3">
-                                <label className="text-sm font-bold text-slate-700">Amount</label>
+                                <label className="text-sm font-bold text-slate-700">Total Amount</label>
                                 <div className="relative">
                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
                                     <input
@@ -611,7 +628,7 @@ const ClaimEntry = () => {
                             onChange={(e) => setForm({ ...form, remarks: e.target.value })}
                             rows="2"
                             placeholder="Optional notes..."
-                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 transition-all outline-none font-medium"
+                            className="w-full h-28 px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 transition-all outline-none font-medium"
                         />
                     </div>
 
