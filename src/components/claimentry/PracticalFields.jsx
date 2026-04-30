@@ -116,6 +116,44 @@ const PracticalFields = ({ form, setForm }) => {
                     <option value="SF">NO TDS</option>
                 </select>
             </div>
+
+            {form.tax_type === "Aided" && (
+                <>
+                    <div className="flex flex-col space-y-3">
+                        <label className="text-sm font-bold text-slate-700 ml-1">Total Value</label>
+                        <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                            <input
+                                type="text"
+                                value={form.practical_total_value || ""}
+                                readOnly
+                                className="w-full pl-8 pr-4 py-2.5 bg-gray-100 border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-bold text-slate-900 cursor-not-allowed"
+                                placeholder="0.00"
+                            />
+                        </div>
+                    </div>
+                    <div className="flex flex-col space-y-3">
+                        <label className="text-sm font-bold text-slate-700 ml-1">Calculated TDS</label>
+                        <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                            <input
+                                type="number"
+                                value={form.practical_calculated_tds !== undefined ? form.practical_calculated_tds : ""}
+                                onChange={(e) => {
+                                    const newTds = e.target.value;
+                                    setForm(prev => ({
+                                        ...prev,
+                                        practical_calculated_tds: newTds,
+                                        amount: Math.max(Number(prev.practical_total_value || 0) - Number(newTds || 0), 0).toString()
+                                    }));
+                                }}
+                                className="w-full pl-8 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-bold text-slate-900"
+                                placeholder="0.00"
+                            />
+                        </div>
+                    </div>
+                </>
+            )}
         </>
     );
 };

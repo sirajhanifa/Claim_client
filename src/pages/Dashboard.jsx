@@ -51,7 +51,6 @@ const Dashboard = () => {
         { name: 'Others', amount: groupedBarChartData.Others }
     ];
 
-    // Prepare data for the new pie chart (claim type amounts)
     const pieChartData = barChartData
         .filter(item => item.amount > 0)
         .map(item => ({ name: item.name, value: item.amount }));
@@ -59,8 +58,8 @@ const Dashboard = () => {
     const pieColors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4'];
 
     return (
-        <div className="min-h-screen bg-[#f8fafc]">
-            <header className="max-w-7xl mx-auto mb-10">
+        <div className="">
+            <header className="mx-auto mb-10">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-2 mb-2">
@@ -95,10 +94,10 @@ const Dashboard = () => {
                         <ClaimPieChart
                             title="Distribution by Staff"
                             data={[
-                                { name: "Internal", value: claimIE?.internal || 0 },
-                                { name: "External", value: claimIE?.external || 0 }
+                                { name: "Internal Staff", value: staffCounts?.internal || 0 },
+                                { name: "External Staff", value: staffCounts?.external || 0 }
                             ]}
-                            colors={['#10b981', '#ef4444']}
+                            colors={['#f59e0b', '#8b5cf6']}
                         />
                     </div>
                     <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
@@ -110,12 +109,12 @@ const Dashboard = () => {
                     </div>
                     <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
                         <ClaimPieChart
-                            title="Distribution by Claim"
+                            title="Distribution by Claims"
                             data={[
-                                { name: "Internal Staff", value: staffCounts?.internal || 0 },
-                                { name: "External Staff", value: staffCounts?.external || 0 }
+                                { name: "Internal", value: claimIE?.internal || 0 },
+                                { name: "External", value: claimIE?.external || 0 }
                             ]}
-                            colors={['#f59e0b', '#8b5cf6']}
+                            colors={['#10b981', '#ef4444']}
                         />
                     </div>
                 </section>

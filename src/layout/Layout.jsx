@@ -135,10 +135,6 @@ const Layout = () => {
                             </Link>
                         );
                     })}
-                </nav>
-
-                {/* Bottom Actions Area (Logout) */}
-                <div className="p-4 border-t border-slate-100">
                     <Link
                         to="/logout"
                         className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-all duration-200 font-semibold text-sm"
@@ -146,7 +142,7 @@ const Layout = () => {
                         <FaSignOutAlt className="text-lg" />
                         <span>Logout</span>
                     </Link>
-                </div>
+                </nav>
             </aside>
 
             {/* Main Content Area */}

@@ -78,6 +78,8 @@ const ClaimEntry = () => {
         ability_no_of_days_halted: 1,
         ability_tax_type: '',
         ability_dearness_allowance: 200,
+        practical_total_value: '',
+        practical_calculated_tds: '',
     });
 
     const isStaffFetched = Boolean(
@@ -213,7 +215,12 @@ const ClaimEntry = () => {
                     const taxRate = (taxPercent || 0) / 100;
                     const taxAmount = subTotal * taxRate;
                     const finalAmount = Math.max(subTotal - taxAmount, 0);
-                    setForm(prev => ({ ...prev, amount: finalAmount.toString() }));
+                    setForm(prev => ({ 
+                        ...prev, 
+                        amount: finalAmount.toString(),
+                        practical_total_value: subTotal.toString(),
+                        practical_calculated_tds: taxAmount.toString()
+                    }));
                 } catch (error) {
                     console.error("Error calculating Practical Exam amount:", error.message);
                 }
@@ -374,6 +381,8 @@ const ClaimEntry = () => {
                 skilled_no_of_students: '',
                 skilled_days_halted: '',
                 skilled_tax_type: '',
+                practical_total_value: '',
+                practical_calculated_tds: '',
             });
             setPhoneNumber('');
             setIsSubmitting(false);
