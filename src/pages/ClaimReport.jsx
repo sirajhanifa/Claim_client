@@ -12,6 +12,7 @@ import logo2 from '../assets/logo.jpeg'
 const ClaimReport = () => {
 
     const [filter, setFilter] = useState('all');
+    const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
     const [claimType, setClaimType] = useState('all');
     const [entryDate, setEntryDate] = useState('');
     const [search, setSearch] = useState("");
@@ -76,6 +77,10 @@ const ClaimReport = () => {
             default:
                 break;
         }
+
+        // 🔹 Payment Status Filter
+        if (paymentStatusFilter === 'credited' && claim.status !== 'Credited') return false;
+        if (paymentStatusFilter === 'pending' && claim.status === 'Credited') return false;
 
         // 🔹 Claim Type
         if (claimType !== "all" && claim.claim_type_name !== claimType) return false;
@@ -493,7 +498,7 @@ const ClaimReport = () => {
 
                     {/* Custom Styled Radio Group */}
                     <div className="flex bg-slate-100 p-1.5 rounded-2xl w-full md:w-fit">
-                        {['all', 'unsubmitted', 'submitted', 'credited'].map((type) => (
+                        {['all', 'unsubmitted', 'submitted'].map((type) => (
                             <label key={type} className="relative flex-1 md:flex-none cursor-pointer">
                                 <input
                                     type="radio"
@@ -505,6 +510,25 @@ const ClaimReport = () => {
                                 />
                                 <div className="px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all text-center">
                                     {type}
+                                </div>
+                            </label>
+                        ))}
+                    </div>
+
+                    {/* Payment Status Radio Group */}
+                    <div className="flex bg-slate-100 p-1.5 rounded-2xl w-full md:w-fit">
+                        {['all', 'pending', 'credited'].map((type) => (
+                            <label key={type} className="relative flex-1 md:flex-none cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="paymentStatusFilter"
+                                    value={type}
+                                    checked={paymentStatusFilter === type}
+                                    onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                                    className="sr-only peer"
+                                />
+                                <div className="px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all text-center">
+                                    {type === 'all' ? 'All Payments' : type}
                                 </div>
                             </label>
                         ))}
@@ -533,8 +557,13 @@ const ClaimReport = () => {
                     <h2 className="text-sm font-bold text-slate-500 uppercase tracking-widest">
                         Claims Records
                     </h2>
-                    <div className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-bold border border-blue-100">
-                        No. of Claims : {displayedClaims.length}
+                    <div className="flex items-center gap-3">
+                        <div className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-bold border border-blue-100">
+                            No. of Claims : {displayedClaims.length}
+                        </div>
+                        <div className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-bold border border-green-100">
+                            Total Amount : ₹{displayedClaims.reduce((sum, claim) => sum + (Number(claim.amount) || 0), 0).toLocaleString('en-IN')}
+                        </div>
                     </div>
                 </div>
 
