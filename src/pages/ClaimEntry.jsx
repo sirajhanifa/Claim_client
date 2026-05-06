@@ -542,6 +542,19 @@ const ClaimEntry = () => {
                                     </ul>
                                 )}
                             </div>
+                            <button
+                                type="button"
+                                tabIndex={form.claim_type_name ? 3 : -1}
+                                onClick={() => handleFetchStaff()}
+                                disabled={!form.claim_type_name}
+                                className={`px-6 py-2.5 rounded-lg font-bold transition-all active:scale-95
+                                    ${form.claim_type_name
+                                        ? "bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-100"
+                                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                    }`}
+                            >
+                                Get
+                            </button>
                         </div>
                     </div>
 
