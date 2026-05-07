@@ -2,12 +2,12 @@ import React, { useState, useMemo } from 'react';
 import useFetch from '../hooks/useFetch';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Trash2, Search, Phone, Download, FileText, Filter, ChevronDown, Layers, Calendar, Landmark } from "lucide-react";
+import { Trash2, Search, Phone, Download, FileText, Filter, ChevronDown, Layers, Calendar, Landmark, X } from "lucide-react";
 import axios from 'axios';
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import logo1 from '../assets/75.jpeg';
-import logo2 from '../assets/logo.jpeg'
+import logo2 from '../assets/logo.jpeg';
 
 const ClaimReport = () => {
 
@@ -21,6 +21,8 @@ const ClaimReport = () => {
     const apiUrl = import.meta.env.VITE_API_URL;
     const { data: claimData, refetch } = useFetch(`${apiUrl}/api/getclaimEntry`);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showBankTypeModal, setShowBankTypeModal] = useState(false);
+
     const claimTypes = [...new Set(claimData?.map((claim) => claim.claim_type_name))];
 
     const handleDownloadExcel = () => {
@@ -166,7 +168,6 @@ const ClaimReport = () => {
         return filteredClaims;
     }, [filter, filteredClaims]);
 
-
     // Handler for download filtered claims when filter === 'all'
     const handleDownloadClaimTypePDF = () => {
         if (displayedClaims.length === 0) {
@@ -177,7 +178,6 @@ const ClaimReport = () => {
         const submissionDate = new Date().toLocaleDateString('en-GB');
         createPDF(prId, submissionDate, displayedClaims);
     };
-
 
     // PDF creator
     const createPDF = (prId, submittedDate, claims) => {
@@ -251,10 +251,8 @@ const ClaimReport = () => {
         doc.save(`ClaimEntryReport_${prId}.pdf`);
     };
 
-    const handleSubmitClaims = async () => {
-        if (
-            !confirm(`Submit ${categoryFilter} ${claimType} claims?`)
-        ) return;
+    // Actual submission logic (extracted)
+    const proceedWithSubmission = async () => {
         setIsSubmitting(true);
         try {
             if (displayedClaims.length === 0) {
@@ -285,6 +283,17 @@ const ClaimReport = () => {
             alert('Failed to submit claims.');
         }
         setIsSubmitting(false);
+        setShowBankTypeModal(false);
+    };
+
+    // Submit handler with modal for "All Bank Types"
+    const handleSubmitClaims = () => {
+        if (ifscFilter === 'all') {
+            setShowBankTypeModal(true);
+            return;
+        }
+        if (!confirm(`Submit ${categoryFilter} ${claimType} claims?`)) return;
+        proceedWithSubmission();
     };
 
     const handleDelete = async (id) => {
@@ -386,6 +395,7 @@ const ClaimReport = () => {
                         </div>
                     </div>
 
+                    {/* Bank Type Filter */}
                     <div className="space-y-1.5">
                         <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                             <Landmark className="w-3 h-3" />
@@ -641,12 +651,11 @@ const ClaimReport = () => {
                 </div>
             </div>
 
-            {/* Buttons */}
+            {/* Submit Button (only for unsubmitted filter) */}
             {filter === 'unsubmitted' && displayedClaims.length > 0 && (
                 <div className="mt-5 text-center flex justify-end gap-4">
-                    {/* Submit claims */}
                     <button
-                        className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
+                        className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={handleSubmitClaims}
                         disabled={isSubmitting}
                     >
@@ -669,8 +678,50 @@ const ClaimReport = () => {
                     </button>
                 </div>
             )}
+
+            {/* Custom Modal for "All Bank Types" Warning */}
+            {showBankTypeModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative animate-in fade-in zoom-in duration-200">
+                        <button
+                            onClick={() => setShowBankTypeModal(false)}
+                            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+
+                        <div className="text-center mb-4">
+                            <div className="mx-auto w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mb-3">
+                                <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-800">All Bank Types Selected</h3>
+                            <p className="text-slate-500 mt-2 text-sm">
+                                You are about to submit claims from <strong>all bank types</strong> (IOB JMC, IOB Other, Other Banks).<br />
+                                This may include a large number of claims. Are you sure you want to continue?
+                            </p>
+                        </div>
+
+                        <div className="flex gap-3 mt-6">
+                            <button
+                                onClick={() => setShowBankTypeModal(false)}
+                                className="flex-1 px-4 py-2 border border-slate-200 rounded-xl text-slate-700 font-medium hover:bg-slate-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={proceedWithSubmission}
+                                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors shadow-sm"
+                            >
+                                Yes, Proceed
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
-export default ClaimReport
+export default ClaimReport;
