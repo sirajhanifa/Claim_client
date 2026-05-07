@@ -22,7 +22,6 @@ const ClaimReport = () => {
     const { data: claimData, refetch } = useFetch(`${apiUrl}/api/getclaimEntry`);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showBankTypeModal, setShowBankTypeModal] = useState(false);
-
     const claimTypes = [...new Set(claimData?.map((claim) => claim.claim_type_name))];
 
     const handleDownloadExcel = () => {
