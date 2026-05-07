@@ -19,10 +19,9 @@ const ClaimReport = () => {
     const [categoryFilter, setCategoryFilter] = useState("all");
     const [ifscFilter, setIfscFilter] = useState("all");
     const apiUrl = import.meta.env.VITE_API_URL;
-    const { data: claimData, loading, error, refetch } = useFetch(`${apiUrl}/api/getclaimEntry`);
+    const { data: claimData, refetch } = useFetch(`${apiUrl}/api/getclaimEntry`);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const claimTypes = [...new Set(claimData?.map((claim) => claim.claim_type_name))];
-    const ifscTypes = [...new Set(claimData?.map((claim) => claim.ifsc_code))];
 
     const handleDownloadExcel = () => {
 
@@ -138,8 +137,6 @@ const ClaimReport = () => {
         return true;
     }) || [];
 
-    // Merge duplicates when viewing unsubmitted claims.
-    // Duplicates are detected by (claim_type_name, phone_number, staff_name).
     const mergeDuplicates = (claims = []) => {
         const map = new Map();
         for (const c of claims) {
@@ -149,7 +146,6 @@ const ClaimReport = () => {
             const creditedDate = c.credited_date ? new Date(c.credited_date) : null;
 
             if (!map.has(key)) {
-                // clone object so we don't mutate original
                 map.set(key, { ...c, _mergedCount: 1 });
             } else {
                 const existing = map.get(key);
@@ -158,7 +154,6 @@ const ClaimReport = () => {
                 if (entryDate && (!existing.entry_date || new Date(existing.entry_date) < entryDate)) existing.entry_date = entryDate.toISOString();
                 if (submissionDate && (!existing.submission_date || new Date(existing.submission_date) < submissionDate)) existing.submission_date = submissionDate.toISOString();
                 if (creditedDate && (!existing.credited_date || new Date(existing.credited_date) < creditedDate)) existing.credited_date = creditedDate.toISOString();
-                // prefer most up-to-date status
                 if (c.status && c.status !== existing.status) existing.status = c.status;
             }
         }
@@ -179,7 +174,7 @@ const ClaimReport = () => {
             return;
         }
         const prId = `PR-${new Date().getFullYear()}-TEMP`;
-        const submissionDate = new Date().toLocaleDateString('en-GB'); // ✅ always include system date
+        const submissionDate = new Date().toLocaleDateString('en-GB');
         createPDF(prId, submissionDate, displayedClaims);
     };
 
@@ -197,10 +192,8 @@ const ClaimReport = () => {
         doc.setFontSize(18);
         doc.setFont("helvetica", "bold");
         doc.text("Jamal Mohamed College (Autonomous)", pageWidth / 2, 20, { align: "center" });
-
         doc.setFontSize(9);
         doc.text("Accredited with A++ Grade by NAAC (4th Cycle) with CGPA 3.69 out of 4.0.", pageWidth / 2, 27, { align: "center" });
-
         doc.setFontSize(9);
         doc.text("Tiruchirappalli – 620 020", pageWidth / 2, 33, { align: "center" });
 
@@ -229,12 +222,8 @@ const ClaimReport = () => {
             claim.department,
             claim.claim_type_name,
             claim.amount,
-            // claim.submission_date
-            //   ? new Date(claim.submission_date).toLocaleDateString('en-GB')
-            //   : submittedDate
         ]);
 
-        // AutoTable
         autoTable(doc, {
             startY: 60,
             head: [tableColumn],
@@ -243,7 +232,7 @@ const ClaimReport = () => {
             headStyles: { fillColor: [0, 51, 102], textColor: "#fff", fontStyle: "bold" },
             columnStyles: {
                 0: { cellWidth: 12 },
-                1: { cellWidth: 22 }, // Category
+                1: { cellWidth: 22 },
                 2: { cellWidth: 30 },
                 3: { cellWidth: 35 },
                 4: { cellWidth: 25 },
@@ -252,22 +241,16 @@ const ClaimReport = () => {
             }
         });
 
-        // **Signature at bottom-left**
         const pageHeight = doc.internal.pageSize.getHeight();
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.text("Controller of Examinations", 15, pageHeight - 20);
-
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.text("Principal", 180, pageHeight - 20);
-
         doc.save(`ClaimEntryReport_${prId}.pdf`);
     };
 
-
-
-    // Submit button handler (update only, no PDF)
     const handleSubmitClaims = async () => {
         if (
             !confirm(`Submit ${categoryFilter} ${claimType} claims?`)
@@ -292,73 +275,20 @@ const ClaimReport = () => {
             if (submitRes.ok) {
                 const result = await submitRes.json();
                 alert(result.message || 'Claims submitted successfully');
-                if (refetch) await refetch(); // refresh table
+                if (refetch) await refetch();
             } else {
                 const result = await submitRes.json();
                 alert(result.message || 'Failed to submit claims.');
             }
         } catch (err) {
+            console.error('Error submitting claims : ', err)
             alert('Failed to submit claims.');
         }
         setIsSubmitting(false);
-    };
-
-    const handleSubmitAndDownloadPDF = async () => {
-        if (displayedClaims.length === 0) {
-            alert('No unsubmitted claims to submit.');
-            return;
-        }
-        setIsSubmitting(true);
-        try {
-            const submitRes = await fetch(`${apiUrl}/api/submitClaims`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ claimType })
-            });
-
-            const result = await submitRes.json();
-
-            if (submitRes.ok) {
-                const prId = result.prId;
-
-                const getDateOnlyString = (dateStr) => {
-                    return new Date(dateStr).toLocaleDateString('en-GB');
-                };
-
-                const actualSubmittedDate = getDateOnlyString(result.submission_date); // ✅ FIXED
-
-                if (refetch) await refetch();
-                const updatedClaims = claimData.filter(c =>
-                    (claimType === 'all' || c.claim_type_name === claimType)
-                );
-                const updatedClaimsMerged = filter === 'unsubmitted' ? mergeDuplicates(updatedClaims) : updatedClaims;
-                createPDF(prId, actualSubmittedDate, updatedClaimsMerged);
-            } else {
-                alert(result.message);
-            }
-
-        } catch (err) {
-            alert('Failed to submit claims.');
-        }
-        setIsSubmitting(false);
-    };
-
-    // Downloads PDF only for currently shown submitted claims (filtered by claimType)
-    const handleDownloadExistingPDF = () => {
-        if (!existingPrId) {
-            alert('No submitted claims available to download PDF.');
-            return;
-        }
-        const submittedFilteredClaims = (displayedClaims || []).filter((claim) =>
-            claim.payment_report_id === existingPrId &&
-            (claimType === 'all' || claim.claim_type_name === claimType)
-        );
-        createPDF(existingPrId, existingSubmissionDate, submittedFilteredClaims);
     };
 
     const handleDelete = async (id) => {
         if (!confirm("Are you sure you want to delete this claim?")) return;
-
         try {
             await axios.delete(`${apiUrl}/api/delete/${id}`);
             alert("Claim deleted successfully");
@@ -370,7 +300,6 @@ const ClaimReport = () => {
             alert("Error deleting claim");
         }
     };
-
 
     return (
         <div>
