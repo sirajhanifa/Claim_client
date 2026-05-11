@@ -436,16 +436,17 @@ const ClaimEntry = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#f8fafc]">
+        <div className="min-h-screen">
             <div className="mx-auto">
                 <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10">
                     <div className="space-y-3">
                         <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm uppercase tracking-wider">
                             <div className="h-1 w-8 bg-blue-600 rounded-full" />
-                            Claims Management
+                            Claims Workspace
                         </div>
+
                         <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">
-                            Claim <span className="text-slate-400 font-light">Entry</span>
+                            Claim <span className="text-slate-400 font-light">Entries</span>
                         </h1>
                     </div>
                 </header>

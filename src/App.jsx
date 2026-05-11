@@ -32,7 +32,7 @@ function App() {
                     <Route path="dataDeletion" element={<DataDeletion />} />
                     <Route path="dashboard" element={<Dashboard />} />
                     <Route path="staffmanage" element={<StaffManage />} />
-                    <Route path="paymentstatus" element={<PaymentStatus />} />
+                    <Route path="paymentreport" element={<PaymentStatus />} />
                     <Route path="claimsubmission" element={<ClaimSubmission />} />
                     <Route path="guidelines" element={<Guidelines />} />
                     <Route path="claimentry" element={<ClaimEntry />} />

@@ -1,9 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import useFetch from '../hooks/useFetch';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Trash2, Search, Phone, Download, FileText, Filter, ChevronDown, Layers, Calendar, Landmark, X } from "lucide-react";
-import axios from 'axios';
+import { Search, Phone, Download, FileText, Filter, ChevronDown, Layers, Calendar, Landmark, Loader2 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import logo1 from '../assets/75.jpeg';
@@ -11,209 +10,202 @@ import logo2 from '../assets/logo.jpeg';
 
 const ClaimReport = () => {
 
+    // Primary filters
     const [filter, setFilter] = useState('all');
-    const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState('all');
     const [claimType, setClaimType] = useState('all');
     const [entryDate, setEntryDate] = useState('');
     const [search, setSearch] = useState("");
     const [categoryFilter, setCategoryFilter] = useState("all");
     const [ifscFilter, setIfscFilter] = useState("all");
+
     const apiUrl = import.meta.env.VITE_API_URL;
-    const { data: claimData, refetch } = useFetch(`${apiUrl}/api/getclaimEntry`);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showBankTypeModal, setShowBankTypeModal] = useState(false);
-    const claimTypes = [...new Set(claimData?.map((claim) => claim.claim_type_name))];
+    const { data: claimData, loading: fetchLoading, error: fetchError, refetch } = useFetch(`${apiUrl}/claimDatas`);
 
-    const handleDownloadExcel = () => {
+    // Debounced search
+    const [debouncedSearch, setDebouncedSearch] = useState(search);
+    const debounceTimer = useRef(null);
+    useEffect(() => {
+        if (debounceTimer.current) clearTimeout(debounceTimer.current);
+        debounceTimer.current = setTimeout(() => setDebouncedSearch(search), 300);
+        return () => clearTimeout(debounceTimer.current);
+    }, [search]);
 
-        if (displayedClaims.length === 0) {
-            alert("No data available to download");
-            return;
+    // Unique claim types
+    const claimTypes = useMemo(() => {
+        if (!claimData) return [];
+        return [...new Set(claimData.map(claim => claim.claim_type_name))];
+    }, [claimData]);
+
+    // Unique status values from the dataset
+    const uniqueStatuses = useMemo(() => {
+        if (!claimData) return [];
+        return [...new Set(claimData.map(claim => claim.status))].sort();
+    }, [claimData]);
+
+    // Determine which status options to show based on 'filter'
+    const statusOptions = useMemo(() => {
+        if (filter === 'all') {
+            return ['all', ...uniqueStatuses];
+        } else if (filter === 'submitted') {
+            const allowed = ['all', 'Submitted to Principal', 'Credited'];
+            return allowed.filter(opt => opt === 'all' || uniqueStatuses.includes(opt));
+        } else {
+            return [];
         }
+    }, [filter, uniqueStatuses]);
 
-        const excelData = displayedClaims.map((claim, index) => {
-            const baseData = {
-                "S.No": index + 1,
-                "Date": new Date(claim.entry_date).toLocaleDateString("en-GB"),
-                "Name": claim.staff_name,
-                "College": claim.college,
-                "Department": claim.department,
-                "Amount Paid": claim.amount,
-                "IFSC Code": claim.ifsc_code,
-                "Account No": claim.account_no,
-            };
-            if (filter === "all" && filter === "submitted" && filter === "unsubmitted" && filter === "credited") {
-                baseData["Phone No"] = claim.phone_number;
-            }
-            return baseData;
-        });
-
-        const worksheet = XLSX.utils.json_to_sheet(excelData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Claims");
-        const excelBuffer = XLSX.write(workbook, {
-            bookType: "xlsx", type: "array"
-        });
-        const file = new Blob([excelBuffer], {
-            type: "application/octet-stream"
-        });
-        saveAs(file, `Claim_Report_${filter}_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    };
-
-    // Core filtered claims for table
-    const filteredClaims = claimData?.filter((claim) => {
-
-        // 🔹 Status filter
-        switch (filter) {
-            case "submitted":
-                if (!claim.submission_date) return false;
-                break;
-            case "unsubmitted":
-                if (claim.submission_date) return false;
-                break;
-            case "credited":
-                if (!claim.credited_date) return false;
-                break;
-            default:
-                break;
+    // Reset status filter when filter changes 
+    useEffect(() => {
+        if (filter === 'unsubmitted') {
+            setStatusFilter('all');
+        } else if (filter === 'all') {
+            if (!statusOptions.includes(statusFilter)) setStatusFilter('all');
+        } else if (filter === 'submitted') {
+            if (!statusOptions.includes(statusFilter)) setStatusFilter('all');
         }
+    }, [filter, statusOptions, statusFilter]);
 
-        // 🔹 Payment Status Filter
-        if (paymentStatusFilter === 'credited' && claim.status !== 'Credited') return false;
-        if (paymentStatusFilter === 'pending' && claim.status === 'Credited') return false;
+    // Apply all filters (including the dynamic status filter)
+    const filteredClaims = useMemo(() => {
+        if (!claimData) return [];
 
-        // 🔹 Claim Type
-        if (claimType !== "all" && claim.claim_type_name !== claimType) return false;
-
-        // 🔹 INTERNAL / EXTERNAL
-        if (categoryFilter !== "all") {
-
-            // Normal INTERNAL / EXTERNAL
-            if (categoryFilter !== "TDS" && claim.internal_external !== categoryFilter) {
-                return false;
+        return claimData.filter(claim => {
+            // 1. Submission status (filter by radio group)
+            switch (filter) {
+                case "submitted":
+                    if (!claim.submission_date) return false;
+                    break;
+                case "unsubmitted":
+                    if (claim.submission_date) return false;
+                    break;
+                case "credited":
+                    if (!claim.credited_date) return false;
+                    break;
+                default:
+                    break;
             }
 
-            // 🔥 TDS → ONLY AIDED STAFF
-            if (categoryFilter === "TDS") {
-                if (claim.category !== "AIDED") {
-                    return false;
-                }
+            // 2. Dynamic status filter (only when filter !== 'unsubmitted')
+            if (filter !== 'unsubmitted' && statusFilter !== 'all' && claim.status !== statusFilter) return false;
+
+            // 3. Claim type
+            if (claimType !== "all" && claim.claim_type_name !== claimType) return false;
+
+            // 4. Category
+            if (categoryFilter !== "all") {
+                if (categoryFilter !== "TDS" && claim.internal_external !== categoryFilter) return false;
+                if (categoryFilter === "TDS" && claim.category !== "AIDED") return false;
             }
-        }
 
-        /* IFSC Filter Logic */
-        let ifscMatch = true;
+            // 5. IFSC filter
+            let ifscMatch = true;
+            if (ifscFilter === "JMC_IOB") ifscMatch = claim.ifsc_code === "IOBA0000467";
+            else if (ifscFilter === "IOB_OTHERS") ifscMatch = claim.ifsc_code?.startsWith("IOBA") && claim.ifsc_code !== "IOBA0000467";
+            else if (ifscFilter === "OTHER_BANKS") ifscMatch = !claim.ifsc_code?.startsWith("IOBA");
+            if (!ifscMatch) return false;
 
-        if (ifscFilter === "JMC_IOB") {
-            ifscMatch = claim.ifsc_code === "IOBA0000467";
-        }
+            // 6. Entry date
+            if (entryDate && new Date(claim.entry_date).toLocaleDateString("en-CA") !== entryDate) return false;
 
-        if (ifscFilter === "IOB_OTHERS") {
-            ifscMatch =
-                claim.ifsc_code?.startsWith("IOBA") &&
-                claim.ifsc_code !== "IOBA0000467";
-        }
+            // 7. Search
+            if (debouncedSearch) {
+                const searchLower = debouncedSearch.toLowerCase();
+                const nameMatch = claim.staff_name?.toLowerCase().includes(searchLower);
+                const phoneMatch = claim.phone_number?.toString().includes(searchLower);
+                if (!nameMatch && !phoneMatch) return false;
+            }
 
-        if (ifscFilter === "OTHER_BANKS") {
-            ifscMatch = !claim.ifsc_code?.startsWith("IOBA");
-        }
+            return true;
+        });
+    }, [claimData, filter, statusFilter, claimType, categoryFilter, ifscFilter, entryDate, debouncedSearch]);
 
-        if (!ifscMatch) return false;
-        // 🔹 Date filter
-        if (
-            entryDate &&
-            new Date(claim.entry_date).toLocaleDateString("en-CA") !== entryDate
-        )
-            return false;
-
-        // 🔹 Search (Staff Name OR Phone)
-        if (search) {
-            const searchText = search.toLowerCase();
-            const nameMatch = claim.staff_name?.toLowerCase().includes(searchText);
-            const phoneMatch = claim.phone_number?.toString().includes(searchText);
-
-            if (!nameMatch && !phoneMatch) return false;
-        }
-
-        return true;
-    }) || [];
-
-    const mergeDuplicates = (claims = []) => {
+    // Merge duplicates
+    const mergeDuplicates = useCallback((claims) => {
         const map = new Map();
         for (const c of claims) {
             const key = `${(c.claim_type_name || '').trim()}::${(c.phone_number || '').trim()}::${(c.staff_name || '').trim()}`;
-            const entryDate = c.entry_date ? new Date(c.entry_date) : null;
-            const submissionDate = c.submission_date ? new Date(c.submission_date) : null;
-            const creditedDate = c.credited_date ? new Date(c.credited_date) : null;
-
             if (!map.has(key)) {
                 map.set(key, { ...c, _mergedCount: 1 });
             } else {
                 const existing = map.get(key);
                 existing.amount = (Number(existing.amount) || 0) + (Number(c.amount) || 0);
                 existing._mergedCount = (existing._mergedCount || 1) + 1;
-                if (entryDate && (!existing.entry_date || new Date(existing.entry_date) < entryDate)) existing.entry_date = entryDate.toISOString();
-                if (submissionDate && (!existing.submission_date || new Date(existing.submission_date) < submissionDate)) existing.submission_date = submissionDate.toISOString();
-                if (creditedDate && (!existing.credited_date || new Date(existing.credited_date) < creditedDate)) existing.credited_date = creditedDate.toISOString();
+                const entryDateObj = c.entry_date ? new Date(c.entry_date) : null;
+                if (entryDateObj && (!existing.entry_date || new Date(existing.entry_date) < entryDateObj)) {
+                    existing.entry_date = entryDateObj.toISOString();
+                }
+                const submissionDateObj = c.submission_date ? new Date(c.submission_date) : null;
+                if (submissionDateObj && (!existing.submission_date || new Date(existing.submission_date) < submissionDateObj)) {
+                    existing.submission_date = submissionDateObj.toISOString();
+                }
+                const creditedDateObj = c.credited_date ? new Date(c.credited_date) : null;
+                if (creditedDateObj && (!existing.credited_date || new Date(existing.credited_date) < creditedDateObj)) {
+                    existing.credited_date = creditedDateObj.toISOString();
+                }
                 if (c.status && c.status !== existing.status) existing.status = c.status;
             }
         }
-
         return Array.from(map.values());
-    };
+    }, []);
 
     const displayedClaims = useMemo(() => {
         if (filter === 'unsubmitted') return mergeDuplicates(filteredClaims);
         return filteredClaims;
-    }, [filter, filteredClaims]);
+    }, [filter, filteredClaims, mergeDuplicates]);
 
-    // Handler for download filtered claims when filter === 'all'
-    const handleDownloadClaimTypePDF = () => {
+    const totalAmount = useMemo(() => {
+        return displayedClaims.reduce((sum, claim) => sum + (Number(claim.amount) || 0), 0);
+    }, [displayedClaims]);
+
+    // Excel download
+    const handleDownloadExcel = () => {
         if (displayedClaims.length === 0) {
-            alert('No claims found to download.');
+            alert("No data available to download");
             return;
         }
-        const prId = `PR-${new Date().getFullYear()}-TEMP`;
-        const submissionDate = new Date().toLocaleDateString('en-GB');
-        createPDF(prId, submissionDate, displayedClaims);
+        const excelData = displayedClaims.map((claim, index) => ({
+            "S.No": index + 1,
+            "Date": new Date(claim.entry_date).toLocaleDateString("en-GB"),
+            "Name": claim.staff_name,
+            "College": claim.college,
+            "Department": claim.department,
+            "Amount Paid": claim.amount,
+            "IFSC Code": claim.ifsc_code,
+            "Account No": claim.account_no,
+            "Phone No": claim.phone_number,
+        }));
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Claims");
+        const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+        const file = new Blob([excelBuffer], { type: "application/octet-stream" });
+        saveAs(file, `Claim_Report_${filter}_${new Date().toISOString().slice(0, 10)}.xlsx`);
     };
 
-    // PDF creator
+    // PDF generation (unchanged)
     const createPDF = (prId, submittedDate, claims) => {
+
         const doc = new jsPDF("p", "mm", "a4");
         const pageWidth = doc.internal.pageSize.getWidth();
 
-        // Add Logos
         doc.addImage(logo2, "JPEG", 15, 10, 25, 25);
         doc.addImage(logo1, "JPEG", pageWidth - 40, 10, 25, 25);
 
-        // College Name
         doc.setFontSize(18);
         doc.setFont("helvetica", "bold");
         doc.text("Jamal Mohamed College (Autonomous)", pageWidth / 2, 20, { align: "center" });
         doc.setFontSize(9);
         doc.text("Accredited with A++ Grade by NAAC (4th Cycle) with CGPA 3.69 out of 4.0.", pageWidth / 2, 27, { align: "center" });
-        doc.setFontSize(9);
         doc.text("Tiruchirappalli – 620 020", pageWidth / 2, 33, { align: "center" });
 
-        // PR & Submission
         doc.setFontSize(12);
         doc.setFont("helvetica", "normal");
         doc.text(`PR ID: ${prId}`, 15, 50);
         doc.text(`Date: ${submittedDate}`, pageWidth - 15, 50, { align: "right" });
 
-        // Table Columns
-        const tableColumn = [
-            "S.No",
-            "Category",
-            "Entry Date",
-            "Name",
-            "Department",
-            "Claim Type",
-            "Amount",
-        ];
-
-        const tableRows = claims?.map((claim, index) => [
+        const tableColumn = ["S.No", "Category", "Entry Date", "Name", "Department", "Claim Type", "Amount"];
+        const tableRows = claims.map((claim, index) => [
             index + 1,
             claim.internal_external,
             new Date(claim.entry_date).toLocaleDateString('en-GB'),
@@ -244,101 +236,44 @@ const ClaimReport = () => {
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.text("Controller of Examinations", 15, pageHeight - 20);
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
         doc.text("Principal", 180, pageHeight - 20);
         doc.save(`ClaimEntryReport_${prId}.pdf`);
     };
 
-    // Actual submission logic (extracted)
-    const proceedWithSubmission = async () => {
-        setIsSubmitting(true);
-        try {
-            if (displayedClaims.length === 0) {
-                alert('No unsubmitted claims to submit.');
-                setIsSubmitting(false);
-                return;
-            }
-
-            const submitRes = await fetch(`${apiUrl}/api/submitClaims`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    claimType, ifscFilter,
-                    category: categoryFilter
-                })
-            });
-
-            if (submitRes.ok) {
-                const result = await submitRes.json();
-                alert(result.message || 'Claims submitted successfully');
-                if (refetch) await refetch();
-            } else {
-                const result = await submitRes.json();
-                alert(result.message || 'Failed to submit claims.');
-            }
-        } catch (err) {
-            console.error('Error submitting claims : ', err)
-            alert('Failed to submit claims.');
-        }
-        setIsSubmitting(false);
-        setShowBankTypeModal(false);
-    };
-
-    // Submit handler with modal for "All Bank Types"
-    const handleSubmitClaims = () => {
-        if (ifscFilter === 'all') {
-            setShowBankTypeModal(true);
+    const handleDownloadPDF = () => {
+        if (displayedClaims.length === 0) {
+            alert('No claims found to download.');
             return;
         }
-        if (!confirm(`Submit ${categoryFilter} ${claimType} claims?`)) return;
-        proceedWithSubmission();
-    };
-
-    const handleDelete = async (id) => {
-        if (!confirm("Are you sure you want to delete this claim?")) return;
-        try {
-            await axios.delete(`${apiUrl}/api/delete/${id}`);
-            alert("Claim deleted successfully");
-            if (refetch) {
-                refetch();
-            }
-        } catch (error) {
-            console.log(error);
-            alert("Error deleting claim");
-        }
+        const prId = `PR-${new Date().getFullYear()}-TEMP`;
+        const submissionDate = new Date().toLocaleDateString('en-GB');
+        createPDF(prId, submissionDate, displayedClaims);
     };
 
     return (
         <div>
-
-            {/* Header Section */}
+            {/* Header */}
             <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm uppercase tracking-wider">
                         <div className="h-1 w-8 bg-blue-600 rounded-full" />
-                        Finance & Claims
+                        Claims Reports
                     </div>
                     <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">
                         Claim <span className="text-slate-400 font-light">History</span>
                     </h1>
                 </div>
-
                 <div className="flex flex-wrap items-center gap-3">
-                    {(filter === 'all' || (filter === 'unsubmitted' && displayedClaims.length > 0)) && (
-                        <button
-                            onClick={handleDownloadClaimTypePDF}
-                            disabled={isSubmitting}
-                            className="flex items-center gap-2 bg-blue-600 pointer hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-100 active:scale-95 disabled:opacity-50"
-                        >
-                            <FileText className="w-4 h-4" />
-                            Download PDF
-                        </button>
-                    )}
-
+                    <button
+                        onClick={handleDownloadPDF}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-100 active:scale-95"
+                    >
+                        <FileText className="w-4 h-4" />
+                        Download PDF
+                    </button>
                     <button
                         onClick={handleDownloadExcel}
-                        className="flex items-center gap-2 bg-green-700 border border-slate-200 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-800 transition-all shadow-sm active:scale-95"
+                        className="flex items-center gap-2 bg-green-700 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-800 transition-all shadow-sm active:scale-95"
                     >
                         <Download className="w-4 h-4" />
                         Download Excel
@@ -349,73 +284,60 @@ const ClaimReport = () => {
             {/* Primary Filter Bar */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-
-                    {/* Claim Type Filter */}
+                    {/* Claim Type */}
                     <div className="space-y-1.5">
                         <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                             <Filter className="w-3 h-3" />
                             Claim Type
                         </label>
-                        <div className="relative group">
-                            <select
-                                value={claimType}
-                                onChange={(e) => setClaimType(e.target.value)}
-                                className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none transition-all cursor-pointer
-                        		${claimType !== 'all' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
-                            >
-                                <option value="all">All Claim Types</option>
-                                {claimTypes.map((type) => (
-                                    <option key={type} value={type}>{type}</option>
-                                ))}
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 mt-1 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                        </div>
+                        <select
+                            value={claimType}
+                            onChange={(e) => setClaimType(e.target.value)}
+                            className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none cursor-pointer ${claimType !== 'all' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
+                        >
+                            <option value="all">All Claim Types</option>
+                            {claimTypes.map((type) => (
+                                <option key={type} value={type}>{type}</option>
+                            ))}
+                        </select>
                     </div>
 
-                    {/* Category Filter */}
+                    {/* Category */}
                     <div className="space-y-1.5">
                         <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                             <Layers className="w-3 h-3" />
                             Category
                         </label>
-                        <div className="relative group">
-                            <select
-                                value={categoryFilter}
-                                onChange={(e) => setCategoryFilter(e.target.value)}
-                                className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none transition-all cursor-pointer
-                                ${categoryFilter !== 'all' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
-                            >
-                                <option value="all">All Categories</option>
-                                <option value="INTERNAL">INTERNAL</option>
-                                <option value="EXTERNAL">EXTERNAL</option>
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 mt-1 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                        </div>
+                        <select
+                            value={categoryFilter}
+                            onChange={(e) => setCategoryFilter(e.target.value)}
+                            className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none cursor-pointer ${categoryFilter !== 'all' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
+                        >
+                            <option value="all">All Categories</option>
+                            <option value="INTERNAL">INTERNAL</option>
+                            <option value="EXTERNAL">EXTERNAL</option>
+                        </select>
                     </div>
 
-                    {/* Bank Type Filter */}
+                    {/* Bank Type */}
                     <div className="space-y-1.5">
                         <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                             <Landmark className="w-3 h-3" />
                             Bank Type
                         </label>
-                        <div className="relative group">
-                            <select
-                                value={ifscFilter}
-                                onChange={(e) => setIfscFilter(e.target.value)}
-                                className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none transition-all cursor-pointer
-                                ${ifscFilter !== 'all' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
-                            >
-                                <option value="all">All Bank Types</option>
-                                <option value="JMC_IOB">IOB JMC Branch</option>
-                                <option value="IOB_OTHERS">IOB Other Branch</option>
-                                <option value="OTHER_BANKS">Other Banks</option>
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 mt-1 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                        </div>
+                        <select
+                            value={ifscFilter}
+                            onChange={(e) => setIfscFilter(e.target.value)}
+                            className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none cursor-pointer ${ifscFilter !== 'all' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
+                        >
+                            <option value="all">All Bank Types</option>
+                            <option value="JMC_IOB">IOB JMC Branch</option>
+                            <option value="IOB_OTHERS">IOB Other Branch</option>
+                            <option value="OTHER_BANKS">Other Banks</option>
+                        </select>
                     </div>
 
-                    {/* Date Filter */}
+                    {/* Entry Date */}
                     <div className="space-y-1.5">
                         <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                             <Calendar className="w-3 h-3" />
@@ -430,10 +352,9 @@ const ClaimReport = () => {
                     </div>
                 </div>
 
-                {/* Secondary Filters: Radio Group & Bank Filter */}
+                {/* Secondary Filters: Submission Status + Dynamic Status Filter */}
                 <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6">
-
-                    {/* Custom Styled Radio Group */}
+                    {/* Submission Status Radio Group */}
                     <div className="flex bg-slate-100 p-1.5 rounded-2xl w-full md:w-fit">
                         {['all', 'unsubmitted', 'submitted'].map((type) => (
                             <label key={type} className="relative flex-1 md:flex-none cursor-pointer">
@@ -446,40 +367,42 @@ const ClaimReport = () => {
                                     className="sr-only peer"
                                 />
                                 <div className="px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all text-center">
-                                    {type}
+                                    {type === 'all' ? 'All Claims' : type}
                                 </div>
                             </label>
                         ))}
                     </div>
 
-                    {/* Payment Status Radio Group */}
-                    <div className="flex bg-slate-100 p-1.5 rounded-2xl w-full md:w-fit">
-                        {['all', 'pending', 'credited'].map((type) => (
-                            <label key={type} className="relative flex-1 md:flex-none cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="paymentStatusFilter"
-                                    value={type}
-                                    checked={paymentStatusFilter === type}
-                                    onChange={(e) => setPaymentStatusFilter(e.target.value)}
-                                    className="sr-only peer"
-                                />
-                                <div className="px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all text-center">
-                                    {type === 'all' ? 'All Payments' : type}
-                                </div>
-                            </label>
-                        ))}
-                    </div>
+                    {/* Dynamic Status Filter – shown only when filter !== 'unsubmitted' */}
+                    {filter !== 'unsubmitted' && statusOptions.length > 1 && (
+                        <div className="flex bg-slate-100 p-1.5 rounded-2xl w-full md:w-fit">
+                            {statusOptions.map(opt => (
+                                <label key={opt} className="relative flex-1 md:flex-none cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="statusFilter"
+                                        value={opt}
+                                        checked={statusFilter === opt}
+                                        onChange={(e) => setStatusFilter(e.target.value)}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all text-center whitespace-nowrap">
+                                        {opt === 'all' ? 'All Statuses' : opt}
+                                    </div>
+                                </label>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Search Filter */}
+            {/* Search Bar */}
             <div className="flex justify-end gap-4 w-full xl:w-auto">
                 <div className="xl:w-96 border border-slate-300 rounded-[12px] relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                         type="text"
-                        placeholder="Search records....."
+                        placeholder="Search by name or phone..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-none rounded-[12px] text-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white outline-none transition-all placeholder:text-slate-400"
@@ -487,237 +410,145 @@ const ClaimReport = () => {
                 </div>
             </div>
 
-            {/* Table */}
+            {/* Table Section */}
             <div className="mt-8 space-y-4">
-                {/* Table Header Section */}
                 <div className="flex items-center justify-between">
                     <h2 className="text-sm font-bold text-slate-500 uppercase tracking-widest">
                         Claims Records
                     </h2>
-                    <div className="flex items-center gap-3">
-                        <div className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-bold border border-blue-100">
-                            No. of Claims : {displayedClaims.length}
+                    {!fetchLoading && !fetchError && (
+                        <div className="flex items-center gap-3">
+                            <div className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-bold border border-blue-100">
+                                No. of Claims : {displayedClaims.length}
+                            </div>
+                            <div className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-bold border border-green-100">
+                                Total Amount : ₹{totalAmount.toLocaleString('en-IN')}
+                            </div>
                         </div>
-                        <div className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-bold border border-green-100">
-                            Total Amount : ₹{displayedClaims.reduce((sum, claim) => sum + (Number(claim.amount) || 0), 0).toLocaleString('en-IN')}
-                        </div>
-                    </div>
+                    )}
                 </div>
 
-                {/* Table container */}
                 <div className="relative w-full overflow-hidden bg-white border border-slate-200 rounded-2xl shadow-sm">
                     <div className="w-full overflow-x-auto overflow-y-auto max-h-[600px] scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
                         <table className="w-full text-sm text-left border-separate border-spacing-0">
                             <thead className="sticky top-0 z-30">
-                                <tr className='text-center'>
-                                    {[
-                                        "S.No", "Staff Details", "Claim Type", "Contact", "Bank/IFSC",
-                                        "Amount", "Dates", "Status", "Payment ID"
-                                    ].map((h, i) => (
-                                        <th
-                                            key={i}
-                                            className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap"
-                                        >
+                                <tr className="text-center">
+                                    {["S.No", "Staff Details", "Claim Type", "Contact", "Bank/IFSC", "Amount", "Dates", "Status", "Payment ID"].map((h, i) => (
+                                        <th key={i} className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap">
                                             {h}
                                         </th>
                                     ))}
-                                    {filter === "all" && (
-                                        <th className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider">
-                                            Actions
-                                        </th>
-                                    )}
                                 </tr>
                             </thead>
-
                             <tbody className="divide-y divide-slate-100">
-                                {displayedClaims.map((claim, index) => (
-                                    <tr key={claim._id} className="group hover:bg-blue-50/30 transition-all duration-200">
-
-                                        {/* S.No */}
-                                        <td className="px-6 py-4 text-slate-400 font-medium text-center">{index + 1}</td>
-
-                                        {/* Staff Details with Avatar */}
-                                        <td className="px-6 py-4 min-w-[340px]">
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
-                                                    {claim.staff_name?.charAt(0)}
+                                {fetchLoading ? (
+                                    <tr>
+                                        <td colSpan={9} className="text-center py-20">
+                                            <div className="flex flex-col items-center justify-center">
+                                                <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-3" />
+                                                <p className="text-slate-500 text-sm">Loading claims...</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : fetchError ? (
+                                    <tr>
+                                        <td colSpan={9} className="text-center py-16">
+                                            <div className="flex flex-col items-center justify-center">
+                                                <div className="bg-red-50 p-4 rounded-full mb-4">
+                                                    <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
                                                 </div>
-                                                <div>
-                                                    <div className="font-bold text-slate-900 leading-none mb-1">{claim.staff_name}</div>
-                                                    <div className="text-[11px] text-blue-600 font-bold uppercase tracking-tight">
-                                                        {categoryFilter === "TDS" ? "AIDED" : claim.internal_external}
+                                                <p className="text-red-600 font-medium mb-2">Failed to load claims</p>
+                                                <p className="text-slate-400 text-sm mb-4">{fetchError.message || 'Please try again'}</p>
+                                                <button onClick={() => refetch()} className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors">
+                                                    Retry
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : displayedClaims.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={9} className="text-center py-16">
+                                            <div className="flex flex-col items-center justify-center">
+                                                <div className="bg-slate-50 p-4 rounded-full mb-4">
+                                                    <Search className="w-10 h-10 text-slate-200" />
+                                                </div>
+                                                <h3 className="text-slate-800 font-bold">No claims found</h3>
+                                                <p className="text-slate-400 text-sm">There are no records matching your current filters.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    displayedClaims.map((claim, index) => (
+                                        <tr key={claim._id} className="group hover:bg-blue-50/30 transition-all duration-200">
+                                            <td className="px-6 py-4 text-slate-400 font-medium text-center">{index + 1}</td>
+                                            <td className="px-6 py-4 min-w-[340px]">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                                                        {claim.staff_name?.charAt(0)}
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-bold text-slate-900 leading-none mb-1">{claim.staff_name}</div>
+                                                        <div className="text-[11px] text-blue-600 font-bold uppercase tracking-tight">
+                                                            {categoryFilter === "TDS" ? "AIDED" : claim.internal_external}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </td>
-
-                                        {/* Claim Type */}
-                                        <td className="px-6 py-4 min-w-[250px] text-center">
-                                            <span className="text-slate-700 font-semibold">{claim.claim_type_name}</span>
-                                        </td>
-
-                                        {/* Phone */}
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-1.5 text-slate-600">
-                                                <Phone size={14} className="text-slate-400" />
-                                                <span className="font-medium">{claim.phone_number}</span>
-                                            </div>
-                                        </td>
-
-                                        {/* Bank Details */}
-                                        <td className="px-6 py-4">
-                                            <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 w-fit">
-                                                <p className="text-[12px] text-slate-400 uppercase tracking-tighter font-bold">{claim.ifsc_code}</p>
-                                            </div>
-                                        </td>
-
-                                        {/* Amount */}
-                                        <td className="px-6 py-4 text-center">
-                                            <span className="text-md font-bold text-green-700">₹{claim.amount}</span>
-                                        </td>
-
-                                        {/* Dates Grouped */}
-                                        <td className="px-6 py-4 text-center">
-                                            <div className="flex flex-col gap-1 text-[11px] w-32">
-                                                <div className="flex justify-between gap-2">
-                                                    <span className="text-slate-400 uppercase">Entry :</span>
-                                                    <span className="text-slate-700 font-bold">{new Date(claim.entry_date).toLocaleDateString('en-GB')}</span>
-                                                </div>
-                                                <div className="flex justify-between gap-2">
-                                                    <span className="text-slate-400 uppercase">Sub :</span>
-                                                    <span className="text-slate-700 font-bold">{claim.submission_date ? new Date(claim.submission_date).toLocaleDateString('en-GB') : '-'}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-slate-400 uppercase">Credited :</span>
-                                                    <span className={`font-bold ${claim.credited_date ? 'text-green-600' : 'text-slate-400'}`}>
-                                                        {claim.credited_date ? new Date(claim.credited_date).toLocaleDateString('en-GB') : '-'}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </td>
-
-                                        {/* Status Badge */}
-                                        <td className="px-6 py-4 min-w-[240px] text-center">
-                                            <span
-                                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wide border transition-colors
-                    								${claim.status === 'Credited'
-                                                        ? 'bg-green-50 text-green-700 border-green-200'
-                                                        : 'bg-yellow-50 text-yellow-700 border-yellow-200'
-                                                    }`}
-                                            >
-                                                <div className={`w-1.5 h-1.5 rounded-full ${claim.status === 'Credited' ? 'bg-green-500' : 'bg-yellow-500'}`} />
-                                                {claim.status}
-                                            </span>
-                                        </td>
-
-                                        {/* Payment ID */}
-                                        <td className="px-6 py-4 font-mono text-sm text-slate-500 font-bold whitespace-nowrap">
-                                            {claim.payment_report_id || '-'}
-                                        </td>
-
-                                        {/* Actions */}
-                                        {filter === "all" && (
-                                            <td className="px-6 py-4 text-center">
-                                                {(claim._mergedCount && claim._mergedCount > 1) ? (
-                                                    <span className="px-2 py-1 rounded bg-slate-100 text-slate-400 text-[10px] font-bold">MERGED ({claim._mergedCount})</span>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => handleDelete(claim._id)}
-                                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                                                    >
-                                                        <Trash2 size={18} />
-                                                    </button>
-                                                )}
                                             </td>
-                                        )}
-                                    </tr>
-                                ))}
+                                            <td className="px-6 py-4 min-w-[250px] text-center">
+                                                <span className="text-slate-700 font-semibold">{claim.claim_type_name}</span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-1.5 text-slate-600">
+                                                    <Phone size={14} className="text-slate-400" />
+                                                    <span className="font-medium">{claim.phone_number}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 w-fit">
+                                                    <p className="text-[12px] text-slate-400 uppercase tracking-tighter font-bold">{claim.ifsc_code}</p>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <span className="text-md font-bold text-green-700">₹{claim.amount}</span>
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <div className="flex flex-col gap-1 text-[11px] w-32">
+                                                    <div className="flex justify-between gap-2">
+                                                        <span className="text-slate-400 uppercase">Entry :</span>
+                                                        <span className="text-slate-700 font-bold">{new Date(claim.entry_date).toLocaleDateString('en-GB')}</span>
+                                                    </div>
+                                                    <div className="flex justify-between gap-2">
+                                                        <span className="text-slate-400 uppercase">Sub :</span>
+                                                        <span className="text-slate-700 font-bold">{claim.submission_date ? new Date(claim.submission_date).toLocaleDateString('en-GB') : '-'}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-slate-400 uppercase">Credited :</span>
+                                                        <span className={`font-bold ${claim.credited_date ? 'text-green-600' : 'text-slate-400'}`}>
+                                                            {claim.credited_date ? new Date(claim.credited_date).toLocaleDateString('en-GB') : '-'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 min-w-[240px] text-center">
+                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wide border transition-colors
+                                                    ${claim.status === 'Credited' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}>
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${claim.status === 'Credited' ? 'bg-green-500' : 'bg-yellow-500'}`} />
+                                                    {claim.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 font-mono text-sm text-slate-500 font-bold whitespace-nowrap">
+                                                {claim.payment_report_id || '-'}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
-
-                        {/* Empty State */}
-                        {displayedClaims.length === 0 && (
-                            <div className="py-24 flex flex-col items-center justify-center">
-                                <div className="bg-slate-50 p-4 rounded-full mb-4">
-                                    <Search className="w-10 h-10 text-slate-200" />
-                                </div>
-                                <h3 className="text-slate-800 font-bold">No claims found</h3>
-                                <p className="text-slate-400 text-sm">There are no records matching your current filters.</p>
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>
-
-            {/* Submit Button (only for unsubmitted filter) */}
-            {filter === 'unsubmitted' && displayedClaims.length > 0 && (
-                <div className="mt-5 text-center flex justify-end gap-4">
-                    <button
-                        className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                        onClick={handleSubmitClaims}
-                        disabled={isSubmitting}
-                    >
-                        {isSubmitting ? (
-                            <>
-                                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Processing...
-                            </>
-                        ) : (
-                            <>
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                Submit Claims
-                            </>
-                        )}
-                    </button>
-                </div>
-            )}
-
-            {/* Custom Modal for "All Bank Types" Warning */}
-            {showBankTypeModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative animate-in fade-in zoom-in duration-200">
-                        <button
-                            onClick={() => setShowBankTypeModal(false)}
-                            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
-                        >
-                            <X size={20} />
-                        </button>
-
-                        <div className="text-center mb-4">
-                            <div className="mx-auto w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mb-3">
-                                <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                </svg>
-                            </div>
-                            <h3 className="text-xl font-bold text-slate-800">All Bank Types Selected</h3>
-                            <p className="text-slate-500 mt-2 text-sm">
-                                You are about to submit claims from <strong>all bank types</strong> (IOB JMC, IOB Other, Other Banks).<br />
-                                This may include a large number of claims. Are you sure you want to continue?
-                            </p>
-                        </div>
-
-                        <div className="flex gap-3 mt-6">
-                            <button
-                                onClick={() => setShowBankTypeModal(false)}
-                                className="flex-1 px-4 py-2 border border-slate-200 rounded-xl text-slate-700 font-medium hover:bg-slate-50 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={proceedWithSubmission}
-                                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors shadow-sm"
-                            >
-                                Yes, Proceed
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
