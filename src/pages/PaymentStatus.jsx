@@ -17,6 +17,7 @@ const PaymentStatus = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [tableSearchTerm, setTableSearchTerm] = useState("");
+    const [processedCount, setProcessedCount] = useState(0);
 
     const formatDate = (dateString) => {
         if (!dateString) return "";
@@ -43,7 +44,8 @@ const PaymentStatus = () => {
         setError(null);
         try {
             const res = await axios.get(`${API_URL}/api/admin/payment-status/claims/${prId}`);
-            setClaims(res.data || []);
+            setClaims(res.data.claims || []);
+            setProcessedCount(res.data.processedCount || 0);
         } catch (err) {
             setError("Could not retrieve claim details.");
         } finally {
@@ -61,25 +63,7 @@ const PaymentStatus = () => {
         ), [prList, searchTerm]
     );
 
-    const displayedClaims = useMemo(() => {
-        const map = new Map();
-        claims.forEach(c => {
-            const key = `${c.staff_name}-${c.phone_number}-${c.claim_type_name}-${c.payment_report_id}`;
-            if (!map.has(key)) {
-                map.set(key, { ...c, totalAmount: c.amount, count: 1 });
-            } else {
-                const ex = map.get(key);
-                ex.totalAmount += c.amount;
-                ex.count += 1;
-            }
-        });
-        return Array.from(map.values());
-    }, [claims]);
-
-    const totalPrAmount = useMemo(() =>
-        displayedClaims.reduce((sum, c) => sum + c.totalAmount, 0),
-        [displayedClaims]
-    );
+    const displayedClaims = claims;
 
     const filteredDisplayedClaims = useMemo(() =>
         displayedClaims.filter(claim => {
@@ -157,7 +141,9 @@ const PaymentStatus = () => {
                                                 </span>
                                                 <ChevronRight className={`w-4 h-4 transition-transform ${selectedPrId === pr.payment_report_id ? "text-blue-600 translate-x-1" : "text-slate-300"}`} />
                                             </div>
-                                            <p className="text-xs text-slate-400 font-medium">{pr.count} claims in batch</p>
+                                            <p className="text-xs font-medium text-slate-400">
+                                                {pr.count} claims in batch
+                                            </p>
                                         </button>
                                     ))
                                 ) : (
@@ -177,7 +163,12 @@ const PaymentStatus = () => {
                                 {/* Dashboard Stats */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <StatCard label="Batch Total" value={`₹${filteredTotalPrAmount.toLocaleString()}`} icon={<IndianRupee />} theme="indigo" />
-                                    <StatCard label="Processed Claims" value={filteredDisplayedClaims.length} icon={<Layers />} theme="blue" />
+                                    <StatCard
+                                        label="Processed Claims"
+                                        value={processedCount}
+                                        icon={<Layers />}
+                                        theme="blue"
+                                    />
                                     <StatCard label="Report Reference" value={selectedPrId} icon={<ArrowUpRight />} theme="slate" isMono />
                                 </div>
 

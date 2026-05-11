@@ -264,7 +264,7 @@ const ClaimReport = () => {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    claimType,
+                    claimType, ifscFilter,
                     category: categoryFilter
                 })
             });
@@ -383,12 +383,11 @@ const ClaimReport = () => {
                                 value={categoryFilter}
                                 onChange={(e) => setCategoryFilter(e.target.value)}
                                 className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none transition-all cursor-pointer
-                        ${categoryFilter !== 'all' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
+                                ${categoryFilter !== 'all' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
                             >
                                 <option value="all">All Categories</option>
                                 <option value="INTERNAL">INTERNAL</option>
                                 <option value="EXTERNAL">EXTERNAL</option>
-                                <option value="TDS">TDS</option>
                             </select>
                             <ChevronDown className="absolute right-3 top-1/2 mt-1 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                         </div>
