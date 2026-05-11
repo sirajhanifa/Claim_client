@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Layout from './layout/Layout';
 import StaffManage from './pages/StaffManage';
 import ClaimEntry from './pages/ClaimEntry';
+import ClaimSubmission from './pages/ClaimSubmission';
 import ClaimManage from './pages/ClaimManage';
 import ClaimReport from './pages/ClaimReport';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -32,6 +33,7 @@ function App() {
                     <Route path="dashboard" element={<Dashboard />} />
                     <Route path="staffmanage" element={<StaffManage />} />
                     <Route path="paymentstatus" element={<PaymentStatus />} />
+                    <Route path="claimsubmission" element={<ClaimSubmission />} />
                     <Route path="guidelines" element={<Guidelines />} />
                     <Route path="claimentry" element={<ClaimEntry />} />
                     <Route path="claimmanage" element={<ClaimManage />} />

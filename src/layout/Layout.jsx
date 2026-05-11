@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation, useParams } from 'react-router-dom';
 import {
     FaTachometerAlt,
     FaUsers,
+    FaTasks,
     FaClipboardList,
     FaFileInvoiceDollar,
     FaChartBar,
@@ -10,7 +11,8 @@ import {
     FaSignOutAlt,
     FaUserCog,
     FaGraduationCap,
-    FaTrashAlt
+    FaTrashAlt,
+    FaShareSquare
 } from 'react-icons/fa';
 import { FiChevronDown } from 'react-icons/fi';
 
@@ -22,7 +24,8 @@ const Layout = () => {
 
     const fullMenu = [
         { name: 'Dashboard', path: `/layout/${username}/dashboard`, icon: <FaTachometerAlt /> },
-        { name: 'Claim Entry', path: `/layout/${username}/claimentry`, icon: <FaClipboardList /> },
+        { name: 'Claim Entry', path: `/layout/${username}/claimentry`, icon: <FaTasks /> },
+        { name: 'Claim Submission', path: `/layout/${username}/claimsubmission`, icon: <FaShareSquare /> },
         { name: 'Claim Report', path: `/layout/${username}/claimreport`, icon: <FaChartBar /> },
         { name: 'Payment Status', path: `/layout/${username}/paymentstatus`, icon: <FaFileInvoiceDollar /> },
         { name: 'Staff Manage', path: `/layout/${username}/staffmanage`, icon: <FaUsers /> },
