@@ -11,13 +11,13 @@ import logo2 from '../assets/logo.jpeg';
 const ClaimReport = () => {
 
     // Primary filters
-    const [filter, setFilter] = useState('all');
-    const [statusFilter, setStatusFilter] = useState('all');
-    const [claimType, setClaimType] = useState('all');
+    const [filter, setFilter] = useState('All');
+    const [statusFilter, setStatusFilter] = useState('All');
+    const [claimType, setClaimType] = useState('All');
     const [entryDate, setEntryDate] = useState('');
     const [search, setSearch] = useState("");
-    const [categoryFilter, setCategoryFilter] = useState("all");
-    const [ifscFilter, setIfscFilter] = useState("all");
+    const [categoryFilter, setCategoryFilter] = useState("All");
+    const [ifscFilter, setIfscFilter] = useState("All");
 
     const apiUrl = import.meta.env.VITE_API_URL;
     const { data: claimData, loading: fetchLoading, error: fetchError, refetch } = useFetch(`${apiUrl}/claimDatas`);
@@ -45,11 +45,11 @@ const ClaimReport = () => {
 
     // Determine which status options to show based on 'filter'
     const statusOptions = useMemo(() => {
-        if (filter === 'all') {
-            return ['all', ...uniqueStatuses];
-        } else if (filter === 'submitted') {
-            const allowed = ['all', 'Submitted to Principal', 'Credited'];
-            return allowed.filter(opt => opt === 'all' || uniqueStatuses.includes(opt));
+        if (filter === 'All') {
+            return ['All', ...uniqueStatuses];
+        } else if (filter === 'Submitted') {
+            const allowed = ['All', 'Submitted to Principal', 'Credited'];
+            return allowed.filter(opt => opt === 'All' || uniqueStatuses.includes(opt));
         } else {
             return [];
         }
@@ -57,26 +57,26 @@ const ClaimReport = () => {
 
     // Reset status filter when filter changes 
     useEffect(() => {
-        if (filter === 'unsubmitted') {
-            setStatusFilter('all');
-        } else if (filter === 'all') {
-            if (!statusOptions.includes(statusFilter)) setStatusFilter('all');
-        } else if (filter === 'submitted') {
-            if (!statusOptions.includes(statusFilter)) setStatusFilter('all');
+        if (filter === 'Unsubmitted') {
+            setStatusFilter('All');
+        } else if (filter === 'All') {
+            if (!statusOptions.includes(statusFilter)) setStatusFilter('All');
+        } else if (filter === 'Submitted') {
+            if (!statusOptions.includes(statusFilter)) setStatusFilter('All');
         }
     }, [filter, statusOptions, statusFilter]);
 
-    // Apply all filters (including the dynamic status filter)
+    // Apply All filters (including the dynamic status filter)
     const filteredClaims = useMemo(() => {
         if (!claimData) return [];
 
         return claimData.filter(claim => {
             // 1. Submission status (filter by radio group)
             switch (filter) {
-                case "submitted":
+                case "Submitted":
                     if (!claim.submission_date) return false;
                     break;
-                case "unsubmitted":
+                case "Unsubmitted":
                     if (claim.submission_date) return false;
                     break;
                 case "credited":
@@ -86,14 +86,14 @@ const ClaimReport = () => {
                     break;
             }
 
-            // 2. Dynamic status filter (only when filter !== 'unsubmitted')
-            if (filter !== 'unsubmitted' && statusFilter !== 'all' && claim.status !== statusFilter) return false;
+            // 2. Dynamic status filter (only when filter !== 'Unsubmitted')
+            if (filter !== 'Unsubmitted' && statusFilter !== 'All' && claim.status !== statusFilter) return false;
 
             // 3. Claim type
-            if (claimType !== "all" && claim.claim_type_name !== claimType) return false;
+            if (claimType !== "All" && claim.claim_type_name !== claimType) return false;
 
             // 4. Category
-            if (categoryFilter !== "all") {
+            if (categoryFilter !== "All") {
                 if (categoryFilter !== "TDS" && claim.internal_external !== categoryFilter) return false;
                 if (categoryFilter === "TDS" && claim.category !== "AIDED") return false;
             }
@@ -150,7 +150,7 @@ const ClaimReport = () => {
     }, []);
 
     const displayedClaims = useMemo(() => {
-        if (filter === 'unsubmitted') return mergeDuplicates(filteredClaims);
+        if (filter === 'Unsubmitted') return mergeDuplicates(filteredClaims);
         return filteredClaims;
     }, [filter, filteredClaims, mergeDuplicates]);
 
@@ -180,7 +180,7 @@ const ClaimReport = () => {
         XLSX.utils.book_append_sheet(workbook, worksheet, "Claims");
         const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
         const file = new Blob([excelBuffer], { type: "application/octet-stream" });
-        saveAs(file, `Claim_Report_${filter}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        saveAs(file, `Claim Report ${filter} ${new Date().toISOString().slice(0, 10)}.xlsx`);
     };
 
     // PDF generation (unchanged)
@@ -266,14 +266,14 @@ const ClaimReport = () => {
                 <div className="flex flex-wrap items-center gap-3">
                     <button
                         onClick={handleDownloadPDF}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-100 active:scale-95"
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-All shadow-lg shadow-blue-100 active:scale-95"
                     >
                         <FileText className="w-4 h-4" />
                         Download PDF
                     </button>
                     <button
                         onClick={handleDownloadExcel}
-                        className="flex items-center gap-2 bg-green-700 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-800 transition-all shadow-sm active:scale-95"
+                        className="flex items-center gap-2 bg-green-700 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-800 transition-All shadow-sm active:scale-95"
                     >
                         <Download className="w-4 h-4" />
                         Download Excel
@@ -293,9 +293,9 @@ const ClaimReport = () => {
                         <select
                             value={claimType}
                             onChange={(e) => setClaimType(e.target.value)}
-                            className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none cursor-pointer ${claimType !== 'all' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
+                            className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none cursor-pointer ${claimType !== 'All' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
                         >
-                            <option value="all">All Claim Types</option>
+                            <option value="All">All Claim Types</option>
                             {claimTypes.map((type) => (
                                 <option key={type} value={type}>{type}</option>
                             ))}
@@ -311,9 +311,9 @@ const ClaimReport = () => {
                         <select
                             value={categoryFilter}
                             onChange={(e) => setCategoryFilter(e.target.value)}
-                            className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none cursor-pointer ${categoryFilter !== 'all' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
+                            className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none cursor-pointer ${categoryFilter !== 'All' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
                         >
-                            <option value="all">All Categories</option>
+                            <option value="All">All Categories</option>
                             <option value="INTERNAL">INTERNAL</option>
                             <option value="EXTERNAL">EXTERNAL</option>
                         </select>
@@ -328,9 +328,9 @@ const ClaimReport = () => {
                         <select
                             value={ifscFilter}
                             onChange={(e) => setIfscFilter(e.target.value)}
-                            className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none cursor-pointer ${ifscFilter !== 'all' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
+                            className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none cursor-pointer ${ifscFilter !== 'All' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
                         >
-                            <option value="all">All Bank Types</option>
+                            <option value="All">All Bank Types</option>
                             <option value="JMC_IOB">IOB JMC Branch</option>
                             <option value="IOB_OTHERS">IOB Other Branch</option>
                             <option value="OTHER_BANKS">Other Banks</option>
@@ -347,7 +347,7 @@ const ClaimReport = () => {
                             type="date"
                             value={entryDate}
                             onChange={(e) => setEntryDate(e.target.value)}
-                            className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 outline-none focus:bg-white focus:border-blue-500 transition-all"
+                            className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 outline-none focus:bg-white focus:border-blue-500 transition-All"
                         />
                     </div>
                 </div>
@@ -356,7 +356,7 @@ const ClaimReport = () => {
                 <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6">
                     {/* Submission Status Radio Group */}
                     <div className="flex bg-slate-100 p-1.5 rounded-2xl w-full md:w-fit">
-                        {['all', 'unsubmitted', 'submitted'].map((type) => (
+                        {['All', 'Unsubmitted', 'Submitted'].map((type) => (
                             <label key={type} className="relative flex-1 md:flex-none cursor-pointer">
                                 <input
                                     type="radio"
@@ -366,15 +366,15 @@ const ClaimReport = () => {
                                     onChange={(e) => setFilter(e.target.value)}
                                     className="sr-only peer"
                                 />
-                                <div className="px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all text-center">
-                                    {type === 'all' ? 'All Claims' : type}
+                                <div className="px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-All text-center">
+                                    {type === 'All' ? 'All Claims' : type}
                                 </div>
                             </label>
                         ))}
                     </div>
 
-                    {/* Dynamic Status Filter – shown only when filter !== 'unsubmitted' */}
-                    {filter !== 'unsubmitted' && statusOptions.length > 1 && (
+                    {/* Dynamic Status Filter – shown only when filter !== 'Unsubmitted' */}
+                    {filter !== 'Unsubmitted' && statusOptions.length > 1 && (
                         <div className="flex bg-slate-100 p-1.5 rounded-2xl w-full md:w-fit">
                             {statusOptions.map(opt => (
                                 <label key={opt} className="relative flex-1 md:flex-none cursor-pointer">
@@ -386,8 +386,8 @@ const ClaimReport = () => {
                                         onChange={(e) => setStatusFilter(e.target.value)}
                                         className="sr-only peer"
                                     />
-                                    <div className="px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all text-center whitespace-nowrap">
-                                        {opt === 'all' ? 'All Statuses' : opt}
+                                    <div className="px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-All text-center whitespace-nowrap">
+                                        {opt === 'All' ? 'All Statuses' : opt}
                                     </div>
                                 </label>
                             ))}
@@ -405,7 +405,7 @@ const ClaimReport = () => {
                         placeholder="Search by name or phone..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-none rounded-[12px] text-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white outline-none transition-all placeholder:text-slate-400"
+                        className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-none rounded-[12px] text-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white outline-none transition-All placeholder:text-slate-400"
                     />
                 </div>
             </div>
@@ -481,7 +481,7 @@ const ClaimReport = () => {
                                     </tr>
                                 ) : (
                                     displayedClaims.map((claim, index) => (
-                                        <tr key={claim._id} className="group hover:bg-blue-50/30 transition-all duration-200">
+                                        <tr key={claim._id} className="group hover:bg-blue-50/30 transition-All duration-200">
                                             <td className="px-6 py-4 text-slate-400 font-medium text-center">{index + 1}</td>
                                             <td className="px-6 py-4 min-w-[340px]">
                                                 <div className="flex items-center gap-3">
