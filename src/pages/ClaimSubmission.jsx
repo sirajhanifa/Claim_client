@@ -349,7 +349,7 @@ const ClaimSubmission = () => {
                         <table className="w-full text-sm text-left border-separate border-spacing-0">
                             <thead className="sticky top-0 z-30">
                                 <tr className="text-center">
-                                    {["S.No", "Staff Details", "Staff Type", "Claim Type", "Contact", "Bank/IFSC", "Amount", "Entry Date"].map((h, i) => (
+                                    {["S.No", "Staff Details", "Staff Type", "Claim Type", "Contact", "IFSC", "Account Number", "Amount", "Entry Date"].map((h, i) => (
                                         <th key={i} className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap">
                                             {h}
                                         </th>
@@ -423,10 +423,11 @@ const ClaimSubmission = () => {
                                                     <span className="font-medium">{claim.phone_number}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 w-fit">
-                                                    <p className="text-[12px] text-slate-400 uppercase tracking-tighter font-bold">{claim.ifsc_code}</p>
-                                                </div>
+                                            <td className="px-6 py-4 text-center">
+                                                <p className=" bg-slate-50 p-2 rounded-lg border border-slate-200 w-fit text-[13px] text-slate-400 uppercase font-bold">{claim.ifsc_code}</p>
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <p className="text-[13px] text-center text-blue-500 uppercase font-bold">{claim.account_no}</p>
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <span className="text-md font-bold text-green-700">₹{claim.amount}</span>

@@ -282,7 +282,7 @@ const ClaimReport = () => {
             </header>
 
             {/* Primary Filter Bar */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {/* Claim Type */}
                     <div className="space-y-1.5">
@@ -412,7 +412,7 @@ const ClaimReport = () => {
 
             {/* Table Section */}
             <div className="mt-8 space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-8">
                     <h2 className="text-sm font-bold text-slate-500 uppercase tracking-widest">
                         Claims Records
                     </h2>
@@ -433,7 +433,7 @@ const ClaimReport = () => {
                         <table className="w-full text-sm text-left border-separate border-spacing-0">
                             <thead className="sticky top-0 z-30">
                                 <tr className="text-center">
-                                    {["S.No", "Staff Details", "Claim Type", "Contact", "Bank/IFSC", "Amount", "Dates", "Status", "Payment ID"].map((h, i) => (
+                                    {["S.No", "Staff Details", "Claim Type", "Contact", "IFSC", "Account Number", "Amount", "Dates", "Status", "Payment ID"].map((h, i) => (
                                         <th key={i} className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap">
                                             {h}
                                         </th>
@@ -505,10 +505,11 @@ const ClaimReport = () => {
                                                     <span className="font-medium">{claim.phone_number}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 w-fit">
-                                                    <p className="text-[12px] text-slate-400 uppercase tracking-tighter font-bold">{claim.ifsc_code}</p>
-                                                </div>
+                                            <td className="px-6 py-4 text-center">
+                                                <p className=" bg-slate-50 p-2 rounded-lg border border-slate-200 w-fit text-[13px] text-slate-400 uppercase font-bold">{claim.ifsc_code}</p>
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <p className="text-[13px] text-center text-blue-500 uppercase font-bold">{claim.account_no}</p>
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <span className="text-md font-bold text-green-700">₹{claim.amount}</span>
