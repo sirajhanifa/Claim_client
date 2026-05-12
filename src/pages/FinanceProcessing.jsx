@@ -345,7 +345,7 @@ const FinanceProcessing = () => {
                                         </button>
                                     </div>
                                     {hasProcessedClaims && (
-                                        <button onClick={handleUpdateStatus} disabled={updateLoading} className="flex items-center gap-2 px-5 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-50">
+                                        <button onClick={handleUpdateStatus} disabled={updateLoading} className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50">
                                             {updateLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                                             Submit Batch to Finance
                                         </button>
