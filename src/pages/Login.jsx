@@ -14,7 +14,6 @@ const Login = () => {
 
     const apiUrl = import.meta.env.VITE_API_URL;
     const navigate = useNavigate();
-
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -23,17 +22,17 @@ const Login = () => {
     const { postData } = usePost();
 
     const handleLogin = async (e) => {
+
         e.preventDefault();
         setLoading(true);
 
         try {
-            const res = await postData(`${apiUrl}/api/login`, { username, password }, {}, true);
 
+            const res = await postData(`${apiUrl}/api/login`, { username, password }, {}, true);
             if (res && res.message === 'Login successful!') {
                 const { token, user } = res;
                 localStorage.setItem('authToken', token);
                 localStorage.setItem('username', user.username);
-
                 Swal.fire('Success', 'Login Successful!', 'success');
                 navigate(`/layout/${user.username}/dashboard`);
             }

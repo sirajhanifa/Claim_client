@@ -26,7 +26,7 @@ const Layout = () => {
         { name: 'Dashboard', path: `/layout/${username}/dashboard`, icon: <FaTachometerAlt /> },
         { name: 'Claim Entry', path: `/layout/${username}/claimentry`, icon: <FaTasks /> },
         { name: 'Claim Submission', path: `/layout/${username}/claimsubmission`, icon: <FaShareSquare /> },
-        { name: 'Finance Processing Panel', path: `/layout/${username}/FinanceProcessing`, icon: <FaFileInvoiceDollar /> },
+        { name: 'Finance Processing', path: `/layout/${username}/FinanceProcessing`, icon: <FaFileInvoiceDollar /> },
         { name: 'Claim Report', path: `/layout/${username}/claimreport`, icon: <FaChartBar /> },
         { name: 'Staff Manage', path: `/layout/${username}/staffmanage`, icon: <FaUsers /> },
         { name: 'Claim Manage', path: `/layout/${username}/claimmanage`, icon: <FaFileInvoiceDollar /> },

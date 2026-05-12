@@ -127,6 +127,7 @@ const ClaimReport = () => {
 
     // Helper to render date column based on mainFilter
     const renderDateCell = (claim) => {
+
         const formatDate = (date) => date ? new Date(date).toLocaleDateString('en-GB') : '-';
 
         switch (mainFilter) {
@@ -528,7 +529,7 @@ const ClaimReport = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                <p className="bg-slate-50 p-2 rounded-lg border border-slate-200 w-fit text-[13px] text-slate-400 uppercase font-bold">{claim.ifsc_code}</p>
+                                                <p className="bg-slate-50 p-2 rounded-lg border border-slate-200 w-fit text-[13px] text-slate-700 uppercase font-semibold">{claim.ifsc_code}</p>
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <p className="text-[13px] text-center text-blue-500 uppercase font-bold">{claim.account_no}</p>
