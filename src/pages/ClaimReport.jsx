@@ -6,13 +6,13 @@ import { Search, Phone, Download, FileText, Filter, ChevronDown, Layers, Calenda
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import logo1 from '../assets/75.jpeg';
-import logo2 from '../assets/logo.jpeg';
+import logo2 from '../assets/JmcLogo.png';
 
 const ClaimReport = () => {
 
-    // Primary filters
-    const [filter, setFilter] = useState('All');
-    const [statusFilter, setStatusFilter] = useState('All');
+    const [mainFilter, setMainFilter] = useState('All');
+
+    // Other filters
     const [claimType, setClaimType] = useState('All');
     const [entryDate, setEntryDate] = useState('');
     const [search, setSearch] = useState("");
@@ -21,6 +21,9 @@ const ClaimReport = () => {
 
     const apiUrl = import.meta.env.VITE_API_URL;
     const { data: claimData, loading: fetchLoading, error: fetchError, refetch } = useFetch(`${apiUrl}/claimDatas`);
+
+    const showStatusColumn = mainFilter === 'All';
+    const showPaymentIdColumn = mainFilter !== 'Unsubmitted';
 
     // Debounced search
     const [debouncedSearch, setDebouncedSearch] = useState(search);
@@ -37,78 +40,36 @@ const ClaimReport = () => {
         return [...new Set(claimData.map(claim => claim.claim_type_name))];
     }, [claimData]);
 
-    // Unique status values from the dataset
-    const uniqueStatuses = useMemo(() => {
-        if (!claimData) return [];
-        return [...new Set(claimData.map(claim => claim.status))].sort();
-    }, [claimData]);
-
-    // Determine which status options to show based on 'filter'
-    const statusOptions = useMemo(() => {
-        if (filter === 'All') {
-            return ['All', ...uniqueStatuses];
-        } else if (filter === 'Submitted') {
-            const allowed = ['All', 'Submitted to Principal', 'Credited'];
-            return allowed.filter(opt => opt === 'All' || uniqueStatuses.includes(opt));
-        } else {
-            return [];
-        }
-    }, [filter, uniqueStatuses]);
-
-    // Reset status filter when filter changes 
-    useEffect(() => {
-        if (filter === 'Unsubmitted') {
-            setStatusFilter('All');
-        } else if (filter === 'All') {
-            if (!statusOptions.includes(statusFilter)) setStatusFilter('All');
-        } else if (filter === 'Submitted') {
-            if (!statusOptions.includes(statusFilter)) setStatusFilter('All');
-        }
-    }, [filter, statusOptions, statusFilter]);
-
-    // Apply All filters (including the dynamic status filter)
+    // Filter logic based on mainFilter (status-based filtering)
     const filteredClaims = useMemo(() => {
         if (!claimData) return [];
 
         return claimData.filter(claim => {
-            // 1. Submission status (filter by radio group)
-            switch (filter) {
-                case "Submitted":
-                    if (!claim.submission_date) return false;
-                    break;
-                case "Unsubmitted":
-                    if (claim.submission_date) return false;
-                    break;
-                case "credited":
-                    if (!claim.credited_date) return false;
-                    break;
-                default:
-                    break;
+            // 1. Main filter (by status)
+            if (mainFilter !== 'All') {
+                if (claim.status !== mainFilter) return false;
             }
 
-            // 2. Dynamic status filter (only when filter !== 'Unsubmitted')
-            if (filter !== 'Unsubmitted' && statusFilter !== 'All' && claim.status !== statusFilter) return false;
-
-            // 3. Claim type
+            // 2. Claim type filter
             if (claimType !== "All" && claim.claim_type_name !== claimType) return false;
 
-            // 4. Category
+            // 3. Category filter
             if (categoryFilter !== "All") {
                 if (categoryFilter !== "TDS" && claim.internal_external !== categoryFilter) return false;
                 if (categoryFilter === "TDS" && claim.category !== "AIDED") return false;
             }
 
-            // 5. IFSC filter
+            // 4. IFSC filter
             let ifscMatch = true;
             if (ifscFilter === "JMC_IOB") ifscMatch = claim.ifsc_code === "IOBA0000467";
             else if (ifscFilter === "IOB_OTHERS") ifscMatch = claim.ifsc_code?.startsWith("IOBA") && claim.ifsc_code !== "IOBA0000467";
             else if (ifscFilter === "OTHER_BANKS") ifscMatch = !claim.ifsc_code?.startsWith("IOBA");
             if (!ifscMatch) return false;
 
-            // 6. Entry date
+            // 5. Entry date filter
             if (entryDate && new Date(claim.entry_date).toLocaleDateString("en-CA") !== entryDate) return false;
 
-            // 7. Search
+            // 6. Search filter
             if (debouncedSearch) {
                 const searchLower = debouncedSearch.toLowerCase();
                 const nameMatch = claim.staff_name?.toLowerCase().includes(searchLower);
@@ -118,9 +79,9 @@ const ClaimReport = () => {
 
             return true;
         });
-    }, [claimData, filter, statusFilter, claimType, categoryFilter, ifscFilter, entryDate, debouncedSearch]);
+    }, [claimData, mainFilter, claimType, categoryFilter, ifscFilter, entryDate, debouncedSearch]);
 
-    // Merge duplicates
+    // Merge duplicates only for Unsubmitted view
     const mergeDuplicates = useCallback((claims) => {
         const map = new Map();
         for (const c of claims) {
@@ -131,13 +92,19 @@ const ClaimReport = () => {
                 const existing = map.get(key);
                 existing.amount = (Number(existing.amount) || 0) + (Number(c.amount) || 0);
                 existing._mergedCount = (existing._mergedCount || 1) + 1;
+
+                // Keep latest dates where applicable
                 const entryDateObj = c.entry_date ? new Date(c.entry_date) : null;
                 if (entryDateObj && (!existing.entry_date || new Date(existing.entry_date) < entryDateObj)) {
                     existing.entry_date = entryDateObj.toISOString();
                 }
-                const submissionDateObj = c.submission_date ? new Date(c.submission_date) : null;
-                if (submissionDateObj && (!existing.submission_date || new Date(existing.submission_date) < submissionDateObj)) {
-                    existing.submission_date = submissionDateObj.toISOString();
+                const processedDateObj = c.processed_date ? new Date(c.processed_date) : null;
+                if (processedDateObj && (!existing.processed_date || new Date(existing.processed_date) < processedDateObj)) {
+                    existing.processed_date = processedDateObj.toISOString();
+                }
+                const submittedDateObj = c.submitted_date ? new Date(c.submitted_date) : null;
+                if (submittedDateObj && (!existing.submitted_date || new Date(existing.submitted_date) < submittedDateObj)) {
+                    existing.submitted_date = submittedDateObj.toISOString();
                 }
                 const creditedDateObj = c.credited_date ? new Date(c.credited_date) : null;
                 if (creditedDateObj && (!existing.credited_date || new Date(existing.credited_date) < creditedDateObj)) {
@@ -150,13 +117,83 @@ const ClaimReport = () => {
     }, []);
 
     const displayedClaims = useMemo(() => {
-        if (filter === 'Unsubmitted') return mergeDuplicates(filteredClaims);
+        if (mainFilter === 'Unsubmitted') return mergeDuplicates(filteredClaims);
         return filteredClaims;
-    }, [filter, filteredClaims, mergeDuplicates]);
+    }, [mainFilter, filteredClaims, mergeDuplicates]);
 
     const totalAmount = useMemo(() => {
         return displayedClaims.reduce((sum, claim) => sum + (Number(claim.amount) || 0), 0);
     }, [displayedClaims]);
+
+    // Helper to render date column based on mainFilter
+    const renderDateCell = (claim) => {
+        const formatDate = (date) => date ? new Date(date).toLocaleDateString('en-GB') : '-';
+
+        switch (mainFilter) {
+            case 'Unsubmitted':
+                return (
+                    <div className="flex flex-col gap-1 text-[11px]">
+                        <div className="flex justify-between gap-2">
+                            <span className="text-slate-400 uppercase whitespace-nowrap">Entry :</span>
+                            <span className="text-slate-700 font-bold">{formatDate(claim.entry_date)}</span>
+                        </div>
+                    </div>
+                );
+            case 'Processed':
+                return (
+                    <div className="flex flex-col gap-1 text-[11px]">
+                        <div className="flex justify-between gap-2">
+                            <span className="text-slate-400 uppercase whitespace-nowrap">Entry :</span>
+                            <span className="text-slate-700 font-bold">{formatDate(claim.entry_date)}</span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                            <span className="text-slate-400 uppercase whitespace-nowrap">Processed :</span>
+                            <span className="text-slate-700 font-bold">{formatDate(claim.processed_date)}</span>
+                        </div>
+                    </div>
+                );
+            case 'Submitted':
+                return (
+                    <div className="flex flex-col gap-1 text-[11px]">
+                        <div className="flex justify-between gap-2">
+                            <span className="text-slate-400 uppercase whitespace-nowrap">Entry :</span>
+                            <span className="text-slate-700 font-bold">{formatDate(claim.entry_date)}</span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                            <span className="text-slate-400 uppercase whitespace-nowrap">Processed :</span>
+                            <span className="text-slate-700 font-bold">{formatDate(claim.processed_date)}</span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                            <span className="text-slate-400 uppercase whitespace-nowrap">Submitted :</span>
+                            <span className="text-slate-700 font-bold">{formatDate(claim.submitted_date)}</span>
+                        </div>
+                    </div>
+                );
+            case 'Credited':
+            case 'All':
+            default:
+                return (
+                    <div className="flex flex-col gap-1 text-[11px] w-36">
+                        <div className="flex justify-between gap-2">
+                            <span className="text-slate-400 uppercase whitespace-nowrap">Entry :</span>
+                            <span className="text-slate-700 font-bold">{formatDate(claim.entry_date)}</span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                            <span className="text-slate-400 uppercase whitespace-nowrap">Processed :</span>
+                            <span className="text-slate-700 font-bold">{formatDate(claim.processed_date)}</span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                            <span className="text-slate-400 uppercase whitespace-nowrap">Submitted :</span>
+                            <span className="text-slate-700 font-bold">{formatDate(claim.submitted_date)}</span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                            <span className="text-slate-400 uppercase whitespace-nowrap">Credited :</span>
+                            <span className="text-slate-700 font-bold">{formatDate(claim.credited_date)}</span>
+                        </div>
+                    </div>
+                );
+        }
+    };
 
     // Excel download
     const handleDownloadExcel = () => {
@@ -166,7 +203,10 @@ const ClaimReport = () => {
         }
         const excelData = displayedClaims.map((claim, index) => ({
             "S.No": index + 1,
-            "Date": new Date(claim.entry_date).toLocaleDateString("en-GB"),
+            "Entry Date": new Date(claim.entry_date).toLocaleDateString("en-GB"),
+            "Processed Date": claim.processed_date ? new Date(claim.processed_date).toLocaleDateString("en-GB") : '',
+            "Submitted Date": claim.submitted_date ? new Date(claim.submitted_date).toLocaleDateString("en-GB") : '',
+            "Credited Date": claim.credited_date ? new Date(claim.credited_date).toLocaleDateString("en-GB") : '',
             "Name": claim.staff_name,
             "College": claim.college,
             "Department": claim.department,
@@ -174,18 +214,18 @@ const ClaimReport = () => {
             "IFSC Code": claim.ifsc_code,
             "Account No": claim.account_no,
             "Phone No": claim.phone_number,
+            "Status": claim.status,
         }));
         const worksheet = XLSX.utils.json_to_sheet(excelData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Claims");
         const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
         const file = new Blob([excelBuffer], { type: "application/octet-stream" });
-        saveAs(file, `Claim Report ${filter} ${new Date().toISOString().slice(0, 10)}.xlsx`);
+        saveAs(file, `Claim_Report_${mainFilter}_${new Date().toISOString().slice(0, 10)}.xlsx`);
     };
 
-    // PDF generation (unchanged)
+    // PDF generation
     const createPDF = (prId, submittedDate, claims) => {
-
         const doc = new jsPDF("p", "mm", "a4");
         const pageWidth = doc.internal.pageSize.getWidth();
 
@@ -250,6 +290,10 @@ const ClaimReport = () => {
         createPDF(prId, submissionDate, displayedClaims);
     };
 
+    const tableHeaders = showStatusColumn
+        ? ["S.No", "Staff Details", "Claim Type", "Contact", "IFSC", "Account Number", "Amount", "Dates", "Status", "Payment ID"]
+        : ["S.No", "Staff Details", "Claim Type", "Contact", "IFSC", "Account Number", "Amount", "Dates", "Payment ID"];
+
     return (
         <div>
             {/* Header */}
@@ -266,14 +310,14 @@ const ClaimReport = () => {
                 <div className="flex flex-wrap items-center gap-3">
                     <button
                         onClick={handleDownloadPDF}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-All shadow-lg shadow-blue-100 active:scale-95"
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-100 active:scale-95"
                     >
                         <FileText className="w-4 h-4" />
                         Download PDF
                     </button>
                     <button
                         onClick={handleDownloadExcel}
-                        className="flex items-center gap-2 bg-green-700 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-800 transition-All shadow-sm active:scale-95"
+                        className="flex items-center gap-2 bg-green-700 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-800 transition-all shadow-sm active:scale-95"
                     >
                         <Download className="w-4 h-4" />
                         Download Excel
@@ -347,52 +391,30 @@ const ClaimReport = () => {
                             type="date"
                             value={entryDate}
                             onChange={(e) => setEntryDate(e.target.value)}
-                            className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 outline-none focus:bg-white focus:border-blue-500 transition-All"
+                            className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 outline-none focus:bg-white focus:border-blue-500 transition-all"
                         />
                     </div>
                 </div>
 
-                {/* Secondary Filters: Submission Status + Dynamic Status Filter */}
-                <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6">
-                    {/* Submission Status Radio Group */}
-                    <div className="flex bg-slate-100 p-1.5 rounded-2xl w-full md:w-fit">
-                        {['All', 'Unsubmitted', 'Submitted'].map((type) => (
-                            <label key={type} className="relative flex-1 md:flex-none cursor-pointer">
+                {/* Main Radio Filter - All, Unsubmitted, Processed, Submitted, Credited */}
+                <div className="mt-8 pt-6 border-t border-slate-100">
+                    <div className="flex flex-wrap gap-3 bg-slate-100 p-1.5 rounded-2xl w-full md:w-fit">
+                        {['All', 'Unsubmitted', 'Processed', 'Submitted', 'Credited'].map((option) => (
+                            <label key={option} className="relative cursor-pointer">
                                 <input
                                     type="radio"
-                                    name="filter"
-                                    value={type}
-                                    checked={filter === type}
-                                    onChange={(e) => setFilter(e.target.value)}
+                                    name="mainFilter"
+                                    value={option}
+                                    checked={mainFilter === option}
+                                    onChange={(e) => setMainFilter(e.target.value)}
                                     className="sr-only peer"
                                 />
-                                <div className="px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-All text-center">
-                                    {type === 'All' ? 'All Claims' : type}
+                                <div className="px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all text-center whitespace-nowrap">
+                                    {option === 'All' ? 'All Claims' : option}
                                 </div>
                             </label>
                         ))}
                     </div>
-
-                    {/* Dynamic Status Filter – shown only when filter !== 'Unsubmitted' */}
-                    {filter !== 'Unsubmitted' && statusOptions.length > 1 && (
-                        <div className="flex bg-slate-100 p-1.5 rounded-2xl w-full md:w-fit">
-                            {statusOptions.map(opt => (
-                                <label key={opt} className="relative flex-1 md:flex-none cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="statusFilter"
-                                        value={opt}
-                                        checked={statusFilter === opt}
-                                        onChange={(e) => setStatusFilter(e.target.value)}
-                                        className="sr-only peer"
-                                    />
-                                    <div className="px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-All text-center whitespace-nowrap">
-                                        {opt === 'All' ? 'All Statuses' : opt}
-                                    </div>
-                                </label>
-                            ))}
-                        </div>
-                    )}
                 </div>
             </div>
 
@@ -405,7 +427,7 @@ const ClaimReport = () => {
                         placeholder="Search by name or phone..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-none rounded-[12px] text-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white outline-none transition-All placeholder:text-slate-400"
+                        className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-none rounded-[12px] text-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white outline-none transition-all placeholder:text-slate-400"
                     />
                 </div>
             </div>
@@ -433,7 +455,7 @@ const ClaimReport = () => {
                         <table className="w-full text-sm text-left border-separate border-spacing-0">
                             <thead className="sticky top-0 z-30">
                                 <tr className="text-center">
-                                    {["S.No", "Staff Details", "Claim Type", "Contact", "IFSC", "Account Number", "Amount", "Dates", "Status", "Payment ID"].map((h, i) => (
+                                    {tableHeaders.map((h, i) => (
                                         <th key={i} className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap">
                                             {h}
                                         </th>
@@ -443,7 +465,7 @@ const ClaimReport = () => {
                             <tbody className="divide-y divide-slate-100">
                                 {fetchLoading ? (
                                     <tr>
-                                        <td colSpan={9} className="text-center py-20">
+                                        <td colSpan={tableHeaders.length} className="text-center py-20">
                                             <div className="flex flex-col items-center justify-center">
                                                 <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-3" />
                                                 <p className="text-slate-500 text-sm">Loading claims...</p>
@@ -452,7 +474,7 @@ const ClaimReport = () => {
                                     </tr>
                                 ) : fetchError ? (
                                     <tr>
-                                        <td colSpan={9} className="text-center py-16">
+                                        <td colSpan={tableHeaders.length} className="text-center py-16">
                                             <div className="flex flex-col items-center justify-center">
                                                 <div className="bg-red-50 p-4 rounded-full mb-4">
                                                     <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -469,19 +491,19 @@ const ClaimReport = () => {
                                     </tr>
                                 ) : displayedClaims.length === 0 ? (
                                     <tr>
-                                        <td colSpan={9} className="text-center py-16">
+                                        <td colSpan={tableHeaders.length} className="text-center py-16">
                                             <div className="flex flex-col items-center justify-center">
                                                 <div className="bg-slate-50 p-4 rounded-full mb-4">
                                                     <Search className="w-10 h-10 text-slate-200" />
                                                 </div>
                                                 <h3 className="text-slate-800 font-bold">No claims found</h3>
-                                                <p className="text-slate-400 text-sm">There are no records matching your current filters.</p>
+                                                <p className="text-slate-400 text-sm mt-4">There are no records matching your current filters.</p>
                                             </div>
                                         </td>
                                     </tr>
                                 ) : (
                                     displayedClaims.map((claim, index) => (
-                                        <tr key={claim._id} className="group hover:bg-blue-50/30 transition-All duration-200">
+                                        <tr key={claim._id} className="group hover:bg-blue-50/30 transition-all duration-200">
                                             <td className="px-6 py-4 text-slate-400 font-medium text-center">{index + 1}</td>
                                             <td className="px-6 py-4 min-w-[340px]">
                                                 <div className="flex items-center gap-3">
@@ -506,7 +528,7 @@ const ClaimReport = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                <p className=" bg-slate-50 p-2 rounded-lg border border-slate-200 w-fit text-[13px] text-slate-400 uppercase font-bold">{claim.ifsc_code}</p>
+                                                <p className="bg-slate-50 p-2 rounded-lg border border-slate-200 w-fit text-[13px] text-slate-400 uppercase font-bold">{claim.ifsc_code}</p>
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <p className="text-[13px] text-center text-blue-500 uppercase font-bold">{claim.account_no}</p>
@@ -515,33 +537,29 @@ const ClaimReport = () => {
                                                 <span className="text-md font-bold text-green-700">₹{claim.amount}</span>
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                <div className="flex flex-col gap-1 text-[11px] w-32">
-                                                    <div className="flex justify-between gap-2">
-                                                        <span className="text-slate-400 uppercase">Entry :</span>
-                                                        <span className="text-slate-700 font-bold">{new Date(claim.entry_date).toLocaleDateString('en-GB')}</span>
-                                                    </div>
-                                                    <div className="flex justify-between gap-2">
-                                                        <span className="text-slate-400 uppercase">Sub :</span>
-                                                        <span className="text-slate-700 font-bold">{claim.submission_date ? new Date(claim.submission_date).toLocaleDateString('en-GB') : '-'}</span>
-                                                    </div>
-                                                    <div className="flex justify-between">
-                                                        <span className="text-slate-400 uppercase">Credited :</span>
-                                                        <span className={`font-bold ${claim.credited_date ? 'text-green-600' : 'text-slate-400'}`}>
-                                                            {claim.credited_date ? new Date(claim.credited_date).toLocaleDateString('en-GB') : '-'}
-                                                        </span>
-                                                    </div>
-                                                </div>
+                                                {renderDateCell(claim)}
                                             </td>
-                                            <td className="px-6 py-4 min-w-[240px] text-center">
-                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wide border transition-colors
-                                                    ${claim.status === 'Credited' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}>
-                                                    <div className={`w-1.5 h-1.5 rounded-full ${claim.status === 'Credited' ? 'bg-green-500' : 'bg-yellow-500'}`} />
-                                                    {claim.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 font-mono text-sm text-slate-500 font-bold whitespace-nowrap">
-                                                {claim.payment_report_id || '-'}
-                                            </td>
+                                            {showStatusColumn && (
+                                                <td className="px-6 py-4 min-w-[240px] text-center">
+                                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wide border transition-colors
+                                                        ${claim.status === 'Credited' ? 'bg-green-50 text-green-700 border-green-200' :
+                                                            claim.status === 'Processed' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                                                claim.status === 'Submitted' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                                    'bg-yellow-50 text-yellow-700 border-yellow-200'}`}>
+                                                        <div className={`w-1.5 h-1.5 rounded-full 
+                                                            ${claim.status === 'Credited' ? 'bg-green-500' :
+                                                                claim.status === 'Processed' ? 'bg-purple-500' :
+                                                                    claim.status === 'Submitted' ? 'bg-blue-500' :
+                                                                        'bg-yellow-500'}`} />
+                                                        {claim.status}
+                                                    </span>
+                                                </td>
+                                            )}
+                                            {showPaymentIdColumn && (
+                                                <td className="px-6 py-4 font-mono text-sm text-center text-slate-500 font-bold whitespace-nowrap">
+                                                    {claim.payment_report_id || '-'}
+                                                </td>
+                                            )}
                                         </tr>
                                     ))
                                 )}

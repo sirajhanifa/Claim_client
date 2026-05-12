@@ -1,22 +1,16 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import useFetch from '../hooks/useFetch';
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
-import { Trash2, Search, Phone, Download, FileText, Filter, ChevronDown, Layers, Calendar, Landmark, X, Loader2 } from "lucide-react";
+import { Trash2, Search, Phone, Filter, ChevronDown, Layers, Calendar, Landmark, X, Loader2 } from "lucide-react";
 import axios from 'axios';
-import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
-import logo1 from '../assets/75.jpeg';
-import logo2 from '../assets/logo.jpeg';
 
 const ClaimSubmission = () => {
 
     // Filter states
-    const [claimType, setClaimType] = useState('all');
+    const [claimType, setClaimType] = useState('');
     const [entryDate, setEntryDate] = useState('');
     const [search, setSearch] = useState("");
-    const [categoryFilter, setCategoryFilter] = useState("all");
-    const [ifscFilter, setIfscFilter] = useState("all");
+    const [categoryFilter, setCategoryFilter] = useState("");
+    const [ifscFilter, setIfscFilter] = useState("");
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showBankTypeModal, setShowBankTypeModal] = useState(false);
@@ -41,17 +35,25 @@ const ClaimSubmission = () => {
     const filteredClaims = useMemo(() => {
         if (!rawClaimData) return [];
         return rawClaimData.filter(claim => {
-            if (claimType !== "all" && claim.claim_type_name !== claimType) return false;
-            if (categoryFilter !== "all") {
-                if (categoryFilter !== "TDS" && claim.internal_external !== categoryFilter) return false;
-                if (categoryFilter === "TDS" && claim.category !== "AIDED") return false;
-            }
+            // Claim Type filter (if not 'all')
+            if (claimType !== "all" && claimType !== "" && claim.claim_type_name !== claimType) return false;
+
+            // Category filter (if not 'all')
+            if (categoryFilter !== "all" && categoryFilter !== "" && claim.internal_external !== categoryFilter) return false;
+
+            // Bank Type filter (if not 'all')
             let ifscMatch = true;
-            if (ifscFilter === "JMC_IOB") ifscMatch = claim.ifsc_code === "IOBA0000467";
-            else if (ifscFilter === "IOB_OTHERS") ifscMatch = claim.ifsc_code?.startsWith("IOBA") && claim.ifsc_code !== "IOBA0000467";
-            else if (ifscFilter === "OTHER_BANKS") ifscMatch = !claim.ifsc_code?.startsWith("IOBA");
+            if (ifscFilter !== "all" && ifscFilter !== "") {
+                if (ifscFilter === "JMC_IOB") ifscMatch = claim.ifsc_code === "IOBA0000467";
+                else if (ifscFilter === "IOB_OTHERS") ifscMatch = claim.ifsc_code?.startsWith("IOBA") && claim.ifsc_code !== "IOBA0000467";
+                else if (ifscFilter === "OTHER_BANKS") ifscMatch = !claim.ifsc_code?.startsWith("IOBA");
+            }
             if (!ifscMatch) return false;
+
+            // Entry Date filter
             if (entryDate && new Date(claim.entry_date).toLocaleDateString("en-CA") !== entryDate) return false;
+
+            // Search filter
             if (debouncedSearch) {
                 const searchLower = debouncedSearch.toLowerCase();
                 const nameMatch = claim.staff_name?.toLowerCase().includes(searchLower);
@@ -85,89 +87,6 @@ const ClaimSubmission = () => {
     const displayedClaims = useMemo(() => mergeDuplicates(filteredClaims), [filteredClaims, mergeDuplicates]);
     const totalAmount = useMemo(() => displayedClaims.reduce((sum, claim) => sum + (Number(claim.amount) || 0), 0), [displayedClaims]);
 
-    // Handlers 
-    const handleDownloadExcel = () => {
-        if (displayedClaims.length === 0) {
-            alert("No data available to download");
-            return;
-        }
-        const excelData = displayedClaims.map((claim, index) => ({
-            "S.No": index + 1,
-            "Date": new Date(claim.entry_date).toLocaleDateString("en-GB"),
-            "Name": claim.staff_name,
-            "College": claim.college,
-            "Department": claim.department,
-            "Amount Paid": claim.amount,
-            "IFSC Code": claim.ifsc_code,
-            "Account No": claim.account_no,
-        }));
-        const worksheet = XLSX.utils.json_to_sheet(excelData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Claims");
-        const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-        const file = new Blob([excelBuffer], { type: "application/octet-stream" });
-        saveAs(file, `Unsubmitted Claims ${new Date().toISOString().slice(0, 10)}.xlsx`);
-    };
-
-    const createPDF = (prId, submittedDate, claims) => {
-        const doc = new jsPDF("p", "mm", "a4");
-        const pageWidth = doc.internal.pageSize.getWidth();
-        doc.addImage(logo2, "JPEG", 15, 10, 25, 25);
-        doc.addImage(logo1, "JPEG", pageWidth - 40, 10, 25, 25);
-        doc.setFontSize(18);
-        doc.setFont("helvetica", "bold");
-        doc.text("Jamal Mohamed College (Autonomous)", pageWidth / 2, 20, { align: "center" });
-        doc.setFontSize(9);
-        doc.text("Accredited with A++ Grade by NAAC (4th Cycle) with CGPA 3.69 out of 4.0.", pageWidth / 2, 27, { align: "center" });
-        doc.text("Tiruchirappalli – 620 020", pageWidth / 2, 33, { align: "center" });
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "normal");
-        doc.text(`PR ID: ${prId}`, 15, 50);
-        doc.text(`Date: ${submittedDate}`, pageWidth - 15, 50, { align: "right" });
-        const tableColumn = ["S.No", "Category", "Entry Date", "Name", "Department", "Claim Type", "Amount"];
-        const tableRows = claims.map((claim, index) => [
-            index + 1,
-            claim.internal_external,
-            new Date(claim.entry_date).toLocaleDateString('en-GB'),
-            claim.staff_name,
-            claim.department,
-            claim.claim_type_name,
-            claim.amount,
-        ]);
-        autoTable(doc, {
-            startY: 60,
-            head: [tableColumn],
-            body: tableRows,
-            styles: { fontSize: 10, halign: "center" },
-            headStyles: { fillColor: [0, 51, 102], textColor: "#fff", fontStyle: "bold" },
-            columnStyles: {
-                0: { cellWidth: 12 },
-                1: { cellWidth: 22 },
-                2: { cellWidth: 30 },
-                3: { cellWidth: 35 },
-                4: { cellWidth: 25 },
-                5: { cellWidth: 28 },
-                6: { cellWidth: 25 },
-            }
-        });
-        const pageHeight = doc.internal.pageSize.getHeight();
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text("Controller of Examinations", 15, pageHeight - 20);
-        doc.text("Principal", 180, pageHeight - 20);
-        doc.save(`PendingClaims_${prId}.pdf`);
-    };
-
-    const handleDownloadClaimTypePDF = () => {
-        if (displayedClaims.length === 0) {
-            alert('No pending claims found to download.');
-            return;
-        }
-        const prId = `PR-${new Date().getFullYear()}-TEMP`;
-        const submissionDate = new Date().toLocaleDateString('en-GB');
-        createPDF(prId, submissionDate, displayedClaims);
-    };
-
     const proceedWithSubmission = async () => {
         setIsSubmitting(true);
         try {
@@ -194,6 +113,12 @@ const ClaimSubmission = () => {
     };
 
     const handleSubmitClaims = () => {
+        // Check if any dropdown is still empty (not selected)
+        if (!claimType || !categoryFilter || !ifscFilter) {
+            alert("Please select Claim Type, Category, and Bank Type before submitting.");
+            return;
+        }
+        // If "All Bank Types" is selected, show modal
         if (ifscFilter === 'all') {
             setShowBankTypeModal(true);
             return;
@@ -214,6 +139,9 @@ const ClaimSubmission = () => {
         }
     };
 
+    // Check if submit button should be enabled (all three dropdowns have a non-empty value)
+    const isSubmitEnabled = claimType !== "" && categoryFilter !== "" && ifscFilter !== "" && displayedClaims.length > 0 && !isSubmitting;
+
     return (
         <div>
             {/* Header Section */}
@@ -228,23 +156,6 @@ const ClaimSubmission = () => {
                         Unsubmitted <span className="text-slate-400 font-light">Claims</span>
                     </h1>
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
-                    <button
-                        onClick={handleDownloadClaimTypePDF}
-                        disabled={isSubmitting}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-100 active:scale-95 disabled:opacity-50"
-                    >
-                        <FileText className="w-4 h-4" />
-                        Download PDF
-                    </button>
-                    <button
-                        onClick={handleDownloadExcel}
-                        className="flex items-center gap-2 bg-green-700 border border-slate-200 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-800 transition-all shadow-sm active:scale-95"
-                    >
-                        <Download className="w-4 h-4" />
-                        Download Excel
-                    </button>
-                </div>
             </header>
 
             {/* Filter Bar */}
@@ -258,8 +169,9 @@ const ClaimSubmission = () => {
                         <select
                             value={claimType}
                             onChange={(e) => setClaimType(e.target.value)}
-                            className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none cursor-pointer ${claimType !== 'all' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
+                            className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none cursor-pointer ${claimType !== '' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
                         >
+                            <option value="" disabled>Select Claim Type</option>
                             <option value="all">All Claim Types</option>
                             {claimTypes.map((type) => (
                                 <option key={type} value={type}>{type}</option>
@@ -274,8 +186,9 @@ const ClaimSubmission = () => {
                         <select
                             value={categoryFilter}
                             onChange={(e) => setCategoryFilter(e.target.value)}
-                            className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none cursor-pointer ${categoryFilter !== 'all' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
+                            className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none cursor-pointer ${categoryFilter !== '' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
                         >
+                            <option value="" disabled>Select Category</option>
                             <option value="all">All Categories</option>
                             <option value="INTERNAL">INTERNAL</option>
                             <option value="EXTERNAL">EXTERNAL</option>
@@ -289,8 +202,9 @@ const ClaimSubmission = () => {
                         <select
                             value={ifscFilter}
                             onChange={(e) => setIfscFilter(e.target.value)}
-                            className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none cursor-pointer ${ifscFilter !== 'all' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
+                            className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none cursor-pointer ${ifscFilter !== '' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
                         >
+                            <option value="" disabled>Select Bank Type</option>
                             <option value="all">All Bank Types</option>
                             <option value="JMC_IOB">IOB JMC Branch</option>
                             <option value="IOB_OTHERS">IOB Other Branch</option>
@@ -359,7 +273,7 @@ const ClaimSubmission = () => {
                             <tbody>
                                 {fetchLoading ? (
                                     <tr>
-                                        <td colSpan={10} className="text-center py-20">
+                                        <td colSpan={9} className="text-center py-20">
                                             <div className="flex flex-col items-center justify-center">
                                                 <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-3" />
                                                 <p className="text-slate-500 text-sm">Loading pending claims...</p>
@@ -368,7 +282,7 @@ const ClaimSubmission = () => {
                                     </tr>
                                 ) : fetchError ? (
                                     <tr>
-                                        <td colSpan={10} className="text-center py-16">
+                                        <td colSpan={9} className="text-center py-16">
                                             <div className="flex flex-col items-center justify-center">
                                                 <div className="bg-red-50 p-4 rounded-full mb-4">
                                                     <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -385,13 +299,13 @@ const ClaimSubmission = () => {
                                     </tr>
                                 ) : displayedClaims.length === 0 ? (
                                     <tr>
-                                        <td colSpan={10} className="text-center py-16">
+                                        <td colSpan={9} className="text-center py-16">
                                             <div className="flex flex-col items-center justify-center">
                                                 <div className="bg-slate-50 p-4 rounded-full mb-4">
                                                     <Search className="w-10 h-10 text-slate-200" />
                                                 </div>
                                                 <h3 className="text-slate-800 font-bold">No pending claims</h3>
-                                                <p className="text-slate-400 text-sm">There are no unsubmitted records matching your filters.</p>
+                                                <p className="text-slate-400 text-sm mt-5">There are no unsubmitted records matching your filters.</p>
                                             </div>
                                         </td>
                                     </tr>
@@ -410,8 +324,8 @@ const ClaimSubmission = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                <div className="text-[14px]  leading-none text-blue-600 font-bold uppercase">
-                                                    {categoryFilter === "TDS" ? "AIDED" : claim.internal_external}
+                                                <div className="text-[14px] leading-none text-blue-600 font-bold uppercase">
+                                                    {claim.internal_external}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 min-w-[250px] text-center">
@@ -424,7 +338,7 @@ const ClaimSubmission = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                <p className=" bg-slate-50 p-2 rounded-lg border border-slate-200 w-fit text-[13px] text-slate-400 uppercase font-bold">{claim.ifsc_code}</p>
+                                                <p className="bg-slate-50 p-2 rounded-lg border border-slate-200 w-fit text-[13px] text-slate-400 uppercase font-bold">{claim.ifsc_code}</p>
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <p className="text-[13px] text-center text-blue-500 uppercase font-bold">{claim.account_no}</p>
@@ -448,9 +362,9 @@ const ClaimSubmission = () => {
             {!fetchLoading && !fetchError && displayedClaims.length > 0 && (
                 <div className="mt-8 text-center flex justify-end gap-4">
                     <button
-                        className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className={`inline-flex items-center gap-2 bg-blue-600 text-white font-medium px-5 py-2.5 rounded-lg shadow-md transition-all duration-200 transform focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${isSubmitEnabled ? 'hover:bg-blue-700 hover:shadow-lg' : ''}`}
                         onClick={handleSubmitClaims}
-                        disabled={isSubmitting}
+                        disabled={!isSubmitEnabled}
                     >
                         {isSubmitting ? (
                             <>
@@ -462,14 +376,14 @@ const ClaimSubmission = () => {
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                Submit Claims
+                                Submit to Principal
                             </>
                         )}
                     </button>
                 </div>
             )}
 
-            {/* Modal */}
+            {/* Modal for "All Bank Types" */}
             {showBankTypeModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                     <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative animate-in fade-in zoom-in duration-200">

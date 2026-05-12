@@ -7,9 +7,9 @@ import useFetch from '../hooks/useFetch';
 const Dashboard = () => {
 
     const apiUrl = import.meta.env.VITE_API_URL;
-    const { data } = useFetch(`${apiUrl}/api/totalclaimscount`);
-    const { data: staffCounts } = useFetch(`${apiUrl}/api/staffcount`);
-    const { data: creditedCounts } = useFetch(`${apiUrl}/api/creditedclaims`);
+    const { data } = useFetch(`${apiUrl}/api/totalClaimsCount`);
+    const { data: staffCounts } = useFetch(`${apiUrl}/api/staffsCount`);
+    const { data: creditedCounts } = useFetch(`${apiUrl}/api/creditedClaims`);
     const { data: submittedCounts } = useFetch(`${apiUrl}/api/submittedclaims`);
     const { data: pendingCounts } = useFetch(`${apiUrl}/api/pendingclaims`);
     const { data: awaitingCounts } = useFetch(`${apiUrl}/api/awaitingclaims`);

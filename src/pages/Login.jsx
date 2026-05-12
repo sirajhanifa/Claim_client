@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import usePost from '../hooks/usePost';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import JmcLogo from '../assets/logo.jpeg';
+import JmcLogo from '../assets/JmcLogo.png';
 import Jmc75 from '../assets/75.jpeg';
 import { User, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
 
