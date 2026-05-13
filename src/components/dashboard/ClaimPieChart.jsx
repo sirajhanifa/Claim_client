@@ -11,6 +11,7 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
 
 const ClaimPieChart = ({ title, data, colors }) => {
+
     const values = data.map(item => Number(item?.value) || 0);
     const labels = data.map(item => item?.name || 'Unknown');
     const total = values.reduce((sum, value) => sum + value, 0);
@@ -85,7 +86,13 @@ const ClaimPieChart = ({ title, data, colors }) => {
                         <div key={`${item?.name}-${index}`} className="flex items-center gap-3">
                             <span className="inline-flex h-3 w-3 rounded-full" style={{ backgroundColor: colors[index] || '#94a3b8' }} />
                             <span className="flex-1 text-slate-600">{item?.name || 'Unknown'}</span>
-                            <span className="font-semibold text-slate-800">{value.toLocaleString('en-IN')}</span>
+                            <span className="font-semibold text-slate-800">
+                                {
+                                    item?.count !== undefined
+                                        ? `₹ ${value.toLocaleString('en-IN')} ( ${item.count} Claims )`
+                                        : value.toLocaleString('en-IN')
+                                }
+                            </span>
                         </div>
                     );
                 })}

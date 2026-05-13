@@ -16,6 +16,8 @@ const Dashboard = () => {
     const { data: claimIE } = useFetch(`${apiUrl}/api/internalexternalclaims`);
     const { data: claimTypeAmounts } = useFetch(`${apiUrl}/api/claimtypeamounts`);
 
+    console.log(awaitingCounts)
+
     const groupedBarChartData = (claimTypeAmounts || []).reduce((acc, item) => {
         const typeName = (item.name || '').trim().toUpperCase();
         if (typeName === 'QPS') {
@@ -56,6 +58,19 @@ const Dashboard = () => {
 
     const pieColors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4'];
 
+    const internalExternalData = [
+        {
+            name: "Internal",
+            value: claimIE?.internal?.amount || 0,
+            count: claimIE?.internal?.count || 0
+        },
+        {
+            name: "External",
+            value: claimIE?.external?.amount || 0,
+            count: claimIE?.external?.count || 0
+        }
+    ];
+
     return (
         <div className="">
             <header className="mx-auto mb-10">
@@ -79,8 +94,17 @@ const Dashboard = () => {
                     <ClaimCard title="Unsubmitted Claims" count={pendingCounts?.pendingClaims || 0} amount={pendingCounts?.pendingAmount || 0} color="yellow" />
                     <ClaimCard title="Submitted Claims" count={submittedCounts?.submittedClaims || 0} amount={submittedCounts?.submittedAmount || 0} color="green" />
                     <ClaimCard title="Credited Claims" count={creditedCounts?.creditedClaims || 0} amount={creditedCounts?.creditedAmount || 0} color="pink" />
-                    <ClaimCard title="Awaiting for Credit" count={awaitingCounts?.awaitingClaims || 0} amount={awaitingCounts?.awaitingAmount || 0} color="red" showAlert={true} />
-                </section>
+                    <ClaimCard
+                        title="Awaiting for Credit"
+                        count={
+                            awaitingCounts
+                                ? `${awaitingCounts.awaitingClaims || 0} ( ${awaitingCounts.uniqueReportCount || 0} )`
+                                : "0 ( 0 )"
+                        }
+                        amount={awaitingCounts?.awaitingAmount || 0}
+                        color="red"
+                        showAlert={true}
+                    />                </section>
 
                 {/* Bar Chart */}
                 <section className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
@@ -109,10 +133,7 @@ const Dashboard = () => {
                     <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
                         <ClaimPieChart
                             title="Distribution by Claims"
-                            data={[
-                                { name: "Internal", value: claimIE?.internal || 0 },
-                                { name: "External", value: claimIE?.external || 0 }
-                            ]}
+                            data={internalExternalData}
                             colors={['#10b981', '#ef4444']}
                         />
                     </div>
