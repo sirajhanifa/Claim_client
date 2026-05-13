@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import useFetch from '../hooks/useFetch';
-import { Trash2, Search, Phone, Filter, Layers, Calendar, Landmark, X, Loader2, Edit3 } from "lucide-react";
+import { Trash2, Search, Phone, Filter, Layers, Calendar, Landmark, X, Loader2, Edit3, Download } from "lucide-react";  // +Download
 import axios from 'axios';
+import * as XLSX from 'xlsx';
 
 const ClaimSubmission = () => {
 
@@ -93,6 +94,40 @@ const ClaimSubmission = () => {
 
     const totalAmount = useMemo(() => displayedClaims.reduce((sum, claim) => sum + (Number(claim.amount) || 0), 0), [displayedClaims]);
 
+    const handleDownloadExcel = () => {
+
+        if (!displayedClaims.length) {
+            alert("No data to export.");
+            return;
+        }
+
+        const worksheetData = displayedClaims.map((claim, idx) => {
+            const baseRow = {
+                "S.No": idx + 1,
+                "Staff Name": claim.staff_name || "",
+                "Category": claim.internal_external || "",
+                "Claim Type": claim.claim_type_name || "",
+                "Phone Number": claim.phone_number || "",
+                "IFSC Code": claim.ifsc_code || "",
+                "Account Number": claim.account_no || "",
+                "Amount": claim.amount || 0,
+                "Entry Date": claim.entry_date ? new Date(claim.entry_date).toLocaleDateString('en-GB') : "",
+            };
+
+            if (viewMode === 'grouped' && claim._mergedCount > 1) {
+                baseRow["Merged Count"] = claim._mergedCount;
+            }
+            return baseRow;
+        });
+
+        const ws = XLSX.utils.json_to_sheet(worksheetData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "UnsubmittedClaims");
+        const fileName = `UnsubmittedClaims_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+    };
+    // --------------------------------------------
+
     // Edit handlers
     const openEditModal = (claim) => {
         setEditingClaim({ ...claim });
@@ -170,7 +205,6 @@ const ClaimSubmission = () => {
     const handleDelete = async (id) => {
         if (!confirm("Are you sure you want to delete this claim?")) return;
         try {
-            // console.log(apiUrl)
             await axios.delete(`${apiUrl}/api/claimDelete/${id}`);
             alert("Claim deleted successfully");
             await refetch();
@@ -184,7 +218,7 @@ const ClaimSubmission = () => {
 
     return (
         <div>
-            {/* Header Section */}
+            {/* Header Section with Excel button */}
             <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm uppercase tracking-wider">
@@ -195,6 +229,15 @@ const ClaimSubmission = () => {
                         Unsubmitted <span className="text-slate-400 font-light">Claims</span>
                     </h1>
                 </div>
+
+                {/* New Excel Download Button */}
+                <button
+                    onClick={handleDownloadExcel}
+                    className="flex items-center gap-2 bg-green-700 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-800 transition-all shadow-sm active:scale-95"
+                >
+                    <Download className="w-4 h-4" />
+                    Download Excel
+                </button>
             </header>
 
             {/* Filter Bar */}
@@ -569,7 +612,6 @@ const ClaimSubmission = () => {
                                         name="amount"
                                         value={editingClaim.amount || ''}
                                         onChange={(e) => {
-                                            // Only allow digits and optional decimal
                                             let val = e.target.value;
                                             if (val === '' || /^\d*\.?\d*$/.test(val)) {
                                                 handleEditChange(e);
