@@ -135,35 +135,36 @@ const StaffManage = () => {
     const customSelectStyles = {
         control: (base, state) => ({
             ...base,
-            backgroundColor: state.isFocused ? 'white' : '#f8fafc',
+            backgroundColor: state.isFocused ? '#ffffff' : '#ffffff',
             borderWidth: '2px',
-            borderColor: state.isFocused ? '#3b82f6' : '#f1f5f9',
+            borderColor: state.isFocused ? '#3b82f6' : '#e2e8f0',
             borderRadius: '0.75rem',
             minHeight: '46px',
-            padding: '0 8px',
+            padding: '0 1rem',
             outline: 'none',
             boxShadow: 'none',
             transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
             '&:hover': {
-                borderColor: state.isFocused ? '#3b82f6' : '#e2e8f0',
+                borderColor: state.isFocused ? '#3b82f6' : '#cbd5e1',
             },
         }),
 
         valueContainer: (base) => ({
             ...base,
-            paddingLeft: '0.5rem',
+            paddingLeft: 0,
+            paddingRight: 0,
         }),
 
         singleValue: (base) => ({
             ...base,
-            color: '#334155',
+            color: '#334155', // slate-700
             fontWeight: '700',
-            fontSize: '0.875rem',
+            fontSize: '0.875rem', // text-sm
         }),
 
         placeholder: (base) => ({
             ...base,
-            color: '#cbd5e1',
+            color: '#cbd5e1', // slate-300 = placeholder:text-slate-300
             fontWeight: '700',
             fontSize: '0.875rem',
         }),
@@ -174,15 +175,17 @@ const StaffManage = () => {
             overflow: 'hidden',
             boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
             border: '1px solid #f1f5f9',
+            marginTop: '0.5rem',
         }),
 
         option: (base, state) => ({
             ...base,
             fontSize: '0.875rem',
             fontWeight: '600',
-            backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-            color: state.isSelected ? 'white' : '#334155',
+            backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : '#ffffff',
+            color: state.isSelected ? '#ffffff' : '#334155',
             cursor: 'pointer',
+            padding: '0.75rem 1rem',
             '&:active': {
                 backgroundColor: '#dbeafe',
             },
@@ -195,6 +198,7 @@ const StaffManage = () => {
         dropdownIndicator: (base) => ({
             ...base,
             color: '#94a3b8',
+            paddingLeft: '0.5rem',
             '&:hover': {
                 color: '#3b82f6',
             },
@@ -537,7 +541,7 @@ const StaffManage = () => {
 
                                         return (
                                             <div key={field} className={`flex flex-col ${field === 'staff_name' ? 'md:col-span-2' : ''}`}>
-                                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.1em] mb-2 ml-1">
+                                                <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.1em] mb-2 ml-1">
                                                     {field === "ifsc_code" ? "IFSC CODE" : camelCaseLabel}
                                                 </label>
                                                 {isSelectField ? (
@@ -558,7 +562,7 @@ const StaffManage = () => {
                                                             [field]: field === "ifsc_code" ? e.target.value.toUpperCase() : e.target.value,
                                                         })}
                                                         required={field !== "staff_id"}
-                                                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:border-blue-500 focus:bg-white outline-none transition-all placeholder:text-slate-300"
+                                                        className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:border-blue-500 focus:bg-white outline-none transition-all placeholder:text-slate-300"
                                                     />
                                                 )}
                                             </div>
@@ -568,18 +572,18 @@ const StaffManage = () => {
                             </form>
                         </div>
 
-                        <div className="p-6 border-t border-slate-100 bg-white/90 backdrop-blur-sm flex items-center gap-4">
+                        <div className="p-6 border-t  border-slate-100 bg-white/90 backdrop-blur-sm justify-between flex items-center gap-4">
                             <button
                                 type="button"
                                 onClick={() => setShowModal(false)}
-                                className="flex-1 py-4 text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors"
+                                className="py-4 w-1/2 bg-slate-200 rounded-2xl text-slate-500 tracking-wider font-bold hover:text-slate-600 transition-colors"
                             >
-                                Discard Changes
+                                DISCARD CHANGES
                             </button>
                             <button
                                 type="submit"
                                 form="staff-form"
-                                className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl text-base font-black shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all active:scale-[0.98]"
+                                className="py-4 w-1/2 bg-blue-600 text-white rounded-2xl tracking-wider font-bold hover:bg-blue-700 transition-all active:scale-[0.98]"
                             >
                                 {editingStaff ? 'UPDATE RECORDS' : 'REGISTER STAFF'}
                             </button>
