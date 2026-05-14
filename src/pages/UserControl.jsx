@@ -56,7 +56,7 @@ const AddUser = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-900">
+        <div className="min-h-screen font-sans text-slate-900">
             <div className="space-y-8">
 
                 {/* Refined Header */}

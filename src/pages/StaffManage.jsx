@@ -206,7 +206,7 @@ const StaffManage = () => {
     };
 
     return (
-        <div className=''>
+        <div>
 
             {/* Header */}
             <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">

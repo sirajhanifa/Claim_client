@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Button from '../components/Button';
-import { Plus, Trash, Pencil } from 'lucide-react';
+import { Plus, Trash, Pencil, Eye, EyeOff, X, AlertTriangle } from 'lucide-react';
 import useFetch from '../hooks/useFetch';
 import usePost from '../hooks/usePost';
 import useDelete from '../hooks/useDelete';
@@ -10,7 +10,7 @@ const ClaimManage = () => {
     const apiUrl = import.meta.env.VITE_API_URL;
     const [showModal, setShowModal] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+    const [confirmDeleteClaim, setConfirmDeleteClaim] = useState(null); // store full claim object
 
     const [form, setForm] = useState({
         name: '',
@@ -81,16 +81,28 @@ const ClaimManage = () => {
         setShowModal(true);
     };
 
-    const handleDelete = async (id) => {
-        await deleteData(`${apiUrl}/api/deleteClaim/${id}`);
+    const handleDelete = async () => {
+        if (!confirmDeleteClaim) return;
+        await deleteData(`${apiUrl}/api/deleteClaim/${confirmDeleteClaim._id}`);
         refetch();
-        setConfirmDeleteId(null);
+        setConfirmDeleteClaim(null);
+    };
+
+    const handleToggleActive = async (claim) => {
+        const newActiveStatus = !claim.isActive;
+        await postData(`${apiUrl}/api/updateClaim/${claim._id}`, { isActive: newActiveStatus });
+        refetch();
+    };
+
+    const hasAnyRate = (settings) => {
+        if (!settings) return false;
+        return Object.values(settings).some(val => val !== '' && val !== null && val !== undefined);
     };
 
     return (
-        <div className="min-h-screen space-y-6">
+        <div className="min-h-screen">
             {/* Header */}
-            <header className="flex flex-col lg:flex-row justify-between items-center gap-6 mb-8">
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm uppercase tracking-wider">
                         <div className="h-1 w-8 bg-blue-600 rounded-full" />
@@ -101,87 +113,94 @@ const ClaimManage = () => {
                     </h1>
                 </div>
 
-                {/* Right Section: Actions */}
-                <div className="flex items-center gap-3">
-                    <Button
-                        variant="primary"
-                        className="group flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-sm active:scale-95"
-                        onClick={() => {
-                            resetForm();
-                            setEditingId(null);
-                            setShowModal(true);
-                        }}
-                    >
-                        <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
-                        <span>Add Category</span>
-                    </Button>
-                </div>
+                <Button
+                    variant="primary"
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold transition-all active:scale-95"
+                    onClick={() => {
+                        resetForm();
+                        setEditingId(null);
+                        setShowModal(true);
+                    }}
+                >
+                    <Plus size={20} />
+                    <span>Add Category</span>
+                </Button>
             </header>
 
             {/* Main Content */}
-            <div className="">
-
+            <div className="relative">
                 {loading && (
-                    <div className="flex items-center gap-2 text-sm font-bold text-blue-600 animate-pulse mb-4 bg-blue-50 w-fit px-4 py-2 rounded-full border border-blue-100">
-                        <div className="w-2 h-2 bg-blue-600 rounded-full animate-ping" />
-                        UPDATING REGISTRY...
+                    <div className="flex items-center gap-3 text-sm font-bold text-blue-700 mb-6 bg-blue-100/50 w-fit px-5 py-2.5 rounded-full border border-blue-200 animate-pulse">
+                        <div className="w-2.5 h-2.5 bg-blue-600 rounded-full" />
+                        SYNCING REGISTRY...
                     </div>
                 )}
 
-                {/* Optimized Grid - 3 Columns for better readability */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {data && data.length > 0 ? (
                         data.map((claim, index) => (
                             <div
                                 key={claim._id}
-                                className="group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-400 transition-all duration-300 relative overflow-hidden flex flex-col"
+                                className={`group bg-white rounded-2xl border-2 transition-all duration-300 flex flex-col hover:shadow-xl hover:shadow-blue-900/5 ${claim.isActive ? 'border-slate-100 hover:border-blue-400' : 'border-slate-200 opacity-80'
+                                    }`}
                             >
                                 <div className="p-6 flex-grow">
-                                    <div className="flex justify-between items-center mb-4">
-                                        <span className="bg-slate-100 text-slate-500 text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-widest">
-                                            Claim #{index + 1}
+                                    <div className="flex justify-between items-start mb-5">
+                                        <span className={`text-[10px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-lg border ${claim.isActive
+                                            ? 'bg-blue-50 text-blue-600 border-blue-100'
+                                            : 'bg-slate-100 text-slate-400 border-slate-200'
+                                            }`}>
+                                            Category #{index + 1}
                                         </span>
-                                        <div className="flex gap-2">
+                                        <div className="flex gap-3">
                                             <button
-                                                onClick={() => handleEdit(claim)}
-                                                className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                                                onClick={() => handleToggleActive(claim)}
+                                                className={`p-2.5 rounded-lg transition-all shadow-sm ${claim.isActive
+                                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                                    : 'bg-slate-200 text-slate-500 hover:bg-blue-500 hover:text-white'
+                                                    }`}
+                                                title={claim.isActive ? 'Deactivate' : 'Activate'}
                                             >
-                                                <Pencil size={14} />
+                                                {claim.isActive ? <Eye size={16} /> : <EyeOff size={16} />}
                                             </button>
                                             <button
-                                                onClick={() => setConfirmDeleteId(claim._id)}
-                                                className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-all shadow-sm"
+                                                onClick={() => handleEdit(claim)}
+                                                className="p-2.5 bg-white text-blue-600 border border-blue-100 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
                                             >
-                                                <Trash size={14} />
+                                                <Pencil size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => setConfirmDeleteClaim(claim)}
+                                                className="p-2.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-lg hover:bg-rose-600 hover:text-white transition-all shadow-sm"
+                                            >
+                                                <Trash size={16} />
                                             </button>
                                         </div>
                                     </div>
 
-                                    <h3 className="text-xl font-black text-slate-800 mb-2 leading-tight">
+                                    <h3 className="text-xl font-bold text-slate-800 mb-2 leading-tight group-hover:text-blue-700 transition-colors mb-4">
                                         {claim.claim_type_name}
                                     </h3>
 
-                                    <p className="text-sm text-slate-500 line-clamp-2 mb-6 font-medium leading-relaxed">
-                                        {claim.description || 'No detailed description available for this claim type.'}
-                                    </p>
-
-                                    {/* Amount Settings Section */}
-                                    <div className="space-y-2">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] ml-1">Current Rates</p>
-                                        {claim.amount_settings ? (
+                                    {/* Pricing List */}
+                                    <div className="space-y-2.5">
+                                        <p className="text-[15px] font-semibold text-blue-500 mb-4 ml-1">Current Pricing</p>
+                                        {hasAnyRate(claim.amount_settings) ? (
                                             Object.entries(claim.amount_settings).map(([key, val]) => (
-                                                <div key={key} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 group-hover:bg-white group-hover:border-blue-100 transition-colors">
-                                                    <span className="text-xs font-bold uppercase text-slate-500">
-                                                        {key.replace(/_/g, ' ')}
-                                                    </span>
-                                                    <span className="text-base font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">
-                                                        ₹{val.toLocaleString('en-IN')}
-                                                    </span>
-                                                </div>
+                                                val !== '' && val !== null && val !== undefined && (
+                                                    <div key={key} className="flex justify-between items-center bg-blue-50/40 p-3 rounded-xl border border-blue-100/50 group-hover:bg-white group-hover:border-blue-200 transition-all">
+                                                        <span className="text-[13px] font-bold uppercase text-slate-500">
+                                                            {key.replace(/_/g, ' ')}
+                                                        </span>
+                                                        <span className="text-sm font-black text-blue-700">
+                                                            ₹{val.toLocaleString('en-IN')}
+                                                        </span>
+                                                    </div>
+                                                )
                                             ))
                                         ) : (
-                                            <div className="text-center mt-6 py-3 bg-amber-50 rounded-xl border border-amber-100 text-amber-600 text-xs font-bold">
-                                                NO PRICING SET
+                                            <div className="text-center py-4 bg-amber-50 rounded-xl border-2 border-dashed border-amber-200 text-amber-600 text-xs font-bold uppercase tracking-widest">
+                                                Not Configured
                                             </div>
                                         )}
                                     </div>
@@ -189,121 +208,153 @@ const ClaimManage = () => {
                             </div>
                         ))
                     ) : (
-                        <div className="col-span-full py-20 text-center bg-white rounded-[2rem] border-2 border-dashed border-slate-200">
-                            <p className="text-slate-400 font-bold text-lg italic tracking-tight">The registry is currently empty.</p>
+                        <div className="col-span-full py-20 text-center bg-white rounded-3xl border-2 border-dashed border-blue-200 shadow-inner shadow-blue-50">
+                            <p className="text-blue-400 font-bold text-lg tracking-tight">The registry is currently empty.</p>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Delete Modal - Clean & Bold */}
-            {confirmDeleteId && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-4">
-                    <div className="bg-white rounded-[1rem] shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="p-8 text-center">
-                            <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                <Trash size={28} />
-                            </div>
-                            <h2 className="text-xl font-black text-slate-900">Remove Type?</h2>
-                            <p className="text-sm text-slate-500 mt-2 font-medium">This configuration will be deleted permanently from the system.</p>
-                        </div>
-                        <div className="p-4 bg-slate-50 flex gap-3">
-                            <button onClick={() => setConfirmDeleteId(null)} className="flex-1 py-3 text-sm font-bold text-slate-500 hover:bg-slate-200 rounded-xl transition">Go Back</button>
-                            <button onClick={() => handleDelete(confirmDeleteId)} className="flex-1 py-3 bg-rose-600 text-white text-sm font-black rounded-xl hover:bg-rose-700 shadow-lg shadow-rose-100 transition">Delete</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Form Modal - Medium Pro Size */}
+            {/* Modal for Add/Edit */}
             {showModal && (
-                <div className="fixed inset-0 bg-blue-900/30 backdrop-blur-md flex items-center justify-center z-[100] p-4">
-                    <div className="bg-white rounded-[1.5rem] shadow-2xl w-full max-w-xl overflow-hidden border-t-[5px] border-blue-600 animate-in slide-in-from-bottom-8 duration-300 flex flex-col max-h-[85vh]">
-                        <div className="p-8 pb-4 bg-white z-10">
-                            <h2 className="text-xl font-black text-slate-900 flex items-center gap-3">
-                                <span className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                                    {editingId ? <Pencil size={20} /> : <Plus size={24} />}
-                                </span>
-                                {editingId ? 'Modify Type' : 'New Type'}
-                            </h2>
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center z-[100] p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white">
+                            <div>
+                                <h2 className="text-xl font-extrabold text-slate-900 leading-none">
+                                    {editingId ? 'Edit Category' : 'New Category'}
+                                </h2>
+                                <p className="text-xs text-slate-400 mt-2 font-bold uppercase tracking-wider">Configuration Panel</p>
+                            </div>
+                            <button
+                                onClick={() => { setShowModal(false); setEditingId(null); }}
+                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all"
+                            >
+                                <X size={20} />
+                            </button>
                         </div>
-                        <div className="flex-1 overflow-y-auto px-8 scrollbar-hide">
-                            <style
-                                dangerouslySetInnerHTML={{ __html: `.scrollbar-hide::-webkit-scrollbar { display: none; }` }}
-                            />
-                            <form onSubmit={handleSubmit} id="type-form" className="space-y-5 pb-5">
-                                <div>
-                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2.5 ml-1 block">
-                                        Category Name
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="name"
-                                        value={form.name}
-                                        onChange={handleChange}
-                                        placeholder="Enter category name"
-                                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 text-base focus:border-blue-500 focus:bg-white outline-none font-bold transition-all"
-                                        required
-                                    />
-                                </div>
 
-                                <div>
-                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2.5 ml-1 block">
-                                        Description
-                                    </label>
-                                    <textarea
-                                        name="description"
-                                        rows={2}
-                                        value={form.description}
-                                        onChange={handleChange}
-                                        placeholder="Briefly describe this type..."
-                                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 text-sm font-medium focus:border-blue-500 focus:bg-white outline-none transition-all"
-                                    ></textarea>
-                                </div>
-
-                                <div className="bg-emerald-50 p-5 rounded-2xl border border-emerald-100">
-                                    <h3 className="text-[10px] font-black text-emerald-700 uppercase tracking-[0.2em] mb-4">
-                                        Price Settings (₹)
-                                    </h3>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {Object.entries(form.amount_settings).map(([key, value]) => (
-                                            <div key={key}>
-                                                <label className="text-[10px] font-bold text-emerald-600 uppercase block mb-1 ml-1">
-                                                    {key.replace(/_/g, ' ')}
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    name={key}
-                                                    value={value}
-                                                    onChange={handleAmountChange}
-                                                    className="w-full bg-white border-2 mt-2 border-emerald-200 rounded-xl px-3 py-2 text-sm font-black text-emerald-800 outline-none focus:border-emerald-500 transition-all"
-                                                />
-                                            </div>
-                                        ))}
+                        <div className="p-8 max-h-[70vh] overflow-y-auto">
+                            <form onSubmit={handleSubmit} id="type-form" className="space-y-5">
+                                <div className="space-y-5">
+                                    <div>
+                                        <label className="text-[12px] font-black text-blue-600 uppercase tracking-widest mb-3 block ml-1">
+                                            Category Title :
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="name"
+                                            value={form.name}
+                                            onChange={handleChange}
+                                            placeholder="e.g. Examination Duties"
+                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-sm font-bold focus:border-blue-500 focus:bg-white outline-none transition-all"
+                                            required
+                                        />
                                     </div>
+                                    <div>
+                                        <label className="text-[12px] font-black text-blue-600 uppercase tracking-widest mb-3 block ml-1">
+                                            Description :
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="description"
+                                            value={form.description}
+                                            onChange={handleChange}
+                                            placeholder="Details regarding this claim type..."
+                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-sm font-medium focus:border-blue-500 focus:bg-white outline-none transition-all"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100 space-y-4">
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <div className="h-1 w-4 bg-blue-600 rounded-full" />
+                                        <h3 className="text-sm font-black text-blue-900 uppercase tracking-widest">Rate Schedule (₹)</h3>
+                                    </div>
+                                    {hasAnyRate(form.amount_settings) ? (
+                                        <div className="grid grid-cols-3 gap-6">
+                                            {Object.entries(form.amount_settings).map(([key, value]) => (
+                                                <div key={key} className="space-y-3">
+                                                    <label className="text-[12px] font-bold text-slate-500 uppercase block ml-1">
+                                                        {key.replace(/_/g, ' ')} :
+                                                    </label>
+                                                    <div className="relative">
+                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-600 font-bold text-xs">₹</span>
+                                                        <input
+                                                            type="number"
+                                                            name={key}
+                                                            value={value}
+                                                            onChange={handleAmountChange}
+                                                            onWheel={(e) => e.target.blur()}
+                                                            className="w-full bg-white border border-blue-100 rounded-lg pl-6 pr-3 py-2 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all shadow-sm"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-8 bg-white/60 rounded-xl border-2 border-dashed border-blue-200">
+                                            <p className="text-blue-500 font-bold text-sm uppercase tracking-wider">No pricing configured</p>
+                                            <p className="text-xs text-slate-400 mt-1">Add rates above by filling the fields</p>
+                                        </div>
+                                    )}
                                 </div>
                             </form>
                         </div>
 
-                        {/* 3. FIXED FOOTER BUTTONS */}
-                        <div className="p-8 pt-4 border-t border-slate-50 bg-white flex gap-4">
+                        {/* Footer buttons: equal width (1/2 each) */}
+                        <div className="px-8 py-6 bg-slate-50/80 border-t border-slate-100 flex gap-3">
                             <button
                                 type="button"
-                                onClick={() => {
-                                    setShowModal(false);
-                                    setEditingId(null);
-                                }}
-                                className="flex-1 py-3 text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors"
+                                onClick={() => { setShowModal(false); setEditingId(null); }}
+                                className="flex-1 py-3 text-xs font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest"
                             >
                                 Discard
                             </button>
                             <button
                                 type="submit"
                                 form="type-form"
-                                className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl text-base font-black shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95"
+                                className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95"
                             >
-                                {editingId ? 'UPDATE' : 'CREATE TYPE'}
+                                {editingId ? 'Save Changes' : 'Create Category'}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Redesigned Delete Modal */}
+            {confirmDeleteClaim && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+                    <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="bg-red-600 p-8 text-white flex flex-col items-center text-center">
+                            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4 backdrop-blur-lg">
+                                <AlertTriangle size={32} />
+                            </div>
+                            <h3 className="text-2xl font-bold">Irreversible Action</h3>
+                            <p className="text-red-100 text-sm mt-2">You are about to delete all claim data for:</p>
+                            <div className="px-4 py-2 bg-black/10 rounded-lg font-bold text-2xl border border-white/20 mt-2">
+                                {confirmDeleteClaim.claim_type_name}
+                            </div>
+                        </div>
+                        <div className="p-8 space-y-6">
+                            <p className="text-slate-600 text-center text-sm leading-relaxed">
+                                Proceeding will remove every claim entry associated with this semester from the live database. This cannot be undone.
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setConfirmDeleteClaim(null)}
+                                    className="flex-1 py-4 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors"
+                                >
+                                    Go Back
+                                </button>
+                                <button
+                                    onClick={handleDelete}
+                                    className="flex-1 py-4 rounded-2xl bg-red-600 text-white font-bold hover:bg-red-700 transition-all active:scale-95"
+                                >
+                                    Confirm Delete
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

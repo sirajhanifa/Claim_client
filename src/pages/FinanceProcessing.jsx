@@ -308,7 +308,7 @@ const FinanceProcessing = () => {
                                                     <ChevronRight className={`w-4 h-4 ${selectedBatchId === batch.payment_report_id ? "text-blue-600 translate-x-1" : "text-slate-300"}`} />
                                                 </div>
                                                 <div className="flex items-center justify-between mt-2">
-                                                    <p className="text-xs font-medium text-slate-500">{batch.count} claim{batch.count !== 1 ? "s" : ""}</p>
+                                                    <p className="text-xs font-medium text-slate-500">{batch.count} Individual Claims{batch.count !== 1 ? "s" : ""}</p>
                                                     <BatchStatusBadge status={batch.batchStatus} />
                                                 </div>
                                             </button>
@@ -330,7 +330,7 @@ const FinanceProcessing = () => {
                                 {/* Metrics Cards */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                     <MetricCard label="Total Amount" value={`₹${totalBatchAmount.toLocaleString()}`} icon={<TrendingUp className="w-5 h-5" />} theme="emerald" />
-                                    <MetricCard label="Total Claims" value={totalClaimsCount} icon={<Users className="w-5 h-5" />} theme="blue" />
+                                    <MetricCard label="Total Grouped Claims" value={totalClaimsCount} icon={<Users className="w-5 h-5" />} theme="blue" />
                                     <MetricCard label="Batch ID" value={selectedBatchId} icon={<Hash className="w-5 h-5" />} theme="orange" />
                                 </div>
 
