@@ -16,6 +16,7 @@ const AbilityEnhancementClaim = ({ form, setForm }) => {
                     name="ability_total_no_students"
                     value={form.ability_total_no_students || ''}
                     onChange={handleChange}
+                    onWheel={(e) => e.target.blur()}
                     className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-medium text-slate-900"
                     placeholder="e.g. 50"
                 />
@@ -29,6 +30,7 @@ const AbilityEnhancementClaim = ({ form, setForm }) => {
                     name="ability_no_of_days_halted"
                     value={form.ability_no_of_days_halted || ''}
                     onChange={handleChange}
+                    onWheel={(e) => e.target.blur()}
                     className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-medium text-slate-900"
                     placeholder="Enter halt days"
                 />
@@ -46,6 +48,7 @@ const AbilityEnhancementClaim = ({ form, setForm }) => {
                         name="ability_dearness_allowance"
                         value={form.ability_dearness_allowance || ''}
                         onChange={handleChange}
+                        onWheel={(e) => e.target.blur()}
                         className="w-full pl-8 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-medium text-slate-900"
                         placeholder="0.00"
                     />
@@ -97,6 +100,7 @@ const AbilityEnhancementClaim = ({ form, setForm }) => {
                                         amount: Math.max(Number(prev.ability_total_value || 0) - Number(newTds || 0), 0).toString()
                                     }));
                                 }}
+                                onWheel={(e) => e.target.blur()}
                                 className="w-full pl-8 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-bold text-slate-900"
                                 placeholder="0.00"
                             />

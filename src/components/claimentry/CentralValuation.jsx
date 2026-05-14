@@ -35,6 +35,7 @@ const CentralValuation = ({ form, setForm }) => {
                     name="central_total_scripts_ug"
                     value={form.central_total_scripts_ug}
                     onChange={handleChange}
+                    onWheel={(e) => e.target.blur()}
                     className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-medium text-slate-900"
                     placeholder="Enter UG scripts"
                 />
@@ -50,6 +51,7 @@ const CentralValuation = ({ form, setForm }) => {
                     name="central_total_scripts_pg"
                     value={form.central_total_scripts_pg}
                     onChange={handleChange}
+                    onWheel={(e) => e.target.blur()}
                     className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-medium text-slate-900"
                     placeholder="Enter PG scripts"
                 />
@@ -65,6 +67,7 @@ const CentralValuation = ({ form, setForm }) => {
                     name="central_days_halted"
                     value={form.central_days_halted}
                     onChange={handleChange}
+                    onWheel={(e) => e.target.blur()}
                     className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-medium text-slate-900"
                     placeholder="0"
                 />
@@ -82,6 +85,7 @@ const CentralValuation = ({ form, setForm }) => {
                         name="central_dearness_allowance"
                         value={form.central_dearness_allowance || ''}
                         onChange={handleChange}
+                        onWheel={(e) => e.target.blur()}
                         className="w-full pl-8 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-medium text-slate-900"
                         placeholder="0.00"
                     />
@@ -100,6 +104,7 @@ const CentralValuation = ({ form, setForm }) => {
                         name="central_travel_allowance"
                         value={form.central_travel_allowance}
                         onChange={handleChange}
+                        onWheel={(e) => e.target.blur()}
                         className="w-full pl-8 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-medium text-slate-900"
                         placeholder="0.00"
                     />
@@ -153,6 +158,7 @@ const CentralValuation = ({ form, setForm }) => {
                                         amount: Math.max(Number(prev.central_total_value || 0) - Number(newTds || 0), 0).toString()
                                     }));
                                 }}
+                                onWheel={(e) => e.target.blur()}
                                 className="w-full pl-8 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-bold text-slate-900"
                                 placeholder="0.00"
                             />

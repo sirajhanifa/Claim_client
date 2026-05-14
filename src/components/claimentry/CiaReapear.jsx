@@ -55,6 +55,7 @@ const CiaReapear = ({ form, setForm }) => {
                     name="cia_no_of_papers"
                     value={form.cia_no_of_papers || ''}
                     onChange={handleChange}
+                    onWheel={(e) => e.target.blur()}
                     className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-medium text-slate-900"
                     placeholder="e.g. 10"
                     min="0"

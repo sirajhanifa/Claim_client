@@ -10,6 +10,7 @@ const PracticalFields = ({ form, setForm }) => {
                     type="number"
                     value={form.qps_paper_setting || ""}
                     onChange={(e) => setForm({ ...form, qps_paper_setting: Number(e.target.value) })}
+                    onWheel={(e) => e.target.blur()}
                     className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-medium text-slate-900"
                     placeholder="Enter papers count"
                 />
@@ -56,6 +57,7 @@ const PracticalFields = ({ form, setForm }) => {
                     type="number"
                     value={form.total_students || ""}
                     onChange={(e) => setForm({ ...form, total_students: Number(e.target.value) })}
+                    onWheel={(e) => e.target.blur()}
                     className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-medium text-slate-900"
                     placeholder="Total students count"
                 />
@@ -68,6 +70,7 @@ const PracticalFields = ({ form, setForm }) => {
                     type="number"
                     value={form.days_halted || ""}
                     onChange={(e) => setForm({ ...form, days_halted: Number(e.target.value) })}
+                    onWheel={(e) => e.target.blur()}
                     className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-medium text-slate-900"
                     placeholder="Enter days"
                 />
@@ -82,6 +85,7 @@ const PracticalFields = ({ form, setForm }) => {
                         type="number"
                         value={form.dearness_allowance || ""}
                         onChange={(e) => setForm({ ...form, dearness_allowance: Number(e.target.value) })}
+                        onWheel={(e) => e.target.blur()}
                         className="w-full pl-8 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-bold text-slate-900"
                         placeholder="0.00"
                     />
@@ -97,6 +101,7 @@ const PracticalFields = ({ form, setForm }) => {
                         type="number"
                         value={form.travelling_allowance || ""}
                         onChange={(e) => setForm({ ...form, travelling_allowance: e.target.value })}
+                        onWheel={(e) => e.target.blur()}
                         className="w-full pl-8 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-bold text-slate-900"
                         placeholder="0.00"
                     />
@@ -147,6 +152,7 @@ const PracticalFields = ({ form, setForm }) => {
                                         amount: Math.max(Number(prev.practical_total_value || 0) - Number(newTds || 0), 0).toString()
                                     }));
                                 }}
+                                onWheel={(e) => e.target.blur()}
                                 className="w-full pl-8 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-bold text-slate-900"
                                 placeholder="0.00"
                             />

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -7,7 +7,8 @@ import CreatableSelect from "react-select/creatable";
 import {
     Users, UserPlus, Search, Filter, Plus, Pencil,
     FileUp, Download, ImagePlus, X,
-    Edit3, Trash2, AlertCircle, Phone, Loader2
+    Edit3, Trash2, AlertCircle, Phone, Loader2,
+    ArrowUpDown, ArrowUp, ArrowDown
 } from 'lucide-react';
 
 const StaffManage = () => {
@@ -28,6 +29,9 @@ const StaffManage = () => {
         category: '', designation: '', phone_no: '', email: '',
         college: '', bank_acc_no: '', ifsc_code: '', bank_name: ''
     });
+
+    // Sorting state
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: null, filteredOrder: [] });
 
     // Fetch staff data with loading state
     const fetchStaff = async () => {
@@ -67,7 +71,63 @@ const StaffManage = () => {
         if (filters.designation) filtered = filtered.filter(s => s.designation === filters.designation);
         if (filters.employment_type) filtered = filtered.filter(s => s.employment_type === filters.employment_type);
         setStaffList(filtered);
+        // Reset sorting when filters/search change (preserve original order of new filtered list)
+        setSortConfig({ key: null, direction: null, filteredOrder: [] });
     }, [searchQuery, filters, allStaff]);
+
+    // Store the current filtered order whenever staffList changes and no sorting is active
+    useEffect(() => {
+        if (sortConfig.key === null && staffList.length) {
+            setSortConfig(prev => ({ ...prev, filteredOrder: staffList }));
+        }
+    }, [staffList]);
+
+    // Sorting logic
+    const sortedStaffList = useMemo(() => {
+        if (!staffList.length) return [];
+        if (!sortConfig.key || sortConfig.direction === null) {
+            // Return original filtered order (as stored)
+            return sortConfig.filteredOrder.length ? sortConfig.filteredOrder : staffList;
+        }
+        const sorted = [...staffList];
+        sorted.sort((a, b) => {
+            let aVal = a[sortConfig.key] || '';
+            let bVal = b[sortConfig.key] || '';
+            if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+            if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+        return sorted;
+    }, [staffList, sortConfig]);
+
+    const handleSort = (key) => {
+        // Determine new direction
+        let direction = 'asc';
+        if (sortConfig.key === key) {
+            if (sortConfig.direction === 'asc') direction = 'desc';
+            else if (sortConfig.direction === 'desc') {
+                // third click: restore original filtered order
+                setSortConfig({ key: null, direction: null, filteredOrder: staffList });
+                return;
+            }
+        }
+        setSortConfig({ key, direction, filteredOrder: sortConfig.filteredOrder });
+    };
+
+    const getSortIcon = (key) => {
+        if (sortConfig.key !== key) {
+            return <ArrowUpDown className="w-3 h-3 ml-1 inline-block opacity-50" />;
+        }
+        if (sortConfig.direction === 'asc') {
+            return <ArrowUp className="w-3 h-3 ml-1 inline-block text-blue-600" />;
+        }
+        if (sortConfig.direction === 'desc') {
+            return <ArrowDown className="w-3 h-3 ml-1 inline-block text-blue-600" />;
+        }
+        return <ArrowUpDown className="w-3 h-3 ml-1 inline-block" />;
+    };
 
     // Handle file upload
     const handleFileUpload = async (e) => {
@@ -86,7 +146,7 @@ const StaffManage = () => {
         }
     };
 
-    // Download sample template – fixed to produce a proper two-row Excel file
+    // Download sample template
     const downloadSampleTemplate = () => {
         const headers = [
             "staff_id", "staff_name", "department", "designation", "category",
@@ -177,7 +237,7 @@ const StaffManage = () => {
         }
     }, [location.state]);
 
-    // Styles for CreatableSelect (same as before)
+    // Styles for CreatableSelect
     const customSelectStyles = {
         control: (base, state) => ({
             ...base,
@@ -220,7 +280,7 @@ const StaffManage = () => {
                 <div className="flex flex-wrap items-center gap-3">
                     <button
                         onClick={() => { resetForm(); setShowModal(true); }}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-100 active:scale-95"
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all active:scale-95"
                     >
                         <UserPlus className="w-4 h-4" />
                         Add Staff
@@ -318,7 +378,7 @@ const StaffManage = () => {
                 </div>
             </div>
 
-            {/* Staff Table - with loading state */}
+            {/* Staff Table - with loading state and sorting */}
             <div className="mt-10 space-y-6">
                 <div className="flex items-center justify-between">
                     <h2 className="text-sm font-bold text-slate-500 uppercase tracking-widest">
@@ -331,14 +391,66 @@ const StaffManage = () => {
 
                 <div className="relative w-full overflow-hidden bg-white border border-slate-200 rounded-xl shadow-sm">
                     <div className="w-full overflow-x-auto overflow-y-auto max-h-[600px] scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
-                        <table className="w-full text-sm text-left border-collapse">
+                        <table className="w-full text-sm border-collapse">
                             <thead className="sticky top-0 z-30">
-                                <tr className='text-center'>
-                                    {['S.No', 'Staff Details', 'Department', 'Designation', 'Contact & Email', 'College', 'Bank Details', 'Emp Type', 'Actions'].map((h, i) => (
-                                        <th key={i} className="bg-slate-50/90 pl-6 backdrop-blur-md border-b border-slate-200 px-4 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap">
-                                            {h}
-                                        </th>
-                                    ))}
+                                <tr className="bg-slate-50/90 text-center">
+                                    <th className="px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap border-b border-slate-200">
+                                        S.No
+                                    </th>
+                                    <th
+                                        className="px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap border-b border-slate-200 cursor-pointer hover:text-blue-600 transition-colors select-none"
+                                        onClick={() => handleSort('staff_name')}
+                                    >
+                                        <span className="inline-flex items-center gap-1">
+                                            Staff Details {getSortIcon('staff_name')}
+                                        </span>
+                                    </th>
+                                    <th
+                                        className="px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap border-b border-slate-200 cursor-pointer hover:text-blue-600 transition-colors select-none"
+                                        onClick={() => handleSort('department')}
+                                    >
+                                        <span className="inline-flex items-center gap-1">
+                                            Department {getSortIcon('department')}
+                                        </span>
+                                    </th>
+                                    <th
+                                        className="px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap border-b border-slate-200 cursor-pointer hover:text-blue-600 transition-colors select-none"
+                                        onClick={() => handleSort('designation')}
+                                    >
+                                        <span className="inline-flex items-center gap-1">
+                                            Designation {getSortIcon('designation')}
+                                        </span>
+                                    </th>
+                                    <th
+                                        className="px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap border-b border-slate-200 cursor-pointer hover:text-blue-600 transition-colors select-none"
+                                        onClick={() => handleSort('phone_no')}
+                                    >
+                                        <span className="inline-flex items-center gap-1">
+                                            Contact & Email {getSortIcon('phone_no')}
+                                        </span>
+                                    </th>
+                                    <th
+                                        className="px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap border-b border-slate-200 cursor-pointer hover:text-blue-600 transition-colors select-none"
+                                        onClick={() => handleSort('college')}
+                                    >
+                                        <span className="inline-flex items-center gap-1">
+                                            College {getSortIcon('college')}
+                                        </span>
+                                    </th>
+                                    <th
+                                        className="px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap border-b border-slate-200 cursor-pointer hover:text-blue-600 transition-colors select-none"
+                                        onClick={() => handleSort('bank_acc_no')}
+                                    >
+                                        <span className="inline-flex items-center gap-1">
+                                            Bank Details {getSortIcon('bank_acc_no')}
+                                        </span>
+                                    </th>
+                                    <th className="px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap border-b border-slate-200">
+                                        Emp Type
+                                    </th>
+                                    <th className="px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap border-b border-slate-200">
+                                        Actions
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -351,7 +463,7 @@ const StaffManage = () => {
                                             </div>
                                         </td>
                                     </tr>
-                                ) : staffList.length === 0 ? (
+                                ) : sortedStaffList.length === 0 ? (
                                     <tr>
                                         <td colSpan={9} className="text-center py-16">
                                             <div className="flex flex-col items-center justify-center">
@@ -364,9 +476,9 @@ const StaffManage = () => {
                                         </td>
                                     </tr>
                                 ) : (
-                                    staffList.map((s, i) => (
+                                    sortedStaffList.map((s, i) => (
                                         <tr key={s._id || i} className="group hover:bg-slate-50/50 transition-colors">
-                                            <td className="px-6 py-5 text-slate-400 font-mono text-xs">{i + 1}</td>
+                                            <td className="px-6 py-5 text-slate-400 font-mono text-xs text-center">{i + 1}</td>
                                             <td className="px-6 py-5 min-w-[280px]">
                                                 <div className="flex items-center gap-4">
                                                     <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
@@ -386,8 +498,8 @@ const StaffManage = () => {
                                                     {s.designation}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-5">
-                                                <div className="flex flex-col">
+                                            <td className="px-6 py-5 text-center">
+                                                <div className="flex flex-col items-center">
                                                     <span className="text-slate-700 font-medium text-sm tabular-nums flex items-center gap-1.5">
                                                         <Phone className="w-3 h-3 text-slate-500" /> {s.phone_no}
                                                     </span>
@@ -395,20 +507,20 @@ const StaffManage = () => {
                                                 </div>
                                             </td>
                                             <td className="px-4 py-4 text-slate-600 text-sm min-w-[200px] text-center">{s.college}</td>
-                                            <td className="px-6 py-5">
-                                                <div className="flex flex-col tabular-nums">
+                                            <td className="px-6 py-5 text-center">
+                                                <div className="flex flex-col tabular-nums items-center">
                                                     <span className="text-slate-700 font-medium text-sm">{s.bank_acc_no}</span>
                                                     <span className="text-[12px] text-blue-500 font-bold">{s.ifsc_code}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center gap-2">
+                                            <td className="px-6 py-5 text-center">
+                                                <div className="flex items-center justify-center gap-2">
                                                     <div className={`h-1.5 w-1.5 rounded-full ${s.employment_type === 'Internal' ? 'bg-orange-500' : 'bg-purple-900'}`} />
                                                     <span className="text-slate-600 text-xs uppercase font-medium">{s.employment_type}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-4 bg-white group-hover:bg-slate-50/80 transition-colors z-10 px-6">
-                                                <div className="flex items-center gap-1">
+                                            <td className="px-4 py-4 bg-white group-hover:bg-slate-50/80 transition-colors z-10 px-6 text-center">
+                                                <div className="flex items-center justify-center gap-1">
                                                     <button onClick={() => openEditModal(s)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-all" title="Edit">
                                                         <Edit3 className="w-4 h-4" />
                                                     </button>
@@ -613,20 +725,6 @@ const StaffManage = () => {
                                             required
                                             placeholder="e.g. SBIN0012345"
                                             className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-sm font-bold font-mono focus:border-blue-500 focus:bg-white outline-none transition-all"
-                                        />
-                                    </div>
-
-                                    {/* Bank Name (text input) */}
-                                    <div className="md:col-span-2">
-                                        <label className="text-[12px] font-black text-blue-600 uppercase tracking-widest mb-3 block ml-1">
-                                            BANK NAME
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={formData.bank_name || ''}
-                                            onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
-                                            placeholder="e.g. State Bank of India"
-                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-sm font-bold focus:border-blue-500 focus:bg-white outline-none transition-all"
                                         />
                                     </div>
                                 </div>

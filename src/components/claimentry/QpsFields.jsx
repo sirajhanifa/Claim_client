@@ -10,6 +10,7 @@ const QpsFields = ({ form, setForm }) => {
                     type="number"
                     value={form.no_of_qps_ug || ""}
                     onChange={(e) => setForm({ ...form, no_of_qps_ug: e.target.value })}
+                    onWheel={(e) => e.target.blur()}
                     className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-medium text-slate-900"
                     placeholder="e.g. 5"
                 />
@@ -22,6 +23,7 @@ const QpsFields = ({ form, setForm }) => {
                     type="number"
                     value={form.no_of_qps_pg || ""}
                     onChange={(e) => setForm({ ...form, no_of_qps_pg: e.target.value })}
+                    onWheel={(e) => e.target.blur()}
                     className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-medium text-slate-900"
                     placeholder="e.g. 2"
                 />
@@ -34,6 +36,7 @@ const QpsFields = ({ form, setForm }) => {
                     type="number"
                     value={form.no_of_scheme || ""}
                     onChange={(e) => setForm({ ...form, no_of_scheme: e.target.value })}
+                    onWheel={(e) => e.target.blur()}
                     className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-medium text-slate-900"
                     placeholder="Enter schemes count"
                 />
