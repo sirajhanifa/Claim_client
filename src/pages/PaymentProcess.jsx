@@ -201,7 +201,7 @@ const PaymentProcess = () => {
                                         <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Action</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100 text-center">
+                                <tbody className="divide-y divide-slate-100 text-center">
                                     {([...displayedClaims]
                                         .sort((a, b) => (a.ifsc_code || "").localeCompare(b.ifsc_code || "")))
                                         .map((claim, index) => {
@@ -268,7 +268,7 @@ const PaymentProcess = () => {
                                         <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Action</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100 text-center">
+                                <tbody className="divide-y divide-slate-100 text-center">
                                     <tr>
                                         <td colSpan={7} className="py-6 text-slate-500 text-sm font-semibold">
                                             No records to display. Please select a report to view details.

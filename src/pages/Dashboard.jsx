@@ -3,6 +3,7 @@ import ClaimCard from '../components/dashboard/ClaimCard';
 import ClaimPieChart from '../components/dashboard/ClaimPieChart';
 import ClaimBarChart from '../components/dashboard/ClaimBarChart';
 import useFetch from '../hooks/useFetch';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const Dashboard = () => {
 
@@ -26,8 +27,8 @@ const Dashboard = () => {
             acc['Practical Exam Claim + Skilled Assistant + Hall Superintendent + Lab Assistant'] += item.amount;
         } else if (typeName === 'ABILITY ENHANCEMENT CLAIM' || typeName === 'AEC') {
             acc.AEC += item.amount;
-        } else if (typeName === 'SCRUTINY CLAIM') {
-            acc.Scrutiny += item.amount;
+        } else if (typeName.includes('COE') && typeName.includes('REAP')) {
+            acc['COE Reappear Claim'] += item.amount;
         } else if (typeName === 'CENTRAL VALUATION') {
             acc['Central Valuation'] += item.amount;
         } else {
@@ -38,8 +39,8 @@ const Dashboard = () => {
         QPS: 0,
         'Practical Exam Claim + Skilled Assistant + Hall Superintendent + Lab Assistant': 0,
         AEC: 0,
-        Scrutiny: 0,
         'Central Valuation': 0,
+        'COE Reappear Claim': 0,
         Others: 0
     });
 
@@ -47,8 +48,8 @@ const Dashboard = () => {
         { name: 'QPS', amount: groupedBarChartData.QPS },
         { name: 'Practicals', amount: groupedBarChartData['Practical Exam Claim + Skilled Assistant + Hall Superintendent + Lab Assistant'] },
         { name: 'AEC', amount: groupedBarChartData.AEC },
-        { name: 'Scrutiny', amount: groupedBarChartData.Scrutiny },
         { name: 'CV', amount: groupedBarChartData['Central Valuation'] },
+        { name: 'COE Reappear', amount: groupedBarChartData['COE Reappear Claim'] },
         { name: 'Others', amount: groupedBarChartData.Others }
     ];
 
@@ -88,7 +89,6 @@ const Dashboard = () => {
             </header>
 
             <main className="mx-auto space-y-8">
-                {/* KPI Cards */}
                 <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                     <ClaimCard title="Total Claims" count={data?.totalClaims || 0} amount={data?.totalAmount || 0} color="blue" />
                     <ClaimCard title="Pending Claims" count={pendingCounts?.pendingClaims || 0} amount={pendingCounts?.pendingAmount || 0} color="yellow" />
@@ -107,9 +107,54 @@ const Dashboard = () => {
                     />                </section>
 
                 {/* Bar Chart */}
-                <section className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-                    <ClaimBarChart data={barChartData} />
-                </section>
+                <div className="grid gap-6 lg:grid-cols-2">
+                    <section className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+                        <ClaimBarChart data={barChartData} />
+                    </section>
+                    <section className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+                        <div className="mb-6 flex items-start justify-between gap-4">
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Preview</p>
+                                <h2 className="mt-2 text-xl font-bold text-slate-900">Empty State Trend</h2>
+                            </div>
+                            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                                Dummy data
+                            </span>
+                        </div>
+                        <div className="h-72">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart
+                                    data={[
+                                        { name: 'Mon', value: 24 },
+                                        { name: 'Tue', value: 32 },
+                                        { name: 'Wed', value: 28 },
+                                        { name: 'Thu', value: 38 },
+                                        { name: 'Fri', value: 30 },
+                                        { name: 'Sat', value: 36 },
+                                        { name: 'Sun', value: 34 }
+                                    ]}
+                                    margin={{ top: 16, right: 8, left: 0, bottom: 8 }}
+                                >
+                                    <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                                    <Tooltip
+                                        contentStyle={{ borderRadius: 16, border: '1px solid #e2e8f0', backgroundColor: '#ffffff' }}
+                                        cursor={{ stroke: '#93c5fd', strokeWidth: 2, opacity: 0.12 }}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="value"
+                                        stroke="#2563eb"
+                                        strokeWidth={3}
+                                        dot={{ r: 4, fill: '#fff', stroke: '#2563eb', strokeWidth: 2 }}
+                                        activeDot={{ r: 6 }}
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </section>
+                </div>
 
                 {/* Three Pie Charts in a Single Row */}
                 <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">

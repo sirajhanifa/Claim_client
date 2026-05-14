@@ -178,7 +178,7 @@ const UserControl = () => {
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="divide-y divide-slate-100">
                                 {fetchLoading ? (
                                     <tr>
                                         <td colSpan="4" className="text-center py-20">

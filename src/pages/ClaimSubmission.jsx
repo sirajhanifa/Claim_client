@@ -382,7 +382,7 @@ const ClaimSubmission = () => {
                                         ))}
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="divide-y divide-slate-100">
                                 {fetchLoading ? (
                                     <tr>
                                         <td colSpan={viewMode === 'individual' ? 10 : 9} className="text-center py-20">

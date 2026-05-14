@@ -70,8 +70,8 @@ const CustomXAxisTick = ({ x, y, payload }) => {
 };
 
 const ClaimBarChart = ({ data }) => {
-    const barSize = Math.max(32, Math.min(70, Math.floor(500 / (data.length || 1)) - 8));
-    const bottomMargin = data.some(d => d.name?.length > 12) ? 50 : 24;
+    const barSize = 36;
+    const bottomMargin = data.some(d => d.name?.length > 12) ? 56 : 24;
 
     return (
         <div className="w-full">

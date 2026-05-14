@@ -208,7 +208,7 @@ const AcademicManage = () => {
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="divide-y divide-slate-100">
                                 {fetchLoading ? (
                                     <tr>
                                         <td colSpan="5" className="text-center py-20">
