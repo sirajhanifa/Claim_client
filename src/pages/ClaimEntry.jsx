@@ -16,7 +16,7 @@ const ClaimEntry = () => {
     const { data: claimTypes } = useFetch(`${apiUrl}/api/getClaim`);
     const sortedClaimTypes = useMemo(() => {
         if (!Array.isArray(claimTypes)) return [];
-        return [...claimTypes].sort((a, b) => {
+        return [...claimTypes].filter(c => c.isActive).sort((a, b) => {
             const nameA = (a.claim_type_name || '').toString().toUpperCase();
             const nameB = (b.claim_type_name || '').toString().toUpperCase();
             return nameA.localeCompare(nameB);
@@ -29,6 +29,67 @@ const ClaimEntry = () => {
     const [activeIndex, setActiveIndex] = useState(-1);
     const { username } = useParams();
     const [phoneNumber, setPhoneNumber] = useState('');
+
+    const resetForm = () => {
+        setForm({
+            claim_type_name: '',
+            staff_id: '',
+            staff_name: '',
+            department: '',
+            designation: '',
+            internal_external: '',
+            category: '',
+            college: '',
+            phone_number: '',
+            email: '',
+            entry_date: new Date().toISOString().split('T')[0],
+            submission_date: '',
+            credited_date: '',
+            amount: '',
+            remarks: '',
+            bank_name: '',
+            branch_name: '',
+            branch_code: '',
+            ifsc_code: '',
+            account_no: '',
+            no_of_qps_ug: '',
+            no_of_qps_pg: '',
+            no_of_scheme: '',
+            no_of_ug_papers: '',
+            no_of_pg_papers: '',
+            scrutiny_days: 1,
+            qps_paper_setting: '',
+            total_students: '',
+            days_halted: 1,
+            travelling_allowance: 0,
+            degree_level: '',
+            tax_type: '',
+            tax_amount: '',
+            dearness_allowance: 200,
+            cia_no_of_papers: '',
+            cia_role_type: '',
+            central_role: '',
+            central_total_scripts_ug: '',
+            central_total_scripts_pg: '',
+            central_days_halted: 1,
+            central_travel_allowance: 0,
+            central_tax_applicable: '',
+            central_dearness_allowance: 200,
+            central_total_value: '',
+            central_calculated_tds: '',
+            ability_total_no_students: '',
+            ability_no_of_days_halted: 1,
+            ability_tax_type: '',
+            ability_dearness_allowance: 200,
+            ability_total_value: '',
+            ability_calculated_tds: '',
+            practical_total_value: '',
+            practical_calculated_tds: '',
+        });
+        setPhoneNumber('');
+        setPhoneSuggestions([]);
+        setActiveIndex(-1);
+    };
 
     const [form, setForm] = useState({
         claim_type_name: '',
@@ -423,12 +484,12 @@ const ClaimEntry = () => {
     };
 
     const fetchPhoneSuggestions = async (query) => {
-        if (query.length < 2) {
+        if (query.length < 1) {
             setPhoneSuggestions([]);
             return;
         }
         try {
-            const res = await axios.get(`${apiUrl}/api/search-phone/${query}`);
+            const res = await axios.get(`${apiUrl}/api/search-phone/${encodeURIComponent(query)}`);
             setPhoneSuggestions(res.data);
         } catch (err) {
             console.error("Phone suggestion error:", err);
@@ -459,7 +520,7 @@ const ClaimEntry = () => {
                         <select
                             tabIndex={1}
                             value={form.claim_type_name}
-                            onChange={(e) => setForm({ ...form, claim_type_name: e.target.value })}
+                            onChange={(e) => setForm({ ...form, claim_type_name: e.target.value, amount: '' })}
                             className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-slate-900 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none appearance-none cursor-pointer"
                         >
                             <option value="">Select Type</option>
@@ -484,7 +545,7 @@ const ClaimEntry = () => {
                                         fetchPhoneSuggestions(e.target.value);
                                         setActiveIndex(-1);
                                     }}
-                                    placeholder="Enter 10-digit number"
+                                    placeholder="Search by name or phone number"
                                     disabled={!form.claim_type_name}
                                     className={`w-full px-4 py-2.5 border rounded-lg font-semibold transition-all outline-none
                                         ${form.claim_type_name
@@ -523,24 +584,32 @@ const ClaimEntry = () => {
                                         }
                                     }}
                                 />
-                                {phoneSuggestions.length > 0 && (
-                                    <ul className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-56 overflow-auto py-1">
-                                        {phoneSuggestions.map((item, index) => (
-                                            <li
-                                                key={item.phone_no}
-                                                onClick={() => {
-                                                    setPhoneNumber(item.phone_no);
-                                                    setPhoneSuggestions([]);
-                                                    setActiveIndex(-1);
-                                                    handleFetchStaff(item.phone_no);
-                                                }}
-                                                className={`px-4 py-2 cursor-pointer text-sm font-medium
-                                                ${index === activeIndex ? "bg-blue-600 text-white" : "text-slate-700 hover:bg-blue-50"}`}
-                                            >
-                                                {item.phone_no}
-                                            </li>
-                                        ))}
-                                    </ul>
+                                {(phoneSuggestions.length > 0 || phoneNumber.length > 0) && (
+                                    <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-56 overflow-auto py-1">
+                                        {phoneSuggestions.length > 0 ? (
+                                            <ul>
+                                                {phoneSuggestions.map((item, index) => (
+                                                    <li
+                                                        key={item.phone_no}
+                                                        onClick={() => {
+                                                            setPhoneNumber(item.phone_no);
+                                                            setPhoneSuggestions([]);
+                                                            setActiveIndex(-1);
+                                                            handleFetchStaff(item.phone_no);
+                                                        }}
+                                                        className={`px-4 py-2 cursor-pointer text-sm font-medium
+                                                        ${index === activeIndex ? "bg-blue-600 text-white" : "text-slate-700 hover:bg-blue-50"}`}
+                                                    >
+                                                        {item.staff_name} - {item.phone_no}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <div className="px-4 py-3 text-sm text-gray-500">
+                                                No matching staff found.
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                             <button
@@ -646,7 +715,14 @@ const ClaimEntry = () => {
                         />
                     </div>
 
-                    <div className="md:col-span-2 flex justify-end pt-6 border-t border-gray-100">
+                    <div className="md:col-span-2 flex justify-between pt-6 border-t border-gray-100">
+                        <button
+                            type="button"
+                            onClick={resetForm}
+                            className="flex items-center gap-2 px-8 py-3 rounded-lg font-bold text-gray-700 bg-gray-200 hover:bg-gray-300 active:scale-95 transition-all shadow-md"
+                        >
+                            Cancel
+                        </button>
                         <button
                             type="submit"
                             tabIndex={isStaffFetched ? 4 : -1}
