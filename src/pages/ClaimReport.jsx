@@ -10,11 +10,13 @@ import logo2 from '../assets/JmcLogo.png';
 
 const ClaimReport = () => {
 
-    const [mainFilter, setMainFilter] = useState('All');
-
     // Other filters
     const [claimType, setClaimType] = useState('All');
-    const [entryDate, setEntryDate] = useState('');
+    const [paymentIdFilter, setPaymentIdFilter] = useState('All');
+    const [mainFilter, setMainFilter] = useState('All');
+    const [viewMode, setViewMode] = useState('Individuals');
+    const [fromDate, setFromDate] = useState('');
+    const [toDate, setToDate] = useState('');
     const [search, setSearch] = useState("");
     const [categoryFilter, setCategoryFilter] = useState("All");
     const [ifscFilter, setIfscFilter] = useState("All");
@@ -43,6 +45,21 @@ const ClaimReport = () => {
         return [...new Set(claimData.map(claim => claim.claim_type_name))];
     }, [claimData]);
 
+    const paymentIds = useMemo(() => {
+        if (!claimData) return [];
+        return [...new Set(claimData
+            .map(claim => claim.payment_report_id)
+            .filter(id => id && id.trim() !== ''))];
+    }, [claimData]);
+
+    const statusOptions = useMemo(() => {
+        if (!claimData) return ['All', 'Unsubmitted', 'Processed', 'Submitted', 'Credited'];
+        const unique = [...new Set(claimData.map(claim => claim.status).filter(Boolean))];
+        return ['All', ...unique];
+    }, [claimData]);
+
+    const viewModeOptions = useMemo(() => ['Individuals', 'Grouped'], []);
+
     // Filter logic based on mainFilter (status-based filtering)
     const filteredClaims = useMemo(() => {
         if (!claimData) return [];
@@ -62,27 +79,33 @@ const ClaimReport = () => {
                 if (categoryFilter === "TDS" && claim.category !== "AIDED") return false;
             }
 
-            // 4. IFSC filter
+            // 4. Payment report ID filter
+            if (paymentIdFilter !== 'All' && claim.payment_report_id !== paymentIdFilter) return false;
+
+            // 5. IFSC filter
             let ifscMatch = true;
             if (ifscFilter === "JMC_IOB") ifscMatch = claim.ifsc_code === "IOBA0000467";
             else if (ifscFilter === "IOB_OTHERS") ifscMatch = claim.ifsc_code?.startsWith("IOBA") && claim.ifsc_code !== "IOBA0000467";
             else if (ifscFilter === "OTHER_BANKS") ifscMatch = !claim.ifsc_code?.startsWith("IOBA");
             if (!ifscMatch) return false;
 
-            // 5. Entry date filter
-            if (entryDate && new Date(claim.entry_date).toLocaleDateString("en-CA") !== entryDate) return false;
+            // 6. Date range filter
+            const claimEntryDate = claim.entry_date ? new Date(claim.entry_date) : null;
+            if (fromDate && claimEntryDate && claimEntryDate < new Date(fromDate)) return false;
+            if (toDate && claimEntryDate && claimEntryDate > new Date(toDate)) return false;
 
-            // 6. Search filter
+            // 7. Search filter
             if (debouncedSearch) {
                 const searchLower = debouncedSearch.toLowerCase();
                 const nameMatch = claim.staff_name?.toLowerCase().includes(searchLower);
                 const phoneMatch = claim.phone_number?.toString().includes(searchLower);
-                if (!nameMatch && !phoneMatch) return false;
+                const paymentMatch = claim.payment_report_id?.toLowerCase().includes(searchLower);
+                if (!nameMatch && !phoneMatch && !paymentMatch) return false;
             }
 
             return true;
         });
-    }, [claimData, mainFilter, claimType, categoryFilter, ifscFilter, entryDate, debouncedSearch]);
+    }, [claimData, mainFilter, claimType, categoryFilter, ifscFilter, paymentIdFilter, fromDate, toDate, debouncedSearch]);
 
     // Merge duplicates only for Unsubmitted view
     const mergeDuplicates = useCallback((claims) => {
@@ -95,7 +118,6 @@ const ClaimReport = () => {
                 const existing = map.get(key);
                 existing.amount = (Number(existing.amount) || 0) + (Number(c.amount) || 0);
                 existing._mergedCount = (existing._mergedCount || 1) + 1;
-
                 // Keep latest dates where applicable
                 const entryDateObj = c.entry_date ? new Date(c.entry_date) : null;
                 if (entryDateObj && (!existing.entry_date || new Date(existing.entry_date) < entryDateObj)) {
@@ -120,14 +142,14 @@ const ClaimReport = () => {
     }, []);
 
     const displayedClaimsBase = useMemo(() => {
-        if (mainFilter === 'Unsubmitted') return mergeDuplicates(filteredClaims);
+        if (viewMode === 'Grouped') return mergeDuplicates(filteredClaims);
         return filteredClaims;
-    }, [mainFilter, filteredClaims, mergeDuplicates]);
+    }, [viewMode, filteredClaims, mergeDuplicates]);
 
     // Reset sorting when filters change
     useEffect(() => {
         setSortConfig({ key: null, direction: null });
-    }, [mainFilter, claimType, categoryFilter, ifscFilter, entryDate, debouncedSearch]);
+    }, [mainFilter, claimType, categoryFilter, ifscFilter, paymentIdFilter, fromDate, toDate, debouncedSearch, viewMode]);
 
     // Sorting logic
     const displayedClaims = useMemo(() => {
@@ -254,21 +276,10 @@ const ClaimReport = () => {
             alert("No data available to download");
             return;
         }
-        const excelData = displayedClaims.map((claim, index) => ({
-            "S.No": index + 1,
-            "Entry Date": new Date(claim.entry_date).toLocaleDateString("en-GB"),
-            "Processed Date": claim.processed_date ? new Date(claim.processed_date).toLocaleDateString("en-GB") : '',
-            "Submitted Date": claim.submitted_date ? new Date(claim.submitted_date).toLocaleDateString("en-GB") : '',
-            "Credited Date": claim.credited_date ? new Date(claim.credited_date).toLocaleDateString("en-GB") : '',
-            "Name": claim.staff_name,
-            "College": claim.college,
-            "Department": claim.department,
-            "Amount Paid": claim.amount,
-            "IFSC Code": claim.ifsc_code,
-            "Account No": claim.account_no,
-            "Phone No": claim.phone_number,
-            "Status": claim.status,
+        const excelData = displayedClaims.map((claim) => ({
+            ...claim
         }));
+
         const worksheet = XLSX.utils.json_to_sheet(excelData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Claims");
@@ -374,13 +385,13 @@ const ClaimReport = () => {
                     </h1>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
-                    <button
+                    {/* <button
                         onClick={handleDownloadPDF}
                         className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-100 active:scale-95"
                     >
                         <FileText className="w-4 h-4" />
                         Download PDF
-                    </button>
+                    </button> */}
                     <button
                         onClick={handleDownloadExcel}
                         className="flex items-center gap-2 bg-green-700 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-800 transition-all shadow-sm active:scale-95"
@@ -393,7 +404,7 @@ const ClaimReport = () => {
 
             {/* Primary Filter Bar */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                     {/* Claim Type */}
                     <div className="space-y-1.5">
                         <label className="flex items-center gap-2 text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">
@@ -447,39 +458,84 @@ const ClaimReport = () => {
                         </select>
                     </div>
 
-                    {/* Entry Date */}
+                    {/* Payment ID */}
+                    <div className="space-y-1.5">
+                        <label className="flex items-center gap-2 text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                            <Layers className="w-3 h-3" />
+                            Payment ID
+                        </label>
+                        <select
+                            value={paymentIdFilter}
+                            onChange={(e) => setPaymentIdFilter(e.target.value)}
+                            className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none cursor-pointer ${paymentIdFilter !== 'All' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
+                        >
+                            <option value="All">All Payment IDs</option>
+                            {paymentIds.map((paymentId) => (
+                                <option key={paymentId} value={paymentId}>{paymentId}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Status */}
+                    <div className="space-y-1.5">
+                        <label className="flex items-center gap-2 text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                            <Filter className="w-3 h-3" />
+                            Status
+                        </label>
+                        <select
+                            value={mainFilter}
+                            onChange={(e) => setMainFilter(e.target.value)}
+                            className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none cursor-pointer ${mainFilter !== 'All' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
+                        >
+                            {statusOptions.map(option => (
+                                <option key={option} value={option}>{option === 'All' ? 'All Claims' : option}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* From Date */}
                     <div className="space-y-1.5">
                         <label className="flex items-center gap-2 text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">
                             <Calendar className="w-3 h-3" />
-                            Entry Date
+                            From Date
                         </label>
                         <input
                             type="date"
-                            value={entryDate}
-                            onChange={(e) => setEntryDate(e.target.value)}
+                            value={fromDate}
+                            onChange={(e) => setFromDate(e.target.value)}
                             className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 outline-none focus:bg-white focus:border-blue-500 transition-all"
                         />
                     </div>
-                </div>
 
-                {/* Main Radio Filter - All, Unsubmitted, Processed, Submitted, Credited */}
-                <div className="mt-8 pt-6 border-t border-slate-100">
-                    <div className="flex flex-wrap gap-3 bg-slate-100 p-1.5 rounded-2xl w-full md:w-fit">
-                        {['All', 'Unsubmitted', 'Processed', 'Submitted', 'Credited'].map((option) => (
-                            <label key={option} className="relative cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="mainFilter"
-                                    value={option}
-                                    checked={mainFilter === option}
-                                    onChange={(e) => setMainFilter(e.target.value)}
-                                    className="sr-only peer"
-                                />
-                                <div className="px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all text-center whitespace-nowrap">
-                                    {option === 'All' ? 'All Claims' : option}
-                                </div>
-                            </label>
-                        ))}
+                    {/* To Date */}
+                    <div className="space-y-1.5">
+                        <label className="flex items-center gap-2 text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                            <Calendar className="w-3 h-3" />
+                            To Date
+                        </label>
+                        <input
+                            type="date"
+                            value={toDate}
+                            onChange={(e) => setToDate(e.target.value)}
+                            className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 outline-none focus:bg-white focus:border-blue-500 transition-all"
+                        />
+                    </div>
+
+                    {/* View Mode */}
+                    <div className="space-y-1.5">
+                        <label className="flex items-center gap-2 text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                            <ChevronDown className="w-3 h-3" />
+                            View Mode
+                        </label>
+                        <select
+                            value={viewMode}
+                            onChange={(e) => setViewMode(e.target.value)}
+                            className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none cursor-pointer ${viewMode !== 'Individuals' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
+                        >
+                            {viewModeOptions.map((mode) => (
+                                <option key={mode} value={mode}>{mode}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
             </div>
@@ -490,7 +546,7 @@ const ClaimReport = () => {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                         type="text"
-                        placeholder="Search by name or phone..."
+                        placeholder="Search by name, phone, or payment ID..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-none rounded-[12px] text-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white outline-none transition-all placeholder:text-slate-400"

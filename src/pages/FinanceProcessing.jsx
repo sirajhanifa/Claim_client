@@ -35,7 +35,6 @@ const FinanceProcessing = () => {
     const fetchBatches = async () => {
         try {
             const res = await axios.get(`${API_URL}/api/batches`);
-            // Sort batches: Processed → Submitted → Credited
             const sorted = (res.data || []).sort((a, b) => {
                 const order = { Processed: 0, Submitted: 1, Credited: 2 };
                 return (order[a.batchStatus] ?? 3) - (order[b.batchStatus] ?? 3);
@@ -52,9 +51,13 @@ const FinanceProcessing = () => {
         setSelectedBatchId(batchId);
         setError(null);
         try {
-            const res = await axios.get(`${API_URL}/api/claims/batch/${batchId}`);
+            console.log(API_URL)
+            const res = await axios.get(
+                `${API_URL}/api/claims/batch/${encodeURIComponent(batchId)}`
+            );
             setClaims(res.data.claims || []);
         } catch (err) {
+            console.error('Error fetching batch datas : ', err)
             setError("Could not retrieve claim details.");
         } finally {
             setLoading(false);
@@ -185,7 +188,9 @@ const FinanceProcessing = () => {
         if (!window.confirm(`Mark all Processed claims in batch ${selectedBatchId} as "Submitted"?`)) return;
         setUpdateLoading(true);
         try {
-            await axios.put(`${API_URL}/api/claims/batch/${selectedBatchId}`);
+            await axios.put(
+                `${API_URL}/api/claims/batch/${encodeURIComponent(selectedBatchId)}`
+            );
             alert("Batch submitted successfully!");
             await fetchBatches();
             await fetchClaims(selectedBatchId);
@@ -375,6 +380,7 @@ const FinanceProcessing = () => {
                                             <table className="w-full text-sm">
                                                 <thead className="bg-gradient-to-r from-slate-100 to-slate-50 border-b border-slate-200">
                                                     <tr>
+                                                        <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">S. No.</th>
                                                         <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Staff</th>
                                                         <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Claim Type</th>
                                                         <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Amount</th>
@@ -384,9 +390,13 @@ const FinanceProcessing = () => {
                                                     {filteredClaims.map((claim, idx) => (
                                                         <tr
                                                             key={idx}
-                                                            className={`transition-colors duration-150 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/80'
-                                                                } hover:bg-slate-100/90`}
+                                                            className={`transition-colors duration-150 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/80'} hover:bg-slate-100/90`}
                                                         >
+                                                            <td className="px-6 py-4 text-center">
+                                                                <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium text-slate-900">
+                                                                    {idx + 1}
+                                                                </span>
+                                                            </td>
                                                             <td className="px-6 py-4 text-center">
                                                                 <div className="font-semibold text-slate-800 text-md">{claim.staff_name}</div>
                                                                 {claim.count > 1 && (
