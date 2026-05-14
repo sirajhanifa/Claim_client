@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import useFetch from '../hooks/useFetch';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Search, Phone, Download, FileText, Filter, ChevronDown, Layers, Calendar, Landmark, Loader2 } from "lucide-react";
+import { Search, Phone, Download, FileText, Filter, ChevronDown, Layers, Calendar, Landmark, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import logo1 from '../assets/75.jpeg';
@@ -18,6 +18,9 @@ const ClaimReport = () => {
     const [search, setSearch] = useState("");
     const [categoryFilter, setCategoryFilter] = useState("All");
     const [ifscFilter, setIfscFilter] = useState("All");
+
+    // Sorting state
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: null });
 
     const apiUrl = import.meta.env.VITE_API_URL;
     const { data: claimData, loading: fetchLoading, error: fetchError, refetch } = useFetch(`${apiUrl}/claimDatas`);
@@ -116,10 +119,59 @@ const ClaimReport = () => {
         return Array.from(map.values());
     }, []);
 
-    const displayedClaims = useMemo(() => {
+    const displayedClaimsBase = useMemo(() => {
         if (mainFilter === 'Unsubmitted') return mergeDuplicates(filteredClaims);
         return filteredClaims;
     }, [mainFilter, filteredClaims, mergeDuplicates]);
+
+    // Reset sorting when filters change
+    useEffect(() => {
+        setSortConfig({ key: null, direction: null });
+    }, [mainFilter, claimType, categoryFilter, ifscFilter, entryDate, debouncedSearch]);
+
+    // Sorting logic
+    const displayedClaims = useMemo(() => {
+        if (!displayedClaimsBase.length) return [];
+        if (!sortConfig.key || sortConfig.direction === null) {
+            return displayedClaimsBase;
+        }
+        const sorted = [...displayedClaimsBase];
+        sorted.sort((a, b) => {
+            let aVal = a[sortConfig.key] || '';
+            let bVal = b[sortConfig.key] || '';
+            if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+            if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+        return sorted;
+    }, [displayedClaimsBase, sortConfig]);
+
+    const handleSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key) {
+            if (sortConfig.direction === 'asc') direction = 'desc';
+            else if (sortConfig.direction === 'desc') {
+                setSortConfig({ key: null, direction: null });
+                return;
+            }
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const getSortIcon = (key) => {
+        if (sortConfig.key !== key) {
+            return <ArrowUpDown className="w-3 h-3 ml-1 inline-block opacity-50" />;
+        }
+        if (sortConfig.direction === 'asc') {
+            return <ArrowUp className="w-3 h-3 ml-1 inline-block text-blue-600" />;
+        }
+        if (sortConfig.direction === 'desc') {
+            return <ArrowDown className="w-3 h-3 ml-1 inline-block text-blue-600" />;
+        }
+        return <ArrowUpDown className="w-3 h-3 ml-1 inline-block" />;
+    };
 
     const totalAmount = useMemo(() => {
         return displayedClaims.reduce((sum, claim) => sum + (Number(claim.amount) || 0), 0);
@@ -295,6 +347,19 @@ const ClaimReport = () => {
         ? ["S.No", "Staff Details", "Claim Type", "Contact", "IFSC", "Account Number", "Amount", "Dates", "Status", "Payment ID"]
         : ["S.No", "Staff Details", "Claim Type", "Contact", "IFSC", "Account Number", "Amount", "Dates", "Payment ID"];
 
+    // Define sortable keys for each column (excluding S.No)
+    const sortableKeys = {
+        "Staff Details": "staff_name",
+        "Claim Type": "claim_type_name",
+        "Contact": "phone_number",
+        "IFSC": "ifsc_code",
+        "Account Number": "account_no",
+        "Amount": "amount",
+        "Dates": "entry_date",
+        "Status": "status",
+        "Payment ID": "payment_report_id"
+    };
+
     return (
         <div>
             {/* Header */}
@@ -456,11 +521,21 @@ const ClaimReport = () => {
                         <table className="w-full text-sm text-left border-separate border-spacing-0">
                             <thead className="sticky top-0 z-30">
                                 <tr className="text-center">
-                                    {tableHeaders.map((h, i) => (
-                                        <th key={i} className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap">
-                                            {h}
-                                        </th>
-                                    ))}
+                                    {tableHeaders.map((h, i) => {
+                                        const isSortable = h !== "S.No" && sortableKeys[h];
+                                        return (
+                                            <th
+                                                key={i}
+                                                onClick={isSortable ? () => handleSort(sortableKeys[h]) : undefined}
+                                                className={`bg-slate-50/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap ${isSortable ? 'cursor-pointer hover:text-blue-600 transition-colors select-none' : ''}`}
+                                            >
+                                                <span className="inline-flex items-center gap-1">
+                                                    {h}
+                                                    {isSortable && getSortIcon(sortableKeys[h])}
+                                                </span>
+                                            </th>
+                                        );
+                                    })}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">

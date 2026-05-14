@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import useFetch from '../hooks/useFetch';
-import { Trash2, Search, Phone, Filter, Layers, Calendar, Landmark, X, Loader2, Edit3, Download } from "lucide-react";  // +Download
+import { Trash2, Search, Phone, Filter, Layers, Calendar, Landmark, X, Loader2, Edit3, Download, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 
@@ -23,6 +23,9 @@ const ClaimSubmission = () => {
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editingClaim, setEditingClaim] = useState(null);
     const [isUpdating, setIsUpdating] = useState(false);
+
+    // Sorting state
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: null });
 
     const apiUrl = import.meta.env.VITE_API_URL;
     const { data: rawClaimData, loading: fetchLoading, error: fetchError, refetch } = useFetch(`${apiUrl}/api/unSubmittedClaims`);
@@ -92,10 +95,58 @@ const ClaimSubmission = () => {
         return mergeDuplicates(filteredClaims);
     }, [filteredClaims, mergeDuplicates, viewMode]);
 
+    // Reset sorting whenever filters or view mode change
+    useEffect(() => {
+        setSortConfig({ key: null, direction: null });
+    }, [claimType, categoryFilter, ifscFilter, entryDate, debouncedSearch, viewMode]);
+
+    // Sorting logic
+    const sortedClaims = useMemo(() => {
+        if (!displayedClaims.length) return [];
+        if (!sortConfig.key || sortConfig.direction === null) {
+            return displayedClaims;
+        }
+        const sorted = [...displayedClaims];
+        sorted.sort((a, b) => {
+            let aVal = a[sortConfig.key] || '';
+            let bVal = b[sortConfig.key] || '';
+            if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+            if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+        return sorted;
+    }, [displayedClaims, sortConfig]);
+
+    const handleSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key) {
+            if (sortConfig.direction === 'asc') direction = 'desc';
+            else if (sortConfig.direction === 'desc') {
+                setSortConfig({ key: null, direction: null });
+                return;
+            }
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const getSortIcon = (key) => {
+        if (sortConfig.key !== key) {
+            return <ArrowUpDown className="w-3 h-3 ml-1 inline-block opacity-50" />;
+        }
+        if (sortConfig.direction === 'asc') {
+            return <ArrowUp className="w-3 h-3 ml-1 inline-block text-blue-600" />;
+        }
+        if (sortConfig.direction === 'desc') {
+            return <ArrowDown className="w-3 h-3 ml-1 inline-block text-blue-600" />;
+        }
+        return <ArrowUpDown className="w-3 h-3 ml-1 inline-block" />;
+    };
+
     const totalAmount = useMemo(() => displayedClaims.reduce((sum, claim) => sum + (Number(claim.amount) || 0), 0), [displayedClaims]);
 
     const handleDownloadExcel = () => {
-
         if (!displayedClaims.length) {
             alert("No data to export.");
             return;
@@ -126,7 +177,6 @@ const ClaimSubmission = () => {
         const fileName = `UnsubmittedClaims_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.xlsx`;
         XLSX.writeFile(wb, fileName);
     };
-    // --------------------------------------------
 
     // Edit handlers
     const openEditModal = (claim) => {
@@ -230,7 +280,6 @@ const ClaimSubmission = () => {
                     </h1>
                 </div>
 
-                {/* New Excel Download Button */}
                 <button
                     onClick={handleDownloadExcel}
                     className="flex items-center gap-2 bg-green-700 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-800 transition-all shadow-sm active:scale-95"
@@ -373,19 +422,76 @@ const ClaimSubmission = () => {
                         <table className="w-full text-sm text-left border-separate border-spacing-0">
                             <thead className="sticky top-0 z-30">
                                 <tr className="text-center">
-                                    {["S.No", "Staff Details", "Claim Type", "Contact", "IFSC", "Account Number", "Amount", "Entry Date"]
-                                        .concat(viewMode === 'individual' ? ["Actions"] : [])
-                                        .map((h, i) => (
-                                            <th key={i} className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap">
-                                                {h}
-                                            </th>
-                                        ))}
+                                    <th className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap">
+                                        S.No
+                                    </th>
+                                    <th
+                                        onClick={() => handleSort('staff_name')}
+                                        className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap cursor-pointer hover:text-blue-600 transition-colors select-none"
+                                    >
+                                        <span className="inline-flex items-center gap-1">
+                                            Staff Details {getSortIcon('staff_name')}
+                                        </span>
+                                    </th>
+                                    <th
+                                        onClick={() => handleSort('claim_type_name')}
+                                        className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap cursor-pointer hover:text-blue-600 transition-colors select-none"
+                                    >
+                                        <span className="inline-flex items-center gap-1">
+                                            Claim Type {getSortIcon('claim_type_name')}
+                                        </span>
+                                    </th>
+                                    <th
+                                        onClick={() => handleSort('phone_number')}
+                                        className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap cursor-pointer hover:text-blue-600 transition-colors select-none"
+                                    >
+                                        <span className="inline-flex items-center gap-1">
+                                            Contact {getSortIcon('phone_number')}
+                                        </span>
+                                    </th>
+                                    <th
+                                        onClick={() => handleSort('ifsc_code')}
+                                        className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap cursor-pointer hover:text-blue-600 transition-colors select-none"
+                                    >
+                                        <span className="inline-flex items-center gap-1">
+                                            IFSC {getSortIcon('ifsc_code')}
+                                        </span>
+                                    </th>
+                                    <th
+                                        onClick={() => handleSort('account_no')}
+                                        className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap cursor-pointer hover:text-blue-600 transition-colors select-none"
+                                    >
+                                        <span className="inline-flex items-center gap-1">
+                                            Account Number {getSortIcon('account_no')}
+                                        </span>
+                                    </th>
+                                    <th
+                                        onClick={() => handleSort('amount')}
+                                        className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap cursor-pointer hover:text-blue-600 transition-colors select-none"
+                                    >
+                                        <span className="inline-flex items-center gap-1">
+                                            Amount {getSortIcon('amount')}
+                                        </span>
+                                    </th>
+                                    <th
+                                        onClick={() => handleSort('entry_date')}
+                                        className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap cursor-pointer hover:text-blue-600 transition-colors select-none"
+                                    >
+                                        <span className="inline-flex items-center gap-1">
+                                            Entry Date {getSortIcon('entry_date')}
+                                        </span>
+                                    </th>
+                                    {viewMode === 'individual' && (
+                                        <th className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider whitespace-nowrap">
+                                            Actions
+                                        </th>
+                                    )}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {fetchLoading ? (
                                     <tr>
-                                        <td colSpan={viewMode === 'individual' ? 10 : 9} className="text-center py-20">
+                                        <td colSpan={viewMode === 'individual' ? 9 : 8} className="text-center py-20">
                                             <div className="flex flex-col items-center justify-center">
                                                 <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-3" />
                                                 <p className="text-slate-500 text-sm">Loading pending claims...</p>
@@ -394,7 +500,7 @@ const ClaimSubmission = () => {
                                     </tr>
                                 ) : fetchError ? (
                                     <tr>
-                                        <td colSpan={viewMode === 'individual' ? 10 : 9} className="text-center py-16">
+                                        <td colSpan={viewMode === 'individual' ? 9 : 8} className="text-center py-16">
                                             <div className="flex flex-col items-center justify-center">
                                                 <div className="bg-red-50 p-4 rounded-full mb-4">
                                                     <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -409,9 +515,9 @@ const ClaimSubmission = () => {
                                             </div>
                                         </td>
                                     </tr>
-                                ) : displayedClaims.length === 0 ? (
+                                ) : sortedClaims.length === 0 ? (
                                     <tr>
-                                        <td colSpan={viewMode === 'individual' ? 10 : 9} className="text-center py-16">
+                                        <td colSpan={viewMode === 'individual' ? 9 : 8} className="text-center py-16">
                                             <div className="flex flex-col items-center justify-center">
                                                 <div className="bg-slate-50 p-4 rounded-full mb-4">
                                                     <Search className="w-10 h-10 text-slate-200" />
@@ -422,7 +528,7 @@ const ClaimSubmission = () => {
                                         </td>
                                     </tr>
                                 ) : (
-                                    displayedClaims.map((claim, index) => (
+                                    sortedClaims.map((claim, index) => (
                                         <tr key={claim._id || index} className="group hover:bg-blue-50/30 transition-all duration-200">
                                             <td className="px-6 py-4 text-slate-400 font-medium text-center">{index + 1}</td>
                                             {/* Staff Details + Merged Count (if grouped) */}
@@ -548,8 +654,6 @@ const ClaimSubmission = () => {
             {editModalOpen && editingClaim && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-[100] p-4">
                     <div className="bg-white rounded-[1.5rem] shadow-2xl w-full max-w-3xl overflow-hidden border-t-[6px] border-blue-600 animate-in slide-in-from-bottom-8 duration-300 flex flex-col max-h-[85vh]">
-
-                        {/* 1. FIXED HEADER */}
                         <div className="p-6 md:p-8 border-b border-slate-100 bg-white z-10">
                             <div className="flex items-center justify-between">
                                 <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
@@ -568,14 +672,12 @@ const ClaimSubmission = () => {
                             <p className="text-sm text-slate-500 mt-2 ml-1">Only the amount field can be modified.</p>
                         </div>
 
-                        {/* 2. SCROLLABLE CONTENT AREA */}
                         <div className="flex-1 overflow-y-auto p-6 md:p-8 pt-2 scrollbar-hide">
                             <style dangerouslySetInnerHTML={{
                                 __html: `.scrollbar-hide::-webkit-scrollbar { display: none; }`
                             }} />
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-                                {/* Read-Only Fields */}
                                 <div>
                                     <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.1em] mb-2 ml-1 block">Staff Name</label>
                                     <input type="text" value={editingClaim.staff_name || ''} readOnly className="w-full bg-slate-100 border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-600" />
@@ -604,7 +706,6 @@ const ClaimSubmission = () => {
                                     <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.1em] mb-2 ml-1 block">Entry Date</label>
                                     <input type="date" value={editingClaim.entry_date ? new Date(editingClaim.entry_date).toLocaleDateString('en-CA') : ''} readOnly className="w-full bg-slate-100 border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-600" />
                                 </div>
-                                {/* Editable Amount Field - no spinner */}
                                 <div>
                                     <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.1em] mb-2 ml-1 block">Amount (₹)</label>
                                     <input
@@ -624,7 +725,6 @@ const ClaimSubmission = () => {
                             </div>
                         </div>
 
-                        {/* 3. STICKY FOOTER */}
                         <div className="p-6 border-t border-slate-100 bg-white/90 backdrop-blur-sm flex items-center gap-4">
                             <button
                                 onClick={closeEditModal}
