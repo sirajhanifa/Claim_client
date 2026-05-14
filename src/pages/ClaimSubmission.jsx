@@ -244,7 +244,7 @@ const ClaimSubmission = () => {
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div className="space-y-1.5">
-                        <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                        <label className="flex items-center gap-2 text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">
                             <Filter className="w-3 h-3" />
                             Claim Type
                         </label>
@@ -261,7 +261,7 @@ const ClaimSubmission = () => {
                         </select>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                        <label className="flex items-center gap-2 text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">
                             <Layers className="w-3 h-3" />
                             Category
                         </label>
@@ -272,12 +272,12 @@ const ClaimSubmission = () => {
                         >
                             <option value="" disabled>Select Category</option>
                             <option value="all">All Categories</option>
-                            <option value="INTERNAL">INTERNAL</option>
-                            <option value="EXTERNAL">EXTERNAL</option>
+                            <option value="Internal">Internal</option>
+                            <option value="External">External</option>
                         </select>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                        <label className="flex items-center gap-2 text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">
                             <Landmark className="w-3 h-3" />
                             Bank Type
                         </label>
@@ -294,7 +294,7 @@ const ClaimSubmission = () => {
                         </select>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                        <label className="flex items-center gap-2 text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">
                             <Calendar className="w-3 h-3" />
                             Entry Date
                         </label>

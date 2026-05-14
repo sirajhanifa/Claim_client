@@ -10,7 +10,7 @@ const ClaimManage = () => {
     const apiUrl = import.meta.env.VITE_API_URL;
     const [showModal, setShowModal] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [confirmDeleteClaim, setConfirmDeleteClaim] = useState(null); // store full claim object
+    const [confirmDeleteClaim, setConfirmDeleteClaim] = useState(null);
 
     const [form, setForm] = useState({
         name: '',

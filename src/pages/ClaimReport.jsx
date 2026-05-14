@@ -331,7 +331,7 @@ const ClaimReport = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {/* Claim Type */}
                     <div className="space-y-1.5">
-                        <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                        <label className="flex items-center gap-2 text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">
                             <Filter className="w-3 h-3" />
                             Claim Type
                         </label>
@@ -349,7 +349,7 @@ const ClaimReport = () => {
 
                     {/* Category */}
                     <div className="space-y-1.5">
-                        <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                        <label className="flex items-center gap-2 text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">
                             <Layers className="w-3 h-3" />
                             Category
                         </label>
@@ -359,14 +359,14 @@ const ClaimReport = () => {
                             className={`w-full mt-2 appearance-none bg-slate-50 border rounded-xl px-4 py-2.5 text-sm font-bold outline-none cursor-pointer ${categoryFilter !== 'All' ? 'border-blue-500 bg-blue-50/50 text-blue-700' : 'border-slate-200 text-slate-600'}`}
                         >
                             <option value="All">All Categories</option>
-                            <option value="INTERNAL">INTERNAL</option>
-                            <option value="EXTERNAL">EXTERNAL</option>
+                            <option value="Internal">Internal</option>
+                            <option value="External">External</option>
                         </select>
                     </div>
 
                     {/* Bank Type */}
                     <div className="space-y-1.5">
-                        <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                        <label className="flex items-center gap-2 text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">
                             <Landmark className="w-3 h-3" />
                             Bank Type
                         </label>
@@ -384,7 +384,7 @@ const ClaimReport = () => {
 
                     {/* Entry Date */}
                     <div className="space-y-1.5">
-                        <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                        <label className="flex items-center gap-2 text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">
                             <Calendar className="w-3 h-3" />
                             Entry Date
                         </label>
