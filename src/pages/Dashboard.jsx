@@ -27,8 +27,8 @@ const Dashboard = () => {
             acc['Practical Exam Claim + Skilled Assistant + Hall Superintendent + Lab Assistant'] += item.amount;
         } else if (typeName === 'ABILITY ENHANCEMENT CLAIM' || typeName === 'AEC') {
             acc.AEC += item.amount;
-        } else if (typeName.includes('COE') && typeName.includes('REAP')) {
-            acc['COE Reappear Claim'] += item.amount;
+        } else if (typeName.includes('CIA') && typeName.includes('REAP')) {
+            acc['CIA Reappear Claim'] += item.amount;
         } else if (typeName === 'CENTRAL VALUATION') {
             acc['Central Valuation'] += item.amount;
         } else {
@@ -40,7 +40,7 @@ const Dashboard = () => {
         'Practical Exam Claim + Skilled Assistant + Hall Superintendent + Lab Assistant': 0,
         AEC: 0,
         'Central Valuation': 0,
-        'COE Reappear Claim': 0,
+        'CIA Reappear Claim': 0,
         Others: 0
     });
 
@@ -49,7 +49,7 @@ const Dashboard = () => {
         { name: 'Practicals', amount: groupedBarChartData['Practical Exam Claim + Skilled Assistant + Hall Superintendent + Lab Assistant'] },
         { name: 'AEC', amount: groupedBarChartData.AEC },
         { name: 'CV', amount: groupedBarChartData['Central Valuation'] },
-        { name: 'COE Reappear', amount: groupedBarChartData['COE Reappear Claim'] },
+        { name: 'CIA Reappear', amount: groupedBarChartData['CIA Reappear Claim'] },
         { name: 'Others', amount: groupedBarChartData.Others }
     ];
 

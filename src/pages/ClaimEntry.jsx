@@ -533,7 +533,7 @@ const ClaimEntry = () => {
                     </div>
 
                     <div className="flex flex-col space-y-3">
-                        <label className="text-sm font-bold text-slate-700">Phone Number</label>
+                        <label className="text-sm font-bold text-slate-700">Phone Number or Staff Name</label>
                         <div className="flex gap-6">
                             <div className="flex-1 relative">
                                 <input
