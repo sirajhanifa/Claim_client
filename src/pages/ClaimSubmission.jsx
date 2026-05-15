@@ -62,9 +62,10 @@ const ClaimSubmission = () => {
 
             if (debouncedSearch) {
                 const searchLower = debouncedSearch.toLowerCase();
-                const nameMatch = claim.staff_name?.toLowerCase().includes(searchLower);
-                const phoneMatch = claim.phone_number?.toString().includes(searchLower);
-                if (!nameMatch && !phoneMatch) return false;
+                const values = Object.values(claim)
+                    .filter((value) => value !== null && value !== undefined)
+                    .map((value) => String(value).toLowerCase());
+                if (!values.some((value) => value.includes(searchLower))) return false;
             }
             return true;
         });
@@ -391,7 +392,7 @@ const ClaimSubmission = () => {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                         type="text"
-                        placeholder="Search by name or phone..."
+                        placeholder="Search across all fields..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-none rounded-[12px] text-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white outline-none transition-all placeholder:text-slate-400"

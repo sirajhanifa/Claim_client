@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Button from '../components/Button';
-import { Plus, Trash, Pencil, Eye, EyeOff, X, AlertTriangle } from 'lucide-react';
+import { Plus, Trash, Pencil, Eye, EyeOff, X, AlertTriangle, Search } from 'lucide-react';
 import useFetch from '../hooks/useFetch';
 import usePost from '../hooks/usePost';
 import useDelete from '../hooks/useDelete';
@@ -11,6 +11,7 @@ const ClaimManage = () => {
     const [showModal, setShowModal] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [confirmDeleteClaim, setConfirmDeleteClaim] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const [form, setForm] = useState({
         name: '',
@@ -27,6 +28,16 @@ const ClaimManage = () => {
     const { data, loading, error, refetch } = useFetch(`${apiUrl}/api/getClaim`);
     const { postData } = usePost();
     const { deleteData } = useDelete();
+
+    const filteredData = useMemo(() => {
+        if (!data) return [];
+        const term = searchTerm.toLowerCase();
+        return data.filter(claim =>
+            claim.claim_type_name.toLowerCase().includes(term) ||
+            claim.description?.toLowerCase().includes(term) ||
+            Object.values(claim.amount_settings || {}).some(val => String(val).includes(term))
+        );
+    }, [data, searchTerm]);
 
     const resetForm = () => {
         setForm({
@@ -102,7 +113,7 @@ const ClaimManage = () => {
     return (
         <div className="min-h-screen">
             {/* Header */}
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
+            <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-10">
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm uppercase tracking-wider">
                         <div className="h-1 w-8 bg-blue-600 rounded-full" />
@@ -113,18 +124,30 @@ const ClaimManage = () => {
                     </h1>
                 </div>
 
-                <Button
-                    variant="primary"
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold transition-all active:scale-95"
-                    onClick={() => {
-                        resetForm();
-                        setEditingId(null);
-                        setShowModal(true);
-                    }}
-                >
-                    <Plus size={20} />
-                    <span>Add Category</span>
-                </Button>
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                        <input
+                            type="text"
+                            placeholder="Search categories..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl w-78 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        />
+                    </div>
+                    <Button
+                        variant="primary"
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold transition-all active:scale-95 whitespace-nowrap"
+                        onClick={() => {
+                            resetForm();
+                            setEditingId(null);
+                            setShowModal(true);
+                        }}
+                    >
+                        <Plus size={20} />
+                        <span>Add Category</span>
+                    </Button>
+                </div>
             </header>
 
             {/* Main Content */}
@@ -137,8 +160,8 @@ const ClaimManage = () => {
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {data && data.length > 0 ? (
-                        data.map((claim, index) => (
+                    {filteredData && filteredData.length > 0 ? (
+                        filteredData.map((claim, index) => (
                             <div
                                 key={claim._id}
                                 className={`group bg-white rounded-2xl border-2 transition-all duration-300 flex flex-col hover:shadow-xl hover:shadow-blue-900/5 ${claim.isActive ? 'border-slate-100 hover:border-blue-400' : 'border-slate-200 opacity-80'
@@ -178,7 +201,7 @@ const ClaimManage = () => {
                                         </div>
                                     </div>
 
-                                    <h3 className="text-xl font-bold text-slate-800 mb-2 leading-tight group-hover:text-blue-700 transition-colors mb-4">
+                                    <h3 className="text-xl font-bold text-slate-800 mb-4 leading-tight group-hover:text-blue-700 transition-colors">
                                         {claim.claim_type_name}
                                     </h3>
 

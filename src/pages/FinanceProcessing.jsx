@@ -37,7 +37,9 @@ const FinanceProcessing = () => {
             const res = await axios.get(`${API_URL}/api/batches`);
             const sorted = (res.data || []).sort((a, b) => {
                 const order = { Processed: 0, Submitted: 1, Credited: 2 };
-                return (order[a.batchStatus] ?? 3) - (order[b.batchStatus] ?? 3);
+                const statusCompare = (order[a.batchStatus] ?? 3) - (order[b.batchStatus] ?? 3);
+                if (statusCompare !== 0) return statusCompare;
+                return a.payment_report_id.localeCompare(b.payment_report_id);
             });
             setBatches(sorted);
         } catch (err) {
@@ -77,7 +79,11 @@ const FinanceProcessing = () => {
         });
         // Re-apply sort after filter to preserve order
         const order = { Processed: 0, Submitted: 1, Credited: 2 };
-        filtered.sort((a, b) => (order[a.batchStatus] ?? 3) - (order[b.batchStatus] ?? 3));
+        filtered.sort((a, b) => {
+            const statusCompare = (order[a.batchStatus] ?? 3) - (order[b.batchStatus] ?? 3);
+            if (statusCompare !== 0) return statusCompare;
+            return a.payment_report_id.localeCompare(b.payment_report_id);
+        });
         return filtered;
     }, [batches, searchTerm, statusFilter]);
 
@@ -275,7 +281,11 @@ const FinanceProcessing = () => {
                                     {["All", "Processed", "Submitted", "Credited"].map(status => (
                                         <button
                                             key={status}
-                                            onClick={() => setStatusFilter(status)}
+                                            onClick={() => {
+                                                setStatusFilter(status);
+                                                setSelectedBatchId(null);
+                                                setClaims([]);
+                                            }}
                                             className={`flex-1 text-xs font-semibold py-1.5 rounded-lg transition ${statusFilter === status ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                                         >
                                             {status}
