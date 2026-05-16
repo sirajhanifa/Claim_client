@@ -23,7 +23,7 @@ const PaymentProcess = () => {
     const getClaimsByPrId = async (prId) => {
         setLoadingClaims(true);
         try {
-            const response = await axios.get(`${API_URL}/api/finance/claims/${prId}`);
+            const response = await axios.get(`${API_URL}/api/finance/claims/${encodeURIComponent(prId)}`);
             setSelectedPrId(prId);
             setClaims(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
@@ -44,7 +44,7 @@ const PaymentProcess = () => {
                 remarks: "Paid via NEFT",
                 payment_report_id: selectedPrId
             };
-            const response = await axios.put(`${API_URL}/api/finance/update/${claimId}`, payload);
+            const response = await axios.put(`${API_URL}/api/finance/update/${encodeURIComponent(claimId)}`, payload);
             setClaims(prev => prev.map(c => c._id === claimId ? response.data : c));
             if (selectedPrId) getClaimsByPrId(selectedPrId);
         } catch (error) {
