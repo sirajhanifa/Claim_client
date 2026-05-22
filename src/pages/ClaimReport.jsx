@@ -25,6 +25,7 @@ const ClaimReport = () => {
 
     const showStatusColumn = mainFilter === 'All';
     const showPaymentIdColumn = mainFilter !== 'Unsubmitted';
+    const showTDSColumn = categoryFilter === 'TDS';
 
     useEffect(() => {
         if (mainFilter === 'Unsubmitted' && paymentIdFilter !== 'All') {
@@ -118,12 +119,14 @@ const ClaimReport = () => {
         return 'Entry To Date';
     }, [mainFilter]);
 
-    // Filter logic based on mainFilter (status-based filtering)
+    // Filter logic based on mainFilter 
     const filteredClaims = useMemo(() => {
+
         if (!claimData) return [];
 
         return claimData.filter(claim => {
-            // 1. Main filter (by status)
+
+            // 1. Main filter
             if (mainFilter !== 'All') {
                 if (claim.status !== mainFilter) return false;
             }
@@ -133,8 +136,11 @@ const ClaimReport = () => {
 
             // 3. Category filter
             if (categoryFilter !== "All") {
-                if (categoryFilter !== "TDS" && claim.internal_external !== categoryFilter) return false;
-                if (categoryFilter === "TDS" && claim.category !== "AIDED") return false;
+                if (categoryFilter === "TDS") {
+                    if (claim.tds_amount === -1) return false;
+                } else if (claim.internal_external !== categoryFilter) {
+                    return false;
+                }
             }
 
             // 4. Payment report ID filter
@@ -178,7 +184,6 @@ const ClaimReport = () => {
                 const existing = map.get(key);
                 existing.amount = (Number(existing.amount) || 0) + (Number(c.amount) || 0);
                 existing._mergedCount = (existing._mergedCount || 1) + 1;
-                // Keep latest dates where applicable
                 const entryDateObj = c.entry_date ? new Date(c.entry_date) : null;
                 if (entryDateObj && (!existing.entry_date || new Date(existing.entry_date) < entryDateObj)) {
                     existing.entry_date = entryDateObj.toISOString();
@@ -259,6 +264,29 @@ const ClaimReport = () => {
         return displayedClaims.reduce((sum, claim) => sum + (Number(claim.amount) || 0), 0);
     }, [displayedClaims]);
 
+    const duplicateNameMap = useMemo(() => {
+        const map = new Map();
+        displayedClaims.forEach((claim) => {
+            const name = claim.staff_name?.trim();
+            if (!name) return;
+            const accounts = map.get(name) || new Set();
+            if (claim.account_no) accounts.add(claim.account_no);
+            map.set(name, accounts);
+        });
+        return new Map(
+            Array.from(map.entries()).filter(([, accounts]) => accounts.size > 1)
+        );
+    }, [displayedClaims]);
+
+    const getExcelDisplayName = (claim) => {
+        const name = claim.staff_name || '';
+        const accounts = duplicateNameMap.get(name);
+        if (accounts && accounts.size > 1 && claim.account_no) {
+            return `${name} (Account No. ${claim.account_no})`;
+        }
+        return name;
+    };
+
     // Helper to render date column based on mainFilter
     const renderDateCell = (claim) => {
 
@@ -332,14 +360,16 @@ const ClaimReport = () => {
 
     // Excel download
     const handleDownloadExcel = () => {
+
         if (displayedClaims.length === 0) {
             alert("No data available to download");
             return;
         }
-        const excelData = displayedClaims.map((claim) => ({
-            ...claim
-        }));
 
+        const excelData = displayedClaims.map((claim) => ({
+            ...claim,
+            staff_name: getExcelDisplayName(claim)
+        }));
         const worksheet = XLSX.utils.json_to_sheet(excelData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Claims");
@@ -348,11 +378,43 @@ const ClaimReport = () => {
         saveAs(file, `Claim_Report_${mainFilter}_${new Date().toISOString().slice(0, 10)}.xlsx`);
     };
 
-    const tableHeaders = showStatusColumn
-        ? ["S.No", "Staff Details", "Claim Type", "Contact", "IFSC", "Account Number", "Amount", "Dates", "Status", "Payment ID"]
-        : ["S.No", "Staff Details", "Claim Type", "Contact", "IFSC", "Account Number", "Amount", "Dates", "Payment ID"];
+    // TDS Excel download
+    const handleDownloadTDSExcel = () => {
+        if (displayedClaims.length === 0) {
+            alert("No data available to download");
+            return;
+        }
+        const excelData = displayedClaims.map((claim, index) => ({
+            Sno: index + 1,
+            Date: claim.entry_date ? new Date(claim.entry_date).toLocaleDateString('en-GB') : '-',
+            Name: getExcelDisplayName(claim),
+            Department: claim.department,
+            'Amount Claimed': claim.tds_amount + claim.amount,
+            'Less I.Tax 10%': claim.tds_amount,
+            'Amount Paid': claim.amount
+        }));
 
-    // Define sortable keys for each column (excluding S.No)
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "TDS Claims");
+        const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+        const file = new Blob([excelBuffer], { type: "application/octet-stream" });
+        const formattedDate = new Date().toLocaleDateString('en-GB').replace(/\//g, '.');
+        saveAs(file, `TDS Report ${formattedDate}.xlsx`);
+    };
+
+    const tableHeaders = useMemo(() => {
+        const baseHeaders = ["S.No", "Staff Details", "Claim Type", "Contact", "IFSC", "Account Number"];
+        const amountHeaders = showTDSColumn ? [...baseHeaders, "TDS Amount", "Amount", "Dates"] : [...baseHeaders, "Amount", "Dates"];
+
+        if (showStatusColumn) {
+            return [...amountHeaders, "Status", "Payment ID"];
+        } else {
+            return [...amountHeaders, "Payment ID"];
+        }
+    }, [showTDSColumn, showStatusColumn]);
+
+    // Define sortable keys for each column
     const sortableKeys = {
         "Staff Details": "staff_name",
         "Claim Type": "claim_type_name",
@@ -360,6 +422,7 @@ const ClaimReport = () => {
         "IFSC": "ifsc_code",
         "Account Number": "account_no",
         "Amount": "amount",
+        "TDS Amount": "tds_amount",
         "Status": "status",
         "Payment ID": "payment_report_id"
     };
@@ -378,13 +441,15 @@ const ClaimReport = () => {
                     </h1>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
-                    {/* <button
-                        onClick={handleDownloadPDF}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-100 active:scale-95"
-                    >
-                        <FileText className="w-4 h-4" />
-                        Download PDF
-                    </button> */}
+                    {categoryFilter === 'TDS' && (
+                        <button
+                            onClick={handleDownloadTDSExcel}
+                            className="flex items-center gap-2 bg-orange-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-orange-700 transition-all shadow-sm active:scale-95"
+                        >
+                            <Download className="w-4 h-4" />
+                            Download TDS Excel
+                        </button>
+                    )}
                     <button
                         onClick={handleDownloadExcel}
                         className="flex items-center gap-2 bg-green-700 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-800 transition-all shadow-sm active:scale-95"
@@ -430,6 +495,7 @@ const ClaimReport = () => {
                             <option value="All">All Categories</option>
                             <option value="Internal">Internal</option>
                             <option value="External">External</option>
+                            <option value="TDS">TDS</option>
                         </select>
                     </div>
 
@@ -646,7 +712,7 @@ const ClaimReport = () => {
                                                             )}
                                                         </div>
                                                         <div className="text-[11px] text-blue-600 font-bold uppercase tracking-tight truncate">
-                                                            {categoryFilter === "TDS" ? "AIDED" : claim.internal_external}
+                                                            {claim.internal_external}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -666,6 +732,11 @@ const ClaimReport = () => {
                                             <td className="px-6 py-4 text-center">
                                                 <p className="text-[13px] text-center text-blue-500 uppercase font-bold">{claim.account_no}</p>
                                             </td>
+                                            {showTDSColumn && (
+                                                <td className="px-6 py-4 text-center font-semibold text-slate-700">
+                                                    {claim.tds_amount === -1 ? '-' : `₹${claim.tds_amount.toLocaleString('en-IN')}`}
+                                                </td>
+                                            )}
                                             <td className="px-6 py-4 text-center">
                                                 <span className="text-md font-bold text-green-700">₹{claim.amount}</span>
                                             </td>

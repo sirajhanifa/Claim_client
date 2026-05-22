@@ -1,16 +1,10 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import axios from "axios";
 import {
-    Search, FileText, Layers, ChevronRight,
-    AlertCircle, Loader2, FileSpreadsheet, Printer, CheckCircle2,
-    Clock, RefreshCw, TrendingUp, Users, CheckCircle, Hash, Filter
+    Search, Layers, ChevronRight,
+    AlertCircle, Loader2, CheckCircle2,
+    TrendingUp, Users, Hash, Filter, RefreshCw, XCircle
 } from "lucide-react";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
-import logo1 from "../assets/75.jpeg";
-import logo2 from "../assets/JmcLogo.png";
 
 const FinanceProcessing = () => {
 
@@ -22,14 +16,9 @@ const FinanceProcessing = () => {
     const [claims, setClaims] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [tableSearchTerm, setTableSearchTerm] = useState("");
+    const [globalSearch, setGlobalSearch] = useState("");
     const [updateLoading, setUpdateLoading] = useState(false);
-
-    const formatDate = (dateString) => {
-        if (!dateString) return "—";
-        const date = new Date(dateString);
-        return isNaN(date.getTime()) ? "—" : date.toLocaleDateString("en-GB");
-    };
+    const [viewMode, setViewMode] = useState('individual');
 
     // Fetch batches (Processed, Submitted, Credited)
     const fetchBatches = async () => {
@@ -43,6 +32,7 @@ const FinanceProcessing = () => {
             });
             setBatches(sorted);
         } catch (err) {
+            console.error('Error in fetching batches : ', err);
             setError("Failed to load batches.");
         }
     };
@@ -53,13 +43,12 @@ const FinanceProcessing = () => {
         setSelectedBatchId(batchId);
         setError(null);
         try {
-            console.log(API_URL)
             const res = await axios.get(
                 `${API_URL}/api/claims/batch/${encodeURIComponent(batchId)}`
             );
             setClaims(res.data.claims || []);
         } catch (err) {
-            console.error('Error fetching batch datas : ', err)
+            console.error('Error fetching batch datas : ', err);
             setError("Could not retrieve claim details.");
         } finally {
             setLoading(false);
@@ -77,7 +66,6 @@ const FinanceProcessing = () => {
             const matchesStatus = statusFilter === "All" || batch.batchStatus === statusFilter;
             return matchesSearch && matchesStatus;
         });
-        // Re-apply sort after filter to preserve order
         const order = { Processed: 0, Submitted: 1, Credited: 2 };
         filtered.sort((a, b) => {
             const statusCompare = (order[a.batchStatus] ?? 3) - (order[b.batchStatus] ?? 3);
@@ -87,108 +75,109 @@ const FinanceProcessing = () => {
         return filtered;
     }, [batches, searchTerm, statusFilter]);
 
-    // Filter claims in the table
-    const filteredClaims = useMemo(() => {
-        const term = tableSearchTerm.toLowerCase();
-        return claims.filter(claim =>
-            claim.staff_name.toLowerCase().includes(term) ||
-            claim.claim_type_name.toLowerCase().includes(term) ||
-            claim.totalAmount.toString().includes(term) ||
-            claim.account_no?.toLowerCase().includes(term) ||
-            claim.ifsc_code?.toLowerCase().includes(term) ||
-            claim.status.toLowerCase().includes(term)
-        );
-    }, [claims, tableSearchTerm]);
+    // Individual view: filtered by search
+    const filteredClaimsForIndividual = useMemo(() => {
 
-    // Derived metrics for selected batch
-    const totalBatchAmount = useMemo(() => claims.reduce((sum, c) => sum + c.totalAmount, 0), [claims]);
-    const totalClaimsCount = claims.length;
+        const term = globalSearch.toLowerCase().trim();
+        if (!term) return claims;
+
+        return claims.filter(claim => {
+            const staffMatch = claim.staff_name?.toLowerCase().includes(term);
+            const phoneMatch = claim.phone_number?.toLowerCase().includes(term);
+            const claimTypeMatch = claim.claim_type_name?.toLowerCase().includes(term);
+            const amountMatch = claim.amount?.toString().includes(term);
+            const accountMatch = claim.account_no?.toLowerCase().includes(term);
+            const ifscMatch = claim.ifsc_code?.toLowerCase().includes(term);
+            const statusMatch = claim.status?.toLowerCase().includes(term);
+            const emailStatusMatch = claim.email_status?.toLowerCase().includes(term);
+            return staffMatch || phoneMatch || claimTypeMatch || amountMatch ||
+                accountMatch || ifscMatch || statusMatch || emailStatusMatch;
+        });
+    }, [claims, globalSearch]);
+
+    // Always use the full claims for grouping
+    const groupedClaims = useMemo(() => {
+        const map = new Map();
+        claims.forEach(c => {
+            const key = `${c.staff_name || ''}||${c.claim_type_name || ''}`;
+            if (!map.has(key)) {
+                map.set(key, {
+                    staff_name: c.staff_name,
+                    claim_type_name: c.claim_type_name,
+                    totalAmount: 0,
+                    count: 0,
+                    account_no: c.account_no,
+                    ifsc_code: c.ifsc_code,
+                    entry_date: c.entry_date,
+                    processed_date: c.processed_date,
+                    submitted_date: c.submitted_date,
+                    credited_date: c.credited_date,
+                    status: c.status,
+                    email_statuses: new Set(),
+                });
+            }
+            const g = map.get(key);
+            g.totalAmount += Number(c.amount) || 0;
+            g.count += 1;
+            if (c.account_no) g.account_no = c.account_no;
+            if (c.ifsc_code) g.ifsc_code = c.ifsc_code;
+            if (c.email_status) {
+                g.email_statuses.add(c.email_status);
+            }
+        });
+
+        return Array.from(map.values()).map((g, idx) => {
+            let finalEmailStatus = 'N/A';
+            let statusColor = 'gray';
+            if (g.email_statuses.has('failed')) {
+                finalEmailStatus = 'Failed';
+                statusColor = 'red';
+            } else if (g.email_statuses.has('sent')) {
+                finalEmailStatus = 'Sent';
+                statusColor = 'green';
+            } else if (g.email_statuses.size > 0) {
+                const firstStatus = Array.from(g.email_statuses)[0];
+                finalEmailStatus = firstStatus.charAt(0).toUpperCase() + firstStatus.slice(1);
+                statusColor = firstStatus === 'failed' ? 'red' : (firstStatus === 'sent' ? 'green' : 'gray');
+            }
+            return {
+                ...g,
+                Sno: idx + 1,
+                aggregatedEmailStatus: finalEmailStatus,
+                aggregatedEmailStatusColor: statusColor
+            };
+        });
+    }, [claims]);
+
+    // Determine which rows to display based on view mode
+    const displayedRows = useMemo(() => {
+        if (viewMode === 'grouped') {
+            return groupedClaims;
+        } else {
+            return filteredClaimsForIndividual.map(claim => ({
+                ...claim,
+                emailStatusDisplay: claim.email_status || 'N/A',
+                emailStatusColor: claim.email_status === 'failed' ? 'red' : (claim.email_status === 'sent' ? 'green' : 'gray')
+            }));
+        }
+    }, [viewMode, groupedClaims, filteredClaimsForIndividual]);
+
+    const selectedBatch = useMemo(() => batches.find(b => b.payment_report_id === selectedBatchId), [batches, selectedBatchId]);
+    const selectedBatchStatus = selectedBatch?.batchStatus;
+
+    const getRowAmount = (r) => {
+        const v = r?.totalAmount ?? r?.amount ?? 0;
+        const n = Number(v);
+        return Number.isFinite(n) ? n : 0;
+    };
+
+    // Derived metrics
+    const totalBatchAmount = useMemo(() => claims.reduce((sum, c) => sum + (Number(c.amount) || 0), 0), [claims]);
+    const groupedClaimsCount = groupedClaims.length;
     const processedClaimsCount = claims.filter(c => c.status === "Processed").length;
     const hasProcessedClaims = processedClaimsCount > 0;
 
-    // Excel export (add account & IFSC columns)
-    const handleDownloadExcel = () => {
-        if (!claims.length) return alert("No claims to export");
-        const excelData = claims.map((claim, idx) => ({
-            "S.No": idx + 1,
-            "Staff Name": claim.staff_name,
-            "Phone": claim.phone_number,
-            "Claim Type": claim.claim_type_name,
-            "Total Amount (₹)": claim.totalAmount,
-            "Merged Count": claim.count,
-            "Account No": claim.account_no || "—",
-            "IFSC Code": claim.ifsc_code || "—",
-            "Entry Date": formatDate(claim.entry_date),
-            "Processed Date": formatDate(claim.processed_date),
-            "Submitted Date": formatDate(claim.submitted_date),
-            "Credited Date": formatDate(claim.credited_date),
-            "Status": claim.status
-        }));
-        const ws = XLSX.utils.json_to_sheet(excelData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Claims");
-        const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-        saveAs(new Blob([excelBuffer]), `Claims_${selectedBatchId}.xlsx`);
-    };
-
-    // PDF export (add account & IFSC)
-    const handleDownloadPDF = () => {
-        if (!claims.length) return alert("No claims to export");
-        const doc = new jsPDF("p", "mm", "a4");
-        const pageWidth = doc.internal.pageSize.getWidth();
-        doc.addImage(logo2, "JPEG", 15, 10, 25, 25);
-        doc.addImage(logo1, "JPEG", pageWidth - 40, 10, 25, 25);
-        doc.setFontSize(18);
-        doc.setFont("helvetica", "bold");
-        doc.text("Jamal Mohamed College (Autonomous)", pageWidth / 2, 20, { align: "center" });
-        doc.setFontSize(9);
-        doc.text("Accredited with A++ Grade by NAAC (4th Cycle) with CGPA 3.69", pageWidth / 2, 27, { align: "center" });
-        doc.text("Tiruchirappalli – 620 020", pageWidth / 2, 33, { align: "center" });
-        doc.setFontSize(12);
-        doc.text(`Payment Report ID: ${selectedBatchId}`, 15, 50);
-        doc.text(`Generated: ${new Date().toLocaleDateString('en-GB')}`, pageWidth - 15, 50, { align: "right" });
-
-        const tableColumn = ["S.No", "Staff Name", "Claim Type", "Amount (₹)", "Account No", "IFSC", "Entry", "Processed", "Submitted", "Credited", "Status"];
-        const tableRows = claims.map((c, idx) => [
-            idx + 1,
-            c.staff_name,
-            c.claim_type_name,
-            `₹${c.totalAmount.toLocaleString()}`,
-            c.account_no || "—",
-            c.ifsc_code || "—",
-            formatDate(c.entry_date),
-            formatDate(c.processed_date),
-            formatDate(c.submitted_date),
-            formatDate(c.credited_date),
-            c.status
-        ]);
-        autoTable(doc, {
-            startY: 60,
-            head: [tableColumn],
-            body: tableRows,
-            styles: { fontSize: 9, halign: "center" },
-            headStyles: { fillColor: [0, 51, 102], textColor: "#fff" },
-            columnStyles: {
-                0: { cellWidth: 10 },
-                1: { cellWidth: 35 },
-                2: { cellWidth: 30 },
-                3: { cellWidth: 25 },
-                4: { cellWidth: 30 },
-                5: { cellWidth: 25 },
-                6: { cellWidth: 18 },
-                7: { cellWidth: 18 },
-                8: { cellWidth: 18 },
-                9: { cellWidth: 18 },
-                10: { cellWidth: 20 }
-            }
-        });
-        const pageHeight = doc.internal.pageSize.getHeight();
-        doc.text("Controller of Examinations", 15, pageHeight - 20);
-        doc.text("Principal", pageWidth - 40, pageHeight - 20);
-        doc.save(`Claims_${selectedBatchId}.pdf`);
-    };
-
-    // Submit batch (move Processed → Submitted)
+    // Submit batch
     const handleUpdateStatus = async () => {
         if (!selectedBatchId) return;
         if (!window.confirm(`Mark all Processed claims in batch ${selectedBatchId} as "Submitted"?`)) return;
@@ -207,42 +196,7 @@ const FinanceProcessing = () => {
         }
     };
 
-    // Helper: render dates based on claim's own status
-    const renderDateStack = (claim) => {
-
-        const status = claim.status;
-        const entry = formatDate(claim.entry_date);
-        const processed = formatDate(claim.processed_date);
-        const submitted = formatDate(claim.submitted_date);
-        const credited = formatDate(claim.credited_date);
-
-        return (
-            <div className="flex flex-col gap-1 text-[11px] min-w-[130px]">
-                <div className="flex justify-between gap-2">
-                    <span className="text-slate-400 uppercase">Entry :</span>
-                    <span className="text-slate-700 font-bold">{entry}</span>
-                </div>
-                {status !== "Unsubmitted" && (
-                    <div className="flex justify-between gap-2">
-                        <span className="text-slate-400 uppercase">Processed :</span>
-                        <span className="text-slate-700 font-bold">{processed}</span>
-                    </div>
-                )}
-                {(status === "Submitted" || status === "Credited") && (
-                    <div className="flex justify-between gap-2">
-                        <span className="text-slate-400 uppercase">Submitted :</span>
-                        <span className="text-slate-700 font-bold">{submitted}</span>
-                    </div>
-                )}
-                {status === "Credited" && (
-                    <div className="flex justify-between gap-2">
-                        <span className="text-slate-400 uppercase">Credited :</span>
-                        <span span className="text-slate-700 font-bold">{credited}</span>
-                    </div>
-                )}
-            </div >
-        );
-    };
+    const showEmailStatus = selectedBatchStatus === 'Credited';
 
     return (
         <div className="min-h-screen font-sans">
@@ -339,26 +293,65 @@ const FinanceProcessing = () => {
                     {/* Main Panel */}
                     <main className="lg:col-span-9 space-y-6">
                         {!selectedBatchId ? (
-                            <EmptyState icon={<FileText className="w-12 h-12" />} title="Select a Batch" description="Choose a payment report from the sidebar to view details." />
+                            <EmptyState icon={<Layers className="w-12 h-12" />} title="Select a Batch" description="Choose a payment report from the sidebar to view details." />
                         ) : (
                             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                                {/* Metrics Cards */}
+                                {/* Metrics Cards – second card always shows grouped claims count */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                     <MetricCard label="Total Amount" value={`₹${totalBatchAmount.toLocaleString()}`} icon={<TrendingUp className="w-5 h-5" />} theme="emerald" />
-                                    <MetricCard label="Total Grouped Claims" value={totalClaimsCount} icon={<Users className="w-5 h-5" />} theme="blue" />
+                                    <MetricCard
+                                        label="Grouped Claims"
+                                        value={groupedClaimsCount}
+                                        icon={<Users className="w-5 h-5" />}
+                                        theme="blue"
+                                    />
                                     <MetricCard label="Batch ID" value={selectedBatchId} icon={<Hash className="w-5 h-5" />} theme="orange" />
                                 </div>
 
-                                {/* Action Bar */}
-                                <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
-                                    <div className="flex gap-3">
-                                        <button onClick={handleDownloadExcel} className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50">
-                                            <FileSpreadsheet className="w-4 h-4 text-green-600" /> Download Excel
-                                        </button>
-                                        <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50">
-                                            <Printer className="w-4 h-4 text-red-500" /> Download PDF
-                                        </button>
+                                {/* View Mode Toggle + Global Search */}
+                                <div className="flex flex-wrap items-center justify-between gap-4">
+                                    <div className="flex flex-wrap gap-3 bg-slate-100 p-1.5 rounded-lg w-full md:w-fit">
+                                        <label className="relative cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="viewMode"
+                                                value="individual"
+                                                checked={viewMode === 'individual'}
+                                                onChange={() => setViewMode('individual')}
+                                                className="sr-only peer"
+                                            />
+                                            <div className="px-5 py-2 rounded-lg text-xs font-black uppercase tracking-widest text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all text-center whitespace-nowrap">
+                                                Individual
+                                            </div>
+                                        </label>
+                                        <label className="relative cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="viewMode"
+                                                value="grouped"
+                                                checked={viewMode === 'grouped'}
+                                                onChange={() => setViewMode('grouped')}
+                                                className="sr-only peer"
+                                            />
+                                            <div className="px-5 py-2 rounded-lg text-xs font-black uppercase tracking-widest text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all text-center whitespace-nowrap">
+                                                Grouped
+                                            </div>
+                                        </label>
                                     </div>
+                                    <div className="xl:w-96 border border-slate-300 rounded-[12px] relative">
+                                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                        <input
+                                            type="text"
+                                            placeholder="Search across all fields..."
+                                            value={globalSearch}
+                                            onChange={(e) => setGlobalSearch(e.target.value)}
+                                            className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-none rounded-[12px] text-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white outline-none transition-all placeholder:text-slate-400"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Action Bar - Submit button */}
+                                <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
                                     {hasProcessedClaims && (
                                         <button onClick={handleUpdateStatus} disabled={updateLoading} className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50">
                                             {updateLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
@@ -369,17 +362,8 @@ const FinanceProcessing = () => {
 
                                 {/* Claims Table */}
                                 <div className="bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden">
-                                    <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center flex-wrap gap-2">
+                                    <div className="px-6 py-4 border-b border-slate-100">
                                         <h3 className="font-bold text-slate-700">Claim Transactions</h3>
-                                        <div className="relative">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                                            <input
-                                                type="text"
-                                                placeholder="Filter claims..."
-                                                className="pl-10 pr-4 py-2 bg-slate-50 border rounded-xl w-64 text-sm border-slate-300"
-                                                onChange={(e) => setTableSearchTerm(e.target.value)}
-                                            />
-                                        </div>
                                     </div>
                                     {loading ? (
                                         <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-cyan-500" /></div>
@@ -394,42 +378,61 @@ const FinanceProcessing = () => {
                                                         <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Staff</th>
                                                         <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Claim Type</th>
                                                         <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Amount</th>
+                                                        {showEmailStatus && (
+                                                            <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Email Status</th>
+                                                        )}
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-100 bg-white">
-                                                    {filteredClaims.map((claim, idx) => (
-                                                        <tr
-                                                            key={idx}
-                                                            className={`transition-colors duration-150 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/80'} hover:bg-slate-100/90`}
-                                                        >
+                                                    {displayedRows.map((row, idx) => (
+                                                        <tr key={idx} className={`transition-colors duration-150 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/80'} hover:bg-slate-100/90`}>
                                                             <td className="px-6 py-4 text-center">
                                                                 <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium text-slate-900">
                                                                     {idx + 1}
                                                                 </span>
                                                             </td>
                                                             <td className="px-6 py-4 text-center">
-                                                                <div className="font-semibold text-slate-800 text-md">{claim.staff_name}</div>
-                                                                {claim.count > 1 && (
-                                                                    <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-700">
-                                                                        Merged ({claim.count})
-                                                                    </span>
+                                                                {viewMode === 'grouped' ? (
+                                                                    <div>
+                                                                        <div className="font-semibold text-slate-800">
+                                                                            {row.staff_name || '—'}
+                                                                            {row.count > 1 && (
+                                                                                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+                                                                                    {row.count} claims
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div>
+                                                                        <div className="font-semibold text-slate-800">{row.staff_name || '—'}</div>
+                                                                    </div>
                                                                 )}
                                                             </td>
                                                             <td className="px-6 py-4 text-center">
-                                                                <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium bg-slate-100 text-slate-700">
-                                                                    {claim.claim_type_name}
-                                                                </span>
+                                                                <div className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium bg-slate-100 text-slate-700">
+                                                                    {row.claim_type_name}
+                                                                </div>
                                                             </td>
                                                             <td className="px-6 py-4 text-center">
                                                                 <span className="font-bold text-blue-600 font-mono text-[15px]">
-                                                                    ₹{claim.totalAmount.toLocaleString()}
+                                                                    ₹{getRowAmount(row).toLocaleString('en-IN')}
                                                                 </span>
                                                             </td>
+                                                            {showEmailStatus && (
+                                                                <td className="px-6 py-4 text-center">
+                                                                    {viewMode === 'grouped' ? (
+                                                                        <EmailStatusBadge status={row.aggregatedEmailStatus} color={row.aggregatedEmailStatusColor} />
+                                                                    ) : (
+                                                                        <EmailStatusBadge status={row.emailStatusDisplay} color={row.emailStatusColor} />
+                                                                    )}
+                                                                </td>
+                                                            )}
                                                         </tr>
                                                     ))}
                                                 </tbody>
                                             </table>
-                                            {filteredClaims.length === 0 && (
+                                            {displayedRows.length === 0 && (
                                                 <div className="py-16 text-center text-slate-400 bg-white">
                                                     <Filter className="w-10 h-10 mx-auto mb-3 opacity-40" />
                                                     <p className="text-sm font-medium">No matching claims</p>
@@ -455,7 +458,7 @@ const EmptyState = ({ icon, title, description }) => (
     </div>
 );
 
-const MetricCard = ({ label, value, icon, theme, isMono }) => {
+const MetricCard = ({ label, value, icon, theme }) => {
     const themes = {
         emerald: "bg-emerald-50 text-emerald-600",
         blue: "bg-blue-50 text-blue-600",
@@ -468,9 +471,7 @@ const MetricCard = ({ label, value, icon, theme, isMono }) => {
                 {icon}
             </div>
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</p>
-            <p className={`text-2xl font-bold text-slate-800 mt-3 ${isMono ? "font-mono" : ""}`}>
-                {value}
-            </p>
+            <p className="text-2xl font-bold text-slate-800 mt-3">{value}</p>
         </div>
     );
 };
@@ -482,6 +483,41 @@ const BatchStatusBadge = ({ status }) => {
         Credited: "bg-green-100 text-green-700"
     };
     return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${config[status] || "bg-gray-100"}`}>{status}</span>;
+};
+
+const EmailStatusBadge = ({ status }) => {
+
+    const toTitleCase = (str) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    const titleStatus = toTitleCase(status);
+    const normalized = titleStatus.toLowerCase();
+    let icon = null;
+    let bgClass = "bg-gray-100";
+    let textClass = "text-gray-700";
+    let borderClass = "border-gray-200";
+
+    if (normalized === 'sent') {
+        icon = <CheckCircle2 className="w-3.5 h-3.5 text-green-700" />;
+        bgClass = "bg-green-50";
+        textClass = "text-green-700";
+        borderClass = "border-green-200";
+    } else if (normalized === 'failed') {
+        icon = <XCircle className="w-3.5 h-3.5 text-red-700" />;
+        bgClass = "bg-red-50";
+        textClass = "text-red-700";
+        borderClass = "border-red-200";
+    } else {
+        icon = <AlertCircle className="w-3.5 h-3.5 text-yellow-500" />;
+        bgClass = "bg-yellow-50";
+        textClass = "text-yellow-500";
+        borderClass = "border-yellow-200";
+    }
+
+    return (
+        <div className={`inline-flex items-center gap-1.5 ${bgClass} px-2.5 py-1 rounded-full text-xs font-bold border ${borderClass}`}>
+            {icon}
+            <span className={textClass}>{titleStatus}</span>
+        </div>
+    );
 };
 
 export default FinanceProcessing;

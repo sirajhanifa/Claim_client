@@ -26,6 +26,7 @@ const ClaimEntry = () => {
     const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [phoneSuggestions, setPhoneSuggestions] = useState([]);
+    const [showPhoneSuggestions, setShowPhoneSuggestions] = useState(false);
     const [activeIndex, setActiveIndex] = useState(-1);
     const { username } = useParams();
     const [phoneNumber, setPhoneNumber] = useState('');
@@ -368,6 +369,7 @@ const ClaimEntry = () => {
     const handleFetchStaff = async (phone = null) => {
         const lookupPhone = phone ?? phoneNumber;
         if (!lookupPhone) return alert("Enter a phone number");
+        setShowPhoneSuggestions(false);
         try {
             const res = await fetch(`${apiUrl}/api/getStaffByPhone/${encodeURIComponent(lookupPhone)}`);
             const data = await res.json();
@@ -486,13 +488,16 @@ const ClaimEntry = () => {
     const fetchPhoneSuggestions = async (query) => {
         if (query.length < 1) {
             setPhoneSuggestions([]);
+            setShowPhoneSuggestions(false);
             return;
         }
         try {
             const res = await axios.get(`${apiUrl}/api/search-phone/${encodeURIComponent(query)}`);
             setPhoneSuggestions(res.data);
+            setShowPhoneSuggestions(true);
         } catch (err) {
             console.error("Phone suggestion error:", err);
+            setShowPhoneSuggestions(false);
         }
     };
 
@@ -541,8 +546,9 @@ const ClaimEntry = () => {
                                     tabIndex={form.claim_type_name ? 2 : -1}
                                     value={phoneNumber}
                                     onChange={(e) => {
-                                        setPhoneNumber(e.target.value);
-                                        fetchPhoneSuggestions(e.target.value);
+                                        const value = e.target.value;
+                                        setPhoneNumber(value);
+                                        fetchPhoneSuggestions(value);
                                         setActiveIndex(-1);
                                     }}
                                     placeholder="Search by name or phone number"
@@ -553,7 +559,28 @@ const ClaimEntry = () => {
                                             : "bg-gray-100 cursor-not-allowed border-gray-200 text-gray-400"
                                         }`}
                                     onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                            e.preventDefault();
+                                            const selectedIndex = activeIndex >= 0
+                                                ? activeIndex
+                                                : phoneSuggestions.length === 1
+                                                    ? 0
+                                                    : phoneSuggestions.findIndex(s => s.phone_no === phoneNumber);
+                                            if (selectedIndex >= 0 && phoneSuggestions[selectedIndex]) {
+                                                const selected = phoneSuggestions[selectedIndex].phone_no;
+                                                setPhoneSuggestions([]);
+                                                setActiveIndex(-1);
+                                                setShowPhoneSuggestions(false);
+                                                handleFetchStaff(selected);
+                                            } else {
+                                                setShowPhoneSuggestions(false);
+                                                handleFetchStaff();
+                                            }
+                                            return;
+                                        }
+
                                         if (!phoneSuggestions.length) return;
+
                                         if (e.key === "ArrowDown") {
                                             e.preventDefault();
                                             setActiveIndex((prev) => {
@@ -570,21 +597,9 @@ const ClaimEntry = () => {
                                                 return next;
                                             });
                                         }
-                                        if (e.key === "Enter") {
-                                            e.preventDefault();
-                                            const idx = phoneSuggestions.findIndex(s => s.phone_no === phoneNumber);
-                                            if (idx >= 0) {
-                                                const selected = phoneSuggestions[idx].phone_no;
-                                                setPhoneSuggestions([]);
-                                                setActiveIndex(-1);
-                                                handleFetchStaff(selected);
-                                            } else {
-                                                handleFetchStaff();
-                                            }
-                                        }
                                     }}
                                 />
-                                {(phoneSuggestions.length > 0 || phoneNumber.length > 0) && (
+                                {showPhoneSuggestions && (
                                     <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-56 overflow-auto py-1">
                                         {phoneSuggestions.length > 0 ? (
                                             <ul>
@@ -595,6 +610,7 @@ const ClaimEntry = () => {
                                                             setPhoneNumber(item.phone_no);
                                                             setPhoneSuggestions([]);
                                                             setActiveIndex(-1);
+                                                            setShowPhoneSuggestions(false);
                                                             handleFetchStaff(item.phone_no);
                                                         }}
                                                         className={`px-4 py-2 cursor-pointer text-sm font-medium
