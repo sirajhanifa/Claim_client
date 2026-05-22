@@ -13,7 +13,18 @@ const PaymentProcess = () => {
     const getPaymentReportIds = async () => {
         try {
             const response = await axios.get(`${API_URL}/api/finance/pr-ids`);
-            setPrList(Array.isArray(response.data) ? response.data : []);
+            let data = Array.isArray(response.data) ? response.data : [];
+            data.sort((a, b) => {
+                const suffixA = a.payment_report_id.slice(-2);
+                const suffixB = b.payment_report_id.slice(-2);
+                const numA = parseInt(suffixA, 10);
+                const numB = parseInt(suffixB, 10);
+                if (!isNaN(numA) && !isNaN(numB)) {
+                    return numA - numB;
+                }
+                return suffixA.localeCompare(suffixB);
+            });
+            setPrList(data);
         } catch (error) {
             console.error('Error fetching PR IDs:', error);
             setPrList([]);
@@ -72,30 +83,26 @@ const PaymentProcess = () => {
                 if (Array.isArray(res.data)) {
                     const updatedMap = new Map(res.data.map(c => [c._id, c]));
                     setClaims(prev => prev.map(c => updatedMap.get(c._id) || c));
-                    return;
                 }
             } catch (err) {
                 console.warn('Batch update failed, falling back to individual updates', err.message || err);
-            }
-
-            for (const id of claimIds) {
-                try {
-                    const res = await axios.put(`${API_URL}/api/finance/update/${id}`, {
-                        credited_date: payload.credited_date,
-                        remarks: payload.remarks,
-                        payment_report_id: payload.payment_report_id
-                    });
-                    setClaims(prev => prev.map(c => c._id === id ? res.data : c));
-                } catch (e) {
-                    console.error('Failed updating claim', id, e);
+                for (const id of claimIds) {
+                    try {
+                        const res = await axios.put(`${API_URL}/api/finance/update/${id}`, {
+                            credited_date: payload.credited_date,
+                            remarks: payload.remarks,
+                            payment_report_id: payload.payment_report_id
+                        });
+                        setClaims(prev => prev.map(c => c._id === id ? res.data : c));
+                    } catch (e) {
+                        console.error('Failed updating claim', id, e);
+                    }
                 }
             }
+            window.location.reload();
         } catch (error) {
             console.error("Error updating claims:", error);
-        } finally {
-            setLoadingClaimId(null);
-            if (selectedPrId) getClaimsByPrId(selectedPrId);
-        }
+        } finally { setLoadingClaimId(null) }
     };
 
     useEffect(() => {
@@ -142,29 +149,32 @@ const PaymentProcess = () => {
                         </h1>
                     </div>
                 </header>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {prList.map((pr) => (
-                        <div
-                            key={pr.payment_report_id}
-                            onClick={() => getClaimsByPrId(pr.payment_report_id)}
-                            className={`cursor-pointer p-6 rounded-2xl border transition-all duration-200 active:scale-95
-                            ${selectedPrId === pr.payment_report_id
-                                    ? "bg-blue-50 border-blue-500 ring-1 ring-blue-500 shadow-md"
-                                    : "bg-white border-gray-200 hover:border-blue-300 shadow-sm"}`}
-                        >
-                            <div className="flex flex-col space-y-1">
-                                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Report ID</span>
-                                <h4 className="text-xl font-bold text-slate-900">{pr.payment_report_id}</h4>
-                                <div className="flex justify-between items-end mt-4">
-                                    <span className="text-sm font-bold text-slate-500">{pr.count} Claims</span>
-                                    <span className="text-lg font-bold text-blue-600">
-                                        ₹{Number(pr.totalAmount || 0).toLocaleString('en-IN')}
-                                    </span>
+
+                {prList.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {prList.map((pr) => (
+                            <div
+                                key={pr.payment_report_id}
+                                onClick={() => getClaimsByPrId(pr.payment_report_id)}
+                                className={`cursor-pointer p-6 rounded-2xl border transition-all duration-200 active:scale-95
+                                    ${selectedPrId === pr.payment_report_id
+                                        ? "bg-blue-50 border-blue-500 ring-1 ring-blue-500 shadow-md"
+                                        : "bg-white border-gray-200 hover:border-blue-300 shadow-sm"}`}
+                            >
+                                <div className="flex flex-col space-y-1">
+                                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Report ID</span>
+                                    <h4 className="text-xl font-bold text-slate-900">{pr.payment_report_id}</h4>
+                                    <div className="flex justify-between items-end mt-4">
+                                        <span className="text-sm font-bold text-slate-500">{pr.count} Claims</span>
+                                        <span className="text-lg font-bold text-blue-600">
+                                            ₹{Number(pr.totalAmount || 0).toLocaleString('en-IN')}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
 
                 {selectedPrId ? (
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -172,7 +182,6 @@ const PaymentProcess = () => {
                             <h3 className="text-lg font-bold text-blue-900 flex items-center gap-2">
                                 <span>🧾</span> Claims for {selectedPrId}
                             </h3>
-
                             <button
                                 onClick={() => {
                                     const allClaimIds = displayedClaims.flatMap(c => c._claimIds ? c._claimIds : [c._id]);
@@ -203,12 +212,11 @@ const PaymentProcess = () => {
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 text-center">
                                     {([...displayedClaims]
-                                        .sort((a, b) => (a.ifsc_code || "").localeCompare(b.ifsc_code || "")))
-                                        .map((claim, index) => {
+                                        .sort((a, b) => new Date(b.submission_date) - new Date(a.submission_date)))
+                                        .map((claim) => {
                                             const key = claim._claimIds ? claim._claimIds.join('-') : claim._id;
                                             const isMerged = claim._mergedCount && claim._mergedCount > 1;
                                             const loadingForThis = loadingClaimId && (loadingClaimId === 'bulk' || loadingClaimId === claim._id || loadingClaimId === (claim._claimIds || []).join(','));
-
                                             return (
                                                 <tr key={key} className="hover:bg-gray-50/50 transition-colors">
                                                     <td className="px-6 py-4">
@@ -223,7 +231,7 @@ const PaymentProcess = () => {
                                                     <td className="px-6 py-4 font-mono text-sm text-slate-700">{claim.ifsc_code}</td>
                                                     <td className="px-6 py-4">
                                                         <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide
-                                                        ${claim.status === "Credited"
+                                                            ${claim.status === "Credited"
                                                                 ? "bg-green-100 text-green-700"
                                                                 : "bg-yellow-100 text-yellow-700"}`}>
                                                             {claim.status}

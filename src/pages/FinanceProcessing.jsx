@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import axios from "axios";
 import {
-    Search, Layers, ChevronRight,
+    Search, Layers, ChevronRight, FileSpreadsheet, Printer,
     AlertCircle, Loader2, CheckCircle2,
     TrendingUp, Users, Hash, Filter, RefreshCw, XCircle
 } from "lucide-react";
@@ -352,6 +352,14 @@ const FinanceProcessing = () => {
 
                                 {/* Action Bar - Submit button */}
                                 <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
+                                    <div className="flex gap-3">
+                                        <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50">
+                                            <FileSpreadsheet className="w-4 h-4 text-green-600" /> Download Excel
+                                        </button>
+                                        <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50">
+                                            <Printer className="w-4 h-4 text-red-500" /> Download PDF
+                                        </button>
+                                    </div>
                                     {hasProcessedClaims && (
                                         <button onClick={handleUpdateStatus} disabled={updateLoading} className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50">
                                             {updateLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
@@ -375,7 +383,7 @@ const FinanceProcessing = () => {
                                                 <thead className="bg-gradient-to-r from-slate-100 to-slate-50 border-b border-slate-200">
                                                     <tr>
                                                         <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">S. No.</th>
-                                                        <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Staff</th>
+                                                        <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Staff Name</th>
                                                         <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Claim Type</th>
                                                         <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Amount</th>
                                                         {showEmailStatus && (
@@ -445,8 +453,8 @@ const FinanceProcessing = () => {
                         )}
                     </main>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 
