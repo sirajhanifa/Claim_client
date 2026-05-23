@@ -86,6 +86,7 @@ const ClaimEntry = () => {
             ability_calculated_tds: '',
             practical_total_value: '',
             practical_calculated_tds: '',
+            bank_city_name: ''
         });
         setPhoneNumber('');
         setPhoneSuggestions([]);
@@ -146,6 +147,7 @@ const ClaimEntry = () => {
         ability_calculated_tds: '',
         practical_total_value: '',
         practical_calculated_tds: '',
+        bank_city_name: ''
     });
 
     const isStaffFetched = Boolean(
@@ -332,13 +334,14 @@ const ClaimEntry = () => {
         };
         fetchAmount();
     }, [
+        apiUrl,
+        form,
         form.claim_type_name,
         form.no_of_qps_ug,
         form.no_of_qps_pg,
         form.no_of_scheme,
         form.no_of_ug_papers,
         form.no_of_pg_papers,
-        form.scrutiny_days,
         form.scrutiny_days,
         form.central_total_scripts_ug,
         form.central_total_scripts_pg,
@@ -373,6 +376,7 @@ const ClaimEntry = () => {
         try {
             const res = await fetch(`${apiUrl}/api/getStaffByPhone/${encodeURIComponent(lookupPhone)}`);
             const data = await res.json();
+            console.table(data)
             if (res.ok) {
                 setForm(prev => ({
                     ...prev,
@@ -389,7 +393,8 @@ const ClaimEntry = () => {
                     branch_name: data.branch_name || '',
                     branch_code: data.branch_code || '',
                     ifsc_code: data.ifsc_code || '',
-                    account_no: data.bank_acc_no || ''
+                    account_no: data.bank_acc_no || '',
+                    bank_city_name: data.bank_city_name || ''
                 }));
             } else {
                 if (window.confirm(data.message || "No staff found. Do you want to add new staff?")) {
@@ -476,10 +481,12 @@ const ClaimEntry = () => {
                 skilled_tax_type: '',
                 practical_total_value: '',
                 practical_calculated_tds: '',
+                bank_city_name: ''
             });
             setPhoneNumber('');
             setIsSubmitting(false);
         } catch (err) {
+            console.error('Error in submitting claim : ', err)
             alert("Failed to submit claim");
             setIsSubmitting(false);
         }
@@ -694,8 +701,9 @@ const ClaimEntry = () => {
                                 { label: "Category", key: "category" },
                                 { label: "College", key: "college" },
                                 { label: "Email", key: "email" },
-                                { label: "IFSC Code", key: "ifsc_code" },
                                 { label: "Account Number", key: "account_no" },
+                                { label: "IFSC Code", key: "ifsc_code" },
+                                { label: "Bank City Name", key: "bank_city_name" },
                             ].map(({ label, key }) => (
                                 <div key={key} className="flex flex-col space-y-1">
                                     <label className="text-xs font-bold text-blue-500 uppercase mb-2">{label} : </label>

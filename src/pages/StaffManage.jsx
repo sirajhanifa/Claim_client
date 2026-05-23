@@ -27,7 +27,7 @@ const StaffManage = () => {
     const [formData, setFormData] = useState({
         employment_type: '', staff_id: '', staff_name: '', department: '',
         category: '', designation: '', phone_no: '', email: '',
-        college: '', bank_acc_no: '', ifsc_code: '', bank_name: ''
+        college: '', bank_acc_no: '', ifsc_code: '', bank_name: '', bank_city_name: ''
     });
 
     // Sorting state
@@ -64,6 +64,7 @@ const StaffManage = () => {
                 (s.college || "").toLowerCase().includes(searchStr) ||
                 (s.bank_acc_no || "").toLowerCase().includes(searchStr) ||
                 (s.ifsc_code || "").toLowerCase().includes(searchStr) ||
+                (s.bank_city_name || "").toLowerCase().includes(searchStr) ||
                 (s.employment_type || "").toLowerCase().includes(searchStr)
             );
         });
@@ -213,7 +214,7 @@ const StaffManage = () => {
         setFormData({
             employment_type: '', staff_id: '', staff_name: '', department: '',
             category: '', designation: '', phone_no: '', email: '',
-            college: '', bank_acc_no: '', ifsc_code: '', bank_name: ''
+            college: '', bank_acc_no: '', ifsc_code: '', bank_name: '', bank_city_name: ''
         });
         setEditingStaff(null);
     };
@@ -499,7 +500,7 @@ const StaffManage = () => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-5 text-center">
-                                                <div className="flex flex-col items-center">
+                                                <div className="flex flex-col">
                                                     <span className="text-slate-700 font-medium text-sm tabular-nums flex items-center gap-1.5">
                                                         <Phone className="w-3 h-3 text-slate-500" /> {s.phone_no}
                                                     </span>
@@ -507,8 +508,8 @@ const StaffManage = () => {
                                                 </div>
                                             </td>
                                             <td className="px-4 py-4 text-slate-600 text-sm min-w-[200px] text-center">{s.college}</td>
-                                            <td className="px-6 py-5 text-center">
-                                                <div className="flex flex-col tabular-nums items-center">
+                                            <td className="px-6 py-5">
+                                                <div className="flex flex-col tabular-nums gap-1">
                                                     <span className="text-slate-700 font-medium text-sm">{s.bank_acc_no}</span>
                                                     <span className="text-[12px] text-blue-500 font-bold">{s.ifsc_code}</span>
                                                 </div>
@@ -519,7 +520,7 @@ const StaffManage = () => {
                                                     <span className="text-slate-600 text-xs uppercase font-medium">{s.employment_type}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-4 bg-white group-hover:bg-slate-50/80 transition-colors z-10 px-6 text-center">
+                                            <td className="px-6 py-4 bg-white group-hover:bg-slate-50/80 transition-colors z-10 text-center">
                                                 <div className="flex items-center justify-center gap-1">
                                                     <button onClick={() => openEditModal(s)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-all" title="Edit">
                                                         <Edit3 className="w-4 h-4" />
@@ -725,6 +726,20 @@ const StaffManage = () => {
                                             required
                                             placeholder="e.g. SBIN0012345"
                                             className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-sm font-bold font-mono focus:border-blue-500 focus:bg-white outline-none transition-all"
+                                        />
+                                    </div>
+
+                                    {/* Bank City Name */}
+                                    <div>
+                                        <label className="text-[12px] font-black text-blue-600 uppercase tracking-widest mb-3 block ml-1">
+                                            BANK CITY NAME
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={formData.bank_city_name || ''}
+                                            onChange={(e) => setFormData({ ...formData, bank_city_name: e.target.value })}
+                                            placeholder="e.g. Mumbai"
+                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-sm font-bold focus:border-blue-500 focus:bg-white outline-none transition-all"
                                         />
                                     </div>
                                 </div>
