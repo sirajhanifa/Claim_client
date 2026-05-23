@@ -146,10 +146,11 @@ const PracticalFields = ({ form, setForm }) => {
                                 value={form.practical_calculated_tds !== undefined ? form.practical_calculated_tds : ""}
                                 onChange={(e) => {
                                     const newTds = e.target.value;
+                                    const roundedTds = newTds !== "" ? Math.round(Number(newTds)).toString() : "";
                                     setForm(prev => ({
                                         ...prev,
-                                        practical_calculated_tds: newTds,
-                                        amount: Math.max(Number(prev.practical_total_value || 0) - Number(newTds || 0), 0).toString()
+                                        practical_calculated_tds: roundedTds,
+                                        amount: Math.max(Number(prev.practical_total_value || 0) - Number(roundedTds || 0), 0).toString()
                                     }));
                                 }}
                                 onWheel={(e) => e.target.blur()}

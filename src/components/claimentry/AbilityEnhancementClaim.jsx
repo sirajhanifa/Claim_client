@@ -94,10 +94,11 @@ const AbilityEnhancementClaim = ({ form, setForm }) => {
                                 value={form.ability_calculated_tds !== undefined ? form.ability_calculated_tds : ""}
                                 onChange={(e) => {
                                     const newTds = e.target.value;
+                                    const roundedTds = newTds !== "" ? Math.round(Number(newTds)).toString() : "";
                                     setForm(prev => ({
                                         ...prev,
-                                        ability_calculated_tds: newTds,
-                                        amount: Math.max(Number(prev.ability_total_value || 0) - Number(newTds || 0), 0).toString()
+                                        ability_calculated_tds: roundedTds,
+                                        amount: Math.max(Number(prev.ability_total_value || 0) - Number(roundedTds || 0), 0).toString()
                                     }));
                                 }}
                                 onWheel={(e) => e.target.blur()}

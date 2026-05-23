@@ -152,10 +152,11 @@ const CentralValuation = ({ form, setForm }) => {
                                 value={form.central_calculated_tds !== undefined ? form.central_calculated_tds : ""}
                                 onChange={(e) => {
                                     const newTds = e.target.value;
+                                    const roundedTds = newTds !== "" ? Math.round(Number(newTds)).toString() : "";
                                     setForm(prev => ({
                                         ...prev,
-                                        central_calculated_tds: newTds,
-                                        amount: Math.max(Number(prev.central_total_value || 0) - Number(newTds || 0), 0).toString()
+                                        central_calculated_tds: roundedTds,
+                                        amount: Math.max(Number(prev.central_total_value || 0) - Number(roundedTds || 0), 0).toString()
                                     }));
                                 }}
                                 onWheel={(e) => e.target.blur()}

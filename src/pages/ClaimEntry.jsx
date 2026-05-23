@@ -251,7 +251,7 @@ const ClaimEntry = () => {
                     const daAmount = Number(form.central_days_halted || 0) * Number(form.central_dearness_allowance || 0);
                     const subTotal = baseAmount + daAmount;
                     const taxRate = (taxPercent || 0) / 100;
-                    const taxAmount = subTotal * taxRate;
+                    const taxAmount = Math.round(subTotal * taxRate);
                     const finalAmount = Math.max(subTotal - taxAmount, 0);
                     setForm(prev => ({
                         ...prev,
@@ -287,7 +287,7 @@ const ClaimEntry = () => {
                     const daAmount = Number(form.days_halted || 0) * Number(form.dearness_allowance || 0);
                     const subTotal = Number(baseAmount) + daAmount;
                     const taxRate = (taxPercent || 0) / 100;
-                    const taxAmount = subTotal * taxRate;
+                    const taxAmount = Math.round(subTotal * taxRate);
                     const finalAmount = Math.max(subTotal - taxAmount, 0);
                     setForm(prev => ({
                         ...prev,
@@ -319,7 +319,7 @@ const ClaimEntry = () => {
                     const daAmount = daPerDay * haltedDays;
                     const subTotal = Number(baseAmount) + daAmount;
                     const taxRate = (taxPercent || 0) / 100;
-                    const taxAmount = subTotal * taxRate;
+                    const taxAmount = Math.round(subTotal * taxRate);
                     const finalAmount = Math.max(subTotal - taxAmount, 0);
                     setForm(prev => ({
                         ...prev,
@@ -416,11 +416,11 @@ const ClaimEntry = () => {
         try {
             let tds_amount = -1;
             if (form.claim_type_name === "CENTRAL VALUATION") {
-                tds_amount = form.central_calculated_tds !== '' && form.central_calculated_tds !== undefined ? Number(form.central_calculated_tds) : 0;
+                tds_amount = form.central_calculated_tds !== '' && form.central_calculated_tds !== undefined ? Math.round(Number(form.central_calculated_tds)) : 0;
             } else if (form.claim_type_name === "PRACTICAL EXAM CLAIM") {
-                tds_amount = form.practical_calculated_tds !== '' && form.practical_calculated_tds !== undefined ? Number(form.practical_calculated_tds) : 0;
+                tds_amount = form.practical_calculated_tds !== '' && form.practical_calculated_tds !== undefined ? Math.round(Number(form.practical_calculated_tds)) : 0;
             } else if (form.claim_type_name === "ABILITY ENHANCEMENT CLAIM") {
-                tds_amount = form.ability_calculated_tds !== '' && form.ability_calculated_tds !== undefined ? Number(form.ability_calculated_tds) : 0;
+                tds_amount = form.ability_calculated_tds !== '' && form.ability_calculated_tds !== undefined ? Math.round(Number(form.ability_calculated_tds)) : 0;
             }
 
             const payload = { ...form, tds_amount };
