@@ -12,7 +12,8 @@ import {
     FaUserCog,
     FaGraduationCap,
     FaTrashAlt,
-    FaShareSquare
+    FaShareSquare,
+    FaKey
 } from 'react-icons/fa';
 import { FiChevronDown } from 'react-icons/fi';
 
@@ -31,6 +32,7 @@ const Layout = () => {
         { name: 'Staff Manage', path: `/layout/${username}/staffmanage`, icon: <FaUsers /> },
         { name: 'Claim Manage', path: `/layout/${username}/claimmanage`, icon: <FaFileInvoiceDollar /> },
         { name: 'Academic Manage', path: `/layout/${username}/academicManage`, icon: <FaGraduationCap /> },
+        { name: 'Change Password', path: `/layout/${username}/changePassword`, icon: <FaKey /> },
         { name: 'User Control', path: `/layout/${username}/userControl`, icon: <FaUserCog /> },
         { name: 'Data Deletion', path: `/layout/${username}/dataDeletion`, icon: <FaTrashAlt /> },
         {

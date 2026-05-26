@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
     UserPlus, Shield, User, Trash2, Edit3, AlertCircle, Loader2,
-    Eye, EyeOff, ArrowUpDown, ArrowUp, ArrowDown
+    Eye, EyeOff, ArrowUpDown, ArrowUp, ArrowDown, Coins
 } from 'lucide-react';
 import useFetch from '../hooks/useFetch';
 import usePost from '../hooks/usePost';
@@ -14,7 +14,7 @@ const UserControl = () => {
     const [openModal, setOpenModal] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
     const [confirmDeleteUser, setConfirmDeleteUser] = useState(null);
-    const [formData, setFormData] = useState({ username: '', password: '' });
+    const [formData, setFormData] = useState({ username: '', password: '', role: 'staff' });
     const [showPassword, setShowPassword] = useState(false);
     const { data: users = [], refetch, loading: fetchLoading } = useFetch(`${apiUrl}/api/getUser`);
     const { postData, loading: postLoading, error: postError } = usePost();
@@ -26,9 +26,7 @@ const UserControl = () => {
 
     // Store original order when data loads
     useEffect(() => {
-        if (users.length && sortConfig.originalOrder.length === 0) {
-            setSortConfig(prev => ({ ...prev, originalOrder: [...users] }));
-        }
+        setSortConfig(prev => ({ ...prev, originalOrder: [...users] }));
     }, [users]);
 
     const handleSort = (key) => {
@@ -84,13 +82,13 @@ const UserControl = () => {
     const closeModal = () => {
         setOpenModal(false);
         setEditingUser(null);
-        setFormData({ username: '', password: '' });
+        setFormData({ username: '', password: '', role: 'staff' });
         setShowPassword(false);
     };
 
     const handleEdit = (user) => {
         setEditingUser(user);
-        setFormData({ username: user.username, password: user.password });
+        setFormData({ username: user.username, password: user.password, role: user.role || 'staff' });
         setOpenModal(true);
         setShowPassword(false);
     };
@@ -167,6 +165,14 @@ const UserControl = () => {
                                     </th>
                                     <th
                                         className="px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider text-center cursor-pointer hover:text-blue-600 transition-colors select-none border-b border-slate-200"
+                                        onClick={() => handleSort('role')}
+                                    >
+                                        <span className="inline-flex items-center gap-1">
+                                            Role {getSortIcon('role')}
+                                        </span>
+                                    </th>
+                                    <th
+                                        className="px-6 py-4 font-bold text-slate-600 uppercase text-[11px] tracking-wider text-center cursor-pointer hover:text-blue-600 transition-colors select-none border-b border-slate-200"
                                         onClick={() => handleSort('password')}
                                     >
                                         <span className="inline-flex items-center gap-1">
@@ -181,7 +187,7 @@ const UserControl = () => {
                             <tbody className="divide-y divide-slate-100">
                                 {fetchLoading ? (
                                     <tr>
-                                        <td colSpan="4" className="text-center py-20">
+                                        <td colSpan="5" className="text-center py-20">
                                             <div className="flex flex-col items-center justify-center">
                                                 <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-3" />
                                                 <p className="text-slate-500 text-sm">Loading user directory...</p>
@@ -190,7 +196,7 @@ const UserControl = () => {
                                     </tr>
                                 ) : sortedUsers.length === 0 ? (
                                     <tr>
-                                        <td colSpan="4" className="text-center py-16">
+                                        <td colSpan="5" className="text-center py-16">
                                             <div className="flex flex-col items-center justify-center">
                                                 <div className="p-4 bg-white rounded-full shadow-sm mb-4">
                                                     <User className="w-8 h-8 text-slate-300" />
@@ -215,6 +221,21 @@ const UserControl = () => {
                                                         {user.username}
                                                     </span>
                                                 </div>
+                                            </td>
+                                            <td className="px-6 py-5 text-center">
+                                                {user.role === 'admin' ? (
+                                                    <div className="inline-flex items-center gap-1.5 text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full text-xs font-bold border border-indigo-200 mx-auto w-fit">
+                                                        <Shield className="w-3.5 h-3.5" /> Admin
+                                                    </div>
+                                                ) : user.role === 'finance' ? (
+                                                    <div className="inline-flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full text-xs font-bold border border-emerald-200 mx-auto w-fit">
+                                                        <Coins className="w-3.5 h-3.5" /> Finance
+                                                    </div>
+                                                ) : (
+                                                    <div className="inline-flex items-center gap-1.5 text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full text-xs font-bold border border-amber-200 mx-auto w-fit">
+                                                        <User className="w-3.5 h-3.5" /> Staff
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="px-6 py-5 text-center">
                                                 <div className="flex items-center justify-center gap-2 text-slate-700 text-sm font-mono bg-slate-100 w-fit px-3 py-1.5 rounded-lg mx-auto">
@@ -315,6 +336,30 @@ const UserControl = () => {
                                             >
                                                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                             </button>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[12px] font-black text-blue-600 uppercase tracking-widest mb-3 block ml-1">
+                                            ROLE
+                                        </label>
+                                        <div className="relative font-bold">
+                                            <select
+                                                name="role"
+                                                value={formData.role}
+                                                onChange={handleChange}
+                                                required
+                                                className="w-full px-4 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-xl text-sm font-bold focus:border-blue-500 focus:bg-white outline-none transition-all appearance-none cursor-pointer"
+                                            >
+                                                <option value="staff">Staff</option>
+                                                <option value="admin">Admin</option>
+                                                <option value="finance">Finance</option>
+                                            </select>
+                                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                                                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                                                </svg>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
