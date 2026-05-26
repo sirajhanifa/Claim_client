@@ -34,6 +34,7 @@ const Layout = () => {
         { name: 'Claim Manage', path: `/layout/${username}/claimmanage`, icon: <FaFileInvoiceDollar /> },
         { name: 'Academic Manage', path: `/layout/${username}/academicManage`, icon: <FaGraduationCap /> },
         { name: 'User Control', path: `/layout/${username}/userControl`, icon: <FaUserCog /> },
+        { name: 'Change Password', path: `/layout/${username}/changePassword`, icon: <FaKey /> },
         { name: 'Data Deletion', path: `/layout/${username}/dataDeletion`, icon: <FaTrashAlt /> },
         {
             name: 'Guidelines',
@@ -93,13 +94,12 @@ const Layout = () => {
                 </div>
 
                 {/* Scrollable Navigation Area */}
-                <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1 custom-scrollbar">
+                <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1 scrollbar-hide">
                     <p className="px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Main Menu</p>
 
                     {sidebarMenu.map((item, index) => {
-                        // Filter out Logout from the main loop if you want it strictly at the bottom
-                        if (item.name === 'Logout') return null;
 
+                        if (item.name === 'Logout') return null;
                         const isActive = location.pathname === item.path;
                         const isSubMenuOpen = openSettings === item.name;
 

@@ -16,6 +16,7 @@ import FinanceProcessing from './pages/FinanceProcessing';
 import DataDeletion from './pages/DataDeletion';
 import Guidelines from './pages/Guidelines';
 import AcademicManage from './pages/AcademicManage';
+import ChangePassword from './pages/ChangePassword';
 
 function App() {
 
@@ -41,6 +42,7 @@ function App() {
                     <Route path="userControl" element={<UserControl />} />
                     <Route path="paymentprocessing" element={<PaymentProcess />} />
                     <Route path="academicManage" element={<AcademicManage />} />
+                    <Route path="changePassword" element={<ChangePassword />} />
                 </Route>
             </Routes>
         </BrowserRouter>
