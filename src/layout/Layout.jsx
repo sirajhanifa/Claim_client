@@ -23,16 +23,16 @@ const Layout = () => {
     const { username } = useParams();
     const [openSettings, setOpenSettings] = useState(null);
 
-    const fullMenu = [
+    const adminMenu = [
         { name: 'Dashboard', path: `/layout/${username}/dashboard`, icon: <FaTachometerAlt /> },
         { name: 'Claim Entry', path: `/layout/${username}/claimentry`, icon: <FaTasks /> },
         { name: 'Claim Submission', path: `/layout/${username}/claimsubmission`, icon: <FaShareSquare /> },
         { name: 'Finance Processing', path: `/layout/${username}/FinanceProcessing`, icon: <FaFileInvoiceDollar /> },
+        { name: 'Payment Processing', path: `/layout/${username}/paymentprocessing`, icon: <FaFileInvoiceDollar /> },
         { name: 'Claim Report', path: `/layout/${username}/claimreport`, icon: <FaChartBar /> },
         { name: 'Staff Manage', path: `/layout/${username}/staffmanage`, icon: <FaUsers /> },
         { name: 'Claim Manage', path: `/layout/${username}/claimmanage`, icon: <FaFileInvoiceDollar /> },
         { name: 'Academic Manage', path: `/layout/${username}/academicManage`, icon: <FaGraduationCap /> },
-        { name: 'Change Password', path: `/layout/${username}/changePassword`, icon: <FaKey /> },
         { name: 'User Control', path: `/layout/${username}/userControl`, icon: <FaUserCog /> },
         { name: 'Data Deletion', path: `/layout/${username}/dataDeletion`, icon: <FaTrashAlt /> },
         {
@@ -46,10 +46,33 @@ const Layout = () => {
     const financeMenu = [
         { name: 'Dashboard', path: `/layout/${username}/dashboard`, icon: <FaTachometerAlt /> },
         { name: 'Payment Processing', path: `/layout/${username}/paymentprocessing`, icon: <FaFileInvoiceDollar /> },
+        { name: 'Change Password', path: `/layout/${username}/changePassword`, icon: <FaKey /> },
+        {
+            name: 'Guidelines',
+            path: `/layout/${username}/guidelines`,
+            icon: <FaUserCircle />,
+        },
         { name: 'Logout', path: '/logout', icon: <FaSignOutAlt /> }
     ];
 
-    const sidebarMenu = username === 'fadmin' ? financeMenu : fullMenu;
+    const staffMenu = [
+        { name: 'Dashboard', path: `/layout/${username}/dashboard`, icon: <FaTachometerAlt /> },
+        { name: 'Claim Entry', path: `/layout/${username}/claimentry`, icon: <FaTasks /> },
+        { name: 'Claim Submission', path: `/layout/${username}/claimsubmission`, icon: <FaShareSquare /> },
+        { name: 'Finance Processing', path: `/layout/${username}/FinanceProcessing`, icon: <FaFileInvoiceDollar /> },
+        { name: 'Claim Report', path: `/layout/${username}/claimreport`, icon: <FaChartBar /> },
+        { name: 'Staff Manage', path: `/layout/${username}/staffmanage`, icon: <FaUsers /> },
+        { name: 'Change Password', path: `/layout/${username}/changePassword`, icon: <FaKey /> },
+        {
+            name: 'Guidelines',
+            path: `/layout/${username}/guidelines`,
+            icon: <FaUserCircle />,
+        },
+        { name: 'Logout', path: '/logout', icon: <FaSignOutAlt /> }
+    ];
+
+    const userRole = localStorage.getItem('role') || (username === 'fadmin' ? 'finance' : username === 'admin' ? 'admin' : 'staff');
+    const sidebarMenu = userRole === 'admin' ? adminMenu : userRole === 'finance' ? financeMenu : staffMenu;
 
     return (
         <div className="flex min-h-screen bg-slate-50/50">

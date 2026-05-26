@@ -33,6 +33,7 @@ const Login = () => {
                 const { token, user } = res;
                 localStorage.setItem('authToken', token);
                 localStorage.setItem('username', user.username);
+                localStorage.setItem('role', user.role || 'staff');
                 Swal.fire('Success', 'Login Successful!', 'success');
                 navigate(`/layout/${user.username}/dashboard`);
             }
