@@ -10,6 +10,8 @@ const PaymentProcess = () => {
     const [loadingClaims, setLoadingClaims] = useState(false);
     const [loadingClaimId, setLoadingClaimId] = useState(null);
 
+    const userRole = localStorage.getItem('role');
+
     const getPaymentReportIds = async () => {
         try {
             const response = await axios.get(`${API_URL}/api/finance/pr-ids`);
@@ -66,6 +68,7 @@ const PaymentProcess = () => {
     };
 
     const markClaimsCredited = async (claimIds = [], loadingKey = null) => {
+
         if (!Array.isArray(claimIds) || claimIds.length === 0) return;
         if (!confirm(`Mark ${claimIds.length} claim(s) as credited?`)) return;
         setLoadingClaimId(loadingKey || 'bulk');
@@ -110,6 +113,7 @@ const PaymentProcess = () => {
     }, []);
 
     const displayedClaims = useMemo(() => {
+
         if (!claims || claims.length === 0) return [];
         const map = new Map();
         for (const c of claims) {
@@ -182,19 +186,22 @@ const PaymentProcess = () => {
                             <h3 className="text-lg font-bold text-blue-900 flex items-center gap-2">
                                 <span>🧾</span> Claims for {selectedPrId}
                             </h3>
-                            <button
-                                onClick={() => {
-                                    const allClaimIds = displayedClaims.flatMap(c => c._claimIds ? c._claimIds : [c._id]);
-                                    markClaimsCredited(allClaimIds);
-                                }}
-                                disabled={loadingClaimId || displayedClaims.length === 0 || !displayedClaims.some(c => c.status !== "Credited")}
-                                className={`px-6 py-2 rounded-lg text-sm font-bold transition-all shadow-sm
-                                ${loadingClaimId
-                                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                        : "bg-blue-600 text-white hover:bg-blue-700 active:scale-95"}`}
-                            >
-                                {loadingClaimId ? "Processing..." : "Mark All Credited"}
-                            </button>
+                            {/* Conditionally render Mark All Credited button - hide for admin role */}
+                            {userRole !== 'admin' && (
+                                <button
+                                    onClick={() => {
+                                        const allClaimIds = displayedClaims.flatMap(c => c._claimIds ? c._claimIds : [c._id]);
+                                        markClaimsCredited(allClaimIds);
+                                    }}
+                                    disabled={loadingClaimId || displayedClaims.length === 0 || !displayedClaims.some(c => c.status !== "Credited")}
+                                    className={`px-6 py-2 rounded-lg text-sm font-bold transition-all shadow-sm
+                                    ${loadingClaimId
+                                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                            : "bg-blue-600 text-white hover:bg-blue-700 active:scale-95"}`}
+                                >
+                                    {loadingClaimId ? "Processing..." : "Mark All Credited"}
+                                </button>
+                            )}
                         </div>
 
                         <div className="overflow-x-auto">
@@ -207,7 +214,9 @@ const PaymentProcess = () => {
                                         <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Bank Account</th>
                                         <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">IFSC</th>
                                         <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Status</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Action</th>
+                                        {userRole !== 'admin' && (
+                                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Action</th>
+                                        )}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 text-center">
@@ -237,18 +246,20 @@ const PaymentProcess = () => {
                                                             {claim.status}
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-4">
-                                                        <button
-                                                            onClick={() => isMerged ? markClaimsCredited(claim._claimIds, (claim._claimIds || []).join(',')) : markClaimCredited(claim._id)}
-                                                            disabled={claim.status === "Credited" || Boolean(loadingClaimId)}
-                                                            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all
+                                                    {userRole !== 'admin' && (
+                                                        <td className="px-6 py-4">
+                                                            <button
+                                                                onClick={() => isMerged ? markClaimsCredited(claim._claimIds, (claim._claimIds || []).join(',')) : markClaimCredited(claim._id)}
+                                                                disabled={claim.status === "Credited" || Boolean(loadingClaimId)}
+                                                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all
                                                             ${claim.status === "Credited"
-                                                                    ? "bg-green-50 text-green-600 cursor-default"
-                                                                    : loadingForThis ? "bg-gray-200 text-gray-400" : "bg-blue-600 text-white hover:bg-blue-700"}`}
-                                                        >
-                                                            {claim.status === "Credited" ? "✓ Credited" : loadingForThis ? "..." : "Mark Credited"}
-                                                        </button>
-                                                    </td>
+                                                                        ? "bg-green-50 text-green-600 cursor-default"
+                                                                        : loadingForThis ? "bg-gray-200 text-gray-400" : "bg-blue-600 text-white hover:bg-blue-700"}`}
+                                                            >
+                                                                {claim.status === "Credited" ? "✓ Credited" : loadingForThis ? "..." : "Mark Credited"}
+                                                            </button>
+                                                        </td>
+                                                    )}
                                                 </tr>
                                             );
                                         })}
