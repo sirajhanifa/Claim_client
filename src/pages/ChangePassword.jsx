@@ -172,14 +172,14 @@ const ChangePassword = () => {
                         <button
                             type="button"
                             onClick={() => navigate(`/layout/${username}/dashboard`)}
-                            className="px-6 py-3.5 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-all text-sm min-w-[120px]"
+                            className="cursor-pointer px-6 py-3.5 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-all text-sm min-w-[120px]"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-6 py-3.5 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 text-sm flex items-center justify-center gap-2 min-w-[160px]"
+                            className="cursor-pointer px-6 py-3.5 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 text-sm flex items-center justify-center gap-2 min-w-[160px]"
                         >
                             {loading ? (
                                 <>

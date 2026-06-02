@@ -12,7 +12,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import UserControl from './pages/UserControl';
 import PaymentProcess from './pages/PaymentProcess';
 import Logout from './components/Logout';
-import FinanceProcessing from './pages/FinanceProcessing';
+import ClaimStatus from './pages/ClaimStatus';
 import DataDeletion from './pages/DataDeletion';
 import Guidelines from './pages/Guidelines';
 import AcademicManage from './pages/AcademicManage';
@@ -33,7 +33,7 @@ function App() {
                     <Route path="dataDeletion" element={<DataDeletion />} />
                     <Route path="dashboard" element={<Dashboard />} />
                     <Route path="staffmanage" element={<StaffManage />} />
-                    <Route path="financeprocessing" element={<FinanceProcessing />} />
+                    <Route path="claimstatus" element={<ClaimStatus />} />
                     <Route path="claimsubmission" element={<ClaimSubmission />} />
                     <Route path="guidelines" element={<Guidelines />} />
                     <Route path="claimentry" element={<ClaimEntry />} />

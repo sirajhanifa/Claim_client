@@ -240,7 +240,7 @@ const FinanceProcessing = () => {
                                                 setSelectedBatchId(null);
                                                 setClaims([]);
                                             }}
-                                            className={`flex-1 text-xs font-semibold py-1.5 rounded-lg transition ${statusFilter === status ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                                            className={`flex-1 text-xs font-semibold py-1.5 cursor-pointer rounded-lg transition ${statusFilter === status ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                                         >
                                             {status}
                                         </button>
@@ -265,7 +265,7 @@ const FinanceProcessing = () => {
                                             <button
                                                 key={batch.payment_report_id}
                                                 onClick={() => fetchClaims(batch.payment_report_id)}
-                                                className={`w-full text-left p-4 transition relative group ${selectedBatchId === batch.payment_report_id ? "bg-gradient-to-r from-blue-50/80 to-white shadow-inner" : "hover:bg-slate-50"}`}
+                                                className={`w-full text-left p-4 transition cursor-pointer relative group ${selectedBatchId === batch.payment_report_id ? "bg-gradient-to-r from-blue-50/80 to-white shadow-inner" : "hover:bg-slate-50"}`}
                                             >
                                                 {selectedBatchId === batch.payment_report_id && (
                                                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-r-full" />
@@ -353,15 +353,15 @@ const FinanceProcessing = () => {
                                 {/* Action Bar - Submit button */}
                                 <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
                                     <div className="flex gap-3">
-                                        <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50">
+                                        <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium border cursor-pointer border-gray-300 rounded-lg hover:bg-gray-50">
                                             <FileSpreadsheet className="w-4 h-4 text-green-600" /> Download Excel
                                         </button>
-                                        <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50">
+                                        <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium border cursor-pointer border-gray-300 rounded-lg hover:bg-gray-50">
                                             <Printer className="w-4 h-4 text-red-500" /> Download PDF
                                         </button>
                                     </div>
                                     {hasProcessedClaims && (
-                                        <button onClick={handleUpdateStatus} disabled={updateLoading} className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50">
+                                        <button onClick={handleUpdateStatus} disabled={updateLoading} className="cursor-pointer flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50">
                                             {updateLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                                             Submit Batch to Finance
                                         </button>

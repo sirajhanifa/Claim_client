@@ -281,7 +281,7 @@ const StaffManage = () => {
                 <div className="flex flex-wrap items-center gap-3">
                     <button
                         onClick={() => { resetForm(); setShowModal(true); }}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all active:scale-95"
+                        className="cursor-pointer flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all active:scale-95"
                     >
                         <UserPlus className="w-4 h-4" />
                         Add Staff
@@ -294,7 +294,7 @@ const StaffManage = () => {
                             const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
                             saveAs(new Blob([excelBuffer]), "Staff List.xlsx");
                         }}
-                        className="flex items-center gap-2 bg-green-700 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-800 transition-all shadow-sm"
+                        className="cursor-pointer flex items-center gap-2 bg-green-700 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-800 transition-all shadow-sm"
                     >
                         <Download className="w-4 h-4" />
                         Download Excel
@@ -352,14 +352,14 @@ const StaffManage = () => {
                     <button
                         onClick={handleFileUpload}
                         disabled={!excelFile}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-100 disabled:text-slate-400 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all"
+                        className="cursor-pointer flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-100 disabled:text-slate-400 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all"
                     >
                         <FileUp className="w-4 h-4" />
                         Upload Bulk Data
                     </button>
                     <button
                         onClick={downloadSampleTemplate}
-                        className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all"
+                        className="cursor-pointer flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all"
                     >
                         <Download className="w-4 h-4" />
                         Download Sample Template

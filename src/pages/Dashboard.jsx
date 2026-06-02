@@ -101,8 +101,8 @@ const Dashboard = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="mx-auto px-4 py-8">
+        <div className="min-h-screen">
+            <div className="mx-auto">
                 <header className="mx-auto mb-10">
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                         <div>

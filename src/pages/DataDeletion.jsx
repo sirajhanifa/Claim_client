@@ -176,7 +176,7 @@ const DataDeletion = () => {
                                 <button
                                     onClick={handleExport}
                                     disabled={exportLoading || !selectedLabel}
-                                    className="flex items-center justify-center gap-2 px-6 py-2.5 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-sm font-bold shadow-sm transition-all disabled:opacity-50 active:scale-95"
+                                    className="cursor-pointer flex items-center justify-center gap-2 px-6 py-2.5 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-sm font-bold shadow-sm transition-all disabled:opacity-50 active:scale-95"
                                 >
                                     {exportLoading ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Download size={16} />}
                                     {exportLoading ? "Processing..." : "Export to XLSX"}
@@ -196,7 +196,7 @@ const DataDeletion = () => {
                                         }
                                     }}
                                     disabled={loading || !isDeleteEnabled}
-                                    className="w-full h-14 flex items-center justify-center gap-3 bg-red-600 hover:bg-red-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold transition-all active:scale-[0.98]"
+                                    className="cursor-pointer w-full h-14 flex items-center justify-center gap-3 bg-red-600 hover:bg-red-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold transition-all active:scale-[0.98]"
                                 >
                                     {loading ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Trash2 size={20} />}
                                     Confirm Data Delete
@@ -241,13 +241,13 @@ const DataDeletion = () => {
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setShowConfirmModal(false)}
-                                    className="flex-1 py-4 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors"
+                                    className="cursor-pointer flex-1 py-4 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors"
                                 >
                                     Go Back
                                 </button>
                                 <button
                                     onClick={confirmDelete}
-                                    className="flex-1 py-4 rounded-2xl bg-red-600 text-white font-bold hover:bg-red-700 transition-all active:scale-95"
+                                    className="cursor-pointer flex-1 py-4 rounded-2xl bg-red-600 text-white font-bold hover:bg-red-700 transition-all active:scale-95"
                                 >
                                     Confirm Delete
                                 </button>

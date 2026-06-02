@@ -283,7 +283,7 @@ const ClaimSubmission = () => {
 
                 <button
                     onClick={handleDownloadExcel}
-                    className="flex items-center gap-2 bg-green-700 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-800 transition-all shadow-sm active:scale-95"
+                    className="flex items-center gap-2 bg-green-700 text-white px-5 py-2.5 rounded-xl cursor-pointer font-bold hover:bg-green-800 transition-all shadow-sm active:scale-95"
                 >
                     <Download className="w-4 h-4" />
                     Download Excel

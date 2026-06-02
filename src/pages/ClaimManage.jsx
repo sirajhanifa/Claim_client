@@ -137,7 +137,7 @@ const ClaimManage = () => {
                     </div>
                     <Button
                         variant="primary"
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold transition-all active:scale-95 whitespace-nowrap"
+                        className="cursor-pointer flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold transition-all active:scale-95 whitespace-nowrap"
                         onClick={() => {
                             resetForm();
                             setEditingId(null);
@@ -178,7 +178,7 @@ const ClaimManage = () => {
                                         <div className="flex gap-3">
                                             <button
                                                 onClick={() => handleToggleActive(claim)}
-                                                className={`p-2.5 rounded-lg transition-all shadow-sm ${claim.isActive
+                                                className={`cursor-pointer p-2.5 rounded-lg transition-all shadow-sm ${claim.isActive
                                                     ? 'bg-blue-600 text-white hover:bg-blue-700'
                                                     : 'bg-slate-200 text-slate-500 hover:bg-blue-500 hover:text-white'
                                                     }`}
@@ -188,13 +188,13 @@ const ClaimManage = () => {
                                             </button>
                                             <button
                                                 onClick={() => handleEdit(claim)}
-                                                className="p-2.5 bg-white text-blue-600 border border-blue-100 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                                                className="cursor-pointer p-2.5 bg-white text-blue-600 border border-blue-100 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
                                             >
                                                 <Pencil size={16} />
                                             </button>
                                             <button
                                                 onClick={() => setConfirmDeleteClaim(claim)}
-                                                className="p-2.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-lg hover:bg-rose-600 hover:text-white transition-all shadow-sm"
+                                                className="cursor-pointer p-2.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-lg hover:bg-rose-600 hover:text-white transition-all shadow-sm"
                                             >
                                                 <Trash size={16} />
                                             </button>
@@ -251,7 +251,7 @@ const ClaimManage = () => {
                             </div>
                             <button
                                 onClick={() => { setShowModal(false); setEditingId(null); }}
-                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all"
+                                className="cursor-pointer p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all"
                             >
                                 <X size={20} />
                             </button>
@@ -330,14 +330,14 @@ const ClaimManage = () => {
                             <button
                                 type="button"
                                 onClick={() => { setShowModal(false); setEditingId(null); }}
-                                className="flex-1 py-3 text-xs font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest"
+                                className="cursor-pointer flex-1 py-3 text-xs font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest"
                             >
                                 Discard
                             </button>
                             <button
                                 type="submit"
                                 form="type-form"
-                                className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95"
+                                className="cursor-pointer flex-1 py-3 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95"
                             >
                                 {editingId ? 'Save Changes' : 'Create Category'}
                             </button>
@@ -367,13 +367,13 @@ const ClaimManage = () => {
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setConfirmDeleteClaim(null)}
-                                    className="flex-1 py-4 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors"
+                                    className="cursor-pointer flex-1 py-4 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors"
                                 >
                                     Go Back
                                 </button>
                                 <button
                                     onClick={handleDelete}
-                                    className="flex-1 py-4 rounded-2xl bg-red-600 text-white font-bold hover:bg-red-700 transition-all active:scale-95"
+                                    className="cursor-pointer flex-1 py-4 rounded-2xl bg-red-600 text-white font-bold hover:bg-red-700 transition-all active:scale-95"
                                 >
                                     Confirm Delete
                                 </button>

@@ -202,7 +202,7 @@ const AcademicManage = () => {
                 </div>
                 <button
                     onClick={() => setOpenModal(true)}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-100 active:scale-95"
+                    className="cursor-pointer flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-100 active:scale-95"
                 >
                     <GraduationCap className="w-4 h-4" />
                     Add Academic
@@ -322,7 +322,7 @@ const AcademicManage = () => {
                                 </h2>
                                 <p className="text-xs text-slate-400 mt-2 font-bold uppercase tracking-wider">Session Configuration</p>
                             </div>
-                            <button onClick={closeModal} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all">
+                            <button onClick={closeModal} className="cursor-pointer p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all">
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
@@ -418,12 +418,12 @@ const AcademicManage = () => {
                         </div>
 
                         <div className="px-8 py-6 bg-slate-50/80 border-t border-slate-100 flex gap-3">
-                            <button type="button" onClick={closeModal} className="flex-1 py-3 text-xs font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest">
+                            <button type="button" onClick={closeModal} className="cursor-pointer flex-1 py-3 text-xs font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest">
                                 Cancel
                             </button>
-                            <button type="submit" form="academic-form" disabled={postLoading || putLoading} className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50">
+                            <button type="submit" form="academic-form" disabled={postLoading || putLoading} className="cursor-pointer flex-1 py-3 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50">
                                 {postLoading || putLoading ? (
-                                    <span className="flex items-center justify-center gap-2">
+                                    <span className="lex items-center justify-center gap-2">
                                         <Loader2 className="w-4 h-4 animate-spin" /> PROCESSING...
                                     </span>
                                 ) : (editingAcademic ? 'SAVE CHANGES' : 'CREATE SESSION')}
