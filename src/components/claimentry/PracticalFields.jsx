@@ -3,6 +3,18 @@ import React from 'react';
 const PracticalFields = ({ form, setForm }) => {
     return (
         <>
+            {/* Course Code */}
+            <div className="flex flex-col space-y-3">
+                <label className="text-sm font-bold text-slate-700 ml-1">Course Code</label>
+                <input
+                    type="text"
+                    value={form.course_code || ""}
+                    onChange={(e) => setForm({ ...form, course_code: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-medium text-slate-900"
+                    placeholder="Enter course code"
+                />
+            </div>
+
             {/* QPS Paper Setting */}
             <div className="flex flex-col space-y-3">
                 <label className="text-sm font-bold text-slate-700 ml-1">QPS Paper Setting</label>

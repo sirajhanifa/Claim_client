@@ -13,7 +13,8 @@ import {
     FaGraduationCap,
     FaTrashAlt,
     FaShareSquare,
-    FaKey
+    FaKey,
+    FaClipboardCheck
 } from 'react-icons/fa';
 import { FiChevronDown } from 'react-icons/fi';
 
@@ -27,8 +28,8 @@ const Layout = () => {
         { name: 'Dashboard', path: `/layout/${username}/dashboard`, icon: <FaTachometerAlt /> },
         { name: 'Claim Entry', path: `/layout/${username}/claimentry`, icon: <FaTasks /> },
         { name: 'Claim Submission', path: `/layout/${username}/claimsubmission`, icon: <FaShareSquare /> },
-        { name: 'Claim Stauts', path: `/layout/${username}/claimstatus`, icon: <FaFileInvoiceDollar /> },
-        { name: 'Payment Processing', path: `/layout/${username}/paymentprocessing`, icon: <FaFileInvoiceDollar /> },
+        { name: 'Claim Stauts', path: `/layout/${username}/claimstatus`, icon: <FaClipboardCheck /> },
+        { name: 'Finance Section', path: `/layout/${username}/paymentprocessing`, icon: <FaFileInvoiceDollar /> },
         { name: 'Claim Report', path: `/layout/${username}/claimreport`, icon: <FaChartBar /> },
         { name: 'Staff Manage', path: `/layout/${username}/staffmanage`, icon: <FaUsers /> },
         { name: 'Claim Manage', path: `/layout/${username}/claimmanage`, icon: <FaFileInvoiceDollar /> },
@@ -60,9 +61,10 @@ const Layout = () => {
         { name: 'Dashboard', path: `/layout/${username}/dashboard`, icon: <FaTachometerAlt /> },
         { name: 'Claim Entry', path: `/layout/${username}/claimentry`, icon: <FaTasks /> },
         { name: 'Claim Submission', path: `/layout/${username}/claimsubmission`, icon: <FaShareSquare /> },
-        { name: 'Finance Processing', path: `/layout/${username}/FinanceProcessing`, icon: <FaFileInvoiceDollar /> },
+        { name: 'Claim Stauts', path: `/layout/${username}/claimstatus`, icon: <FaClipboardCheck /> },
         { name: 'Claim Report', path: `/layout/${username}/claimreport`, icon: <FaChartBar /> },
         { name: 'Staff Manage', path: `/layout/${username}/staffmanage`, icon: <FaUsers /> },
+        { name: 'Claim Manage', path: `/layout/${username}/claimmanage`, icon: <FaFileInvoiceDollar /> },
         { name: 'Change Password', path: `/layout/${username}/changePassword`, icon: <FaKey /> },
         {
             name: 'Guidelines',

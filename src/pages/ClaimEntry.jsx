@@ -86,7 +86,8 @@ const ClaimEntry = () => {
             ability_calculated_tds: '',
             practical_total_value: '',
             practical_calculated_tds: '',
-            bank_city_name: ''
+            bank_city_name: '',
+            course_code: ''
         });
         setPhoneNumber('');
         setPhoneSuggestions([]);
@@ -147,7 +148,8 @@ const ClaimEntry = () => {
         ability_calculated_tds: '',
         practical_total_value: '',
         practical_calculated_tds: '',
-        bank_city_name: ''
+        bank_city_name: '',
+        course_code: ''
     });
 
     const isStaffFetched = Boolean(
