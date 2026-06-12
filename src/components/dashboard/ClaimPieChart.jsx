@@ -10,7 +10,7 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
 
-const ClaimPieChart = ({ title, data, colors }) => {
+const ClaimPieChart = ({ title, data, colors, hideAmount = false, useCountInstead = false }) => {
 
     const values = data.map(item => Number(item?.value) || 0);
     const labels = data.map(item => item?.name || 'Unknown');
@@ -46,7 +46,10 @@ const ClaimPieChart = ({ title, data, colors }) => {
                         const label = context.label || 'Unknown';
                         const value = Number(context.raw) || 0;
                         const percentage = total ? ((value / total) * 100).toFixed(1) : '0.0';
-                        return `${label}: ${value.toLocaleString('en-IN')} (${percentage}%)`;
+                        if (hideAmount) {
+                            return `${label}: ${value.toLocaleString('en-IN')} claims (${percentage}%)`;
+                        }
+                        return `${label}: ₹${value.toLocaleString('en-IN')} (${percentage}%)`;
                     },
                 },
                 backgroundColor: 'white',
@@ -82,15 +85,15 @@ const ClaimPieChart = ({ title, data, colors }) => {
             <div className="grid gap-2 text-sm" style={{ marginTop: '30px' }}>
                 {data.map((item, index) => {
                     const value = Number(item?.value) || 0;
+                    const percentage = total ? ((value / total) * 100).toFixed(1) : '0.0';
                     return (
                         <div key={`${item?.name}-${index}`} className="flex items-center gap-3">
                             <span className="inline-flex h-3 w-3 rounded-full" style={{ backgroundColor: colors[index] || '#94a3b8' }} />
                             <span className="flex-1 text-slate-600">{item?.name || 'Unknown'}</span>
                             <span className="font-semibold text-slate-800">
-                                {
-                                    item?.count !== undefined
-                                        ? `₹ ${value.toLocaleString('en-IN')} ( ${item.count} Claims )`
-                                        : value.toLocaleString('en-IN')
+                                {hideAmount
+                                    ? `${value.toLocaleString('en-IN')} (${percentage}%)`
+                                    : `₹ ${value.toLocaleString('en-IN')} (${percentage}%)`
                                 }
                             </span>
                         </div>

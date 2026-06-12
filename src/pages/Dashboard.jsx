@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import ClaimCard from '../components/dashboard/ClaimCard';
 import ClaimPieChart from '../components/dashboard/ClaimPieChart';
 import ClaimBarChart from '../components/dashboard/ClaimBarChart';
@@ -8,7 +8,10 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 const Dashboard = () => {
 
     const apiUrl = import.meta.env.VITE_API_URL;
-    const { data } = useFetch(`${apiUrl}/api/totalClaimsCount`);
+    const role = localStorage.getItem('role') || 'admin';
+    const username = localStorage.getItem('username');
+
+    const { data: totalClaims } = useFetch(`${apiUrl}/api/totalClaimsCount`);
     const { data: staffCounts } = useFetch(`${apiUrl}/api/staffsCount`);
     const { data: creditedCounts } = useFetch(`${apiUrl}/api/creditedClaims`);
     const { data: submittedCounts } = useFetch(`${apiUrl}/api/submittedclaims`);
@@ -17,6 +20,45 @@ const Dashboard = () => {
     const { data: claimIE } = useFetch(`${apiUrl}/api/internalexternalclaims`);
     const { data: claimTypeAmounts } = useFetch(`${apiUrl}/api/claimtypeamounts`);
     const { data: academicTrends } = useFetch(`${apiUrl}/api/academic-trends`);
+
+    const { data: paymentStats } = useFetch(`${apiUrl}/api/payment-badges`);
+    const { data: paymentTableData } = useFetch(`${apiUrl}/api/payment-table`);
+
+    const [tableData, setTableData] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        fetchAdminTableData();
+    }, []);
+
+    const fetchAdminTableData = async () => {
+        setLoading(true);
+        try {
+            const response = await fetch(`${apiUrl}/api/payment-table`);
+            const data = await response.json();
+            setTableData(data);
+        } catch (error) {
+            console.error('Error fetching admin table data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getDaysPendingColor = (days) => {
+        if (days <= 10) return { color: 'text-green-600', bg: 'bg-green-50', dot: '🟢' };
+        if (days <= 20) return { color: 'text-yellow-600', bg: 'bg-yellow-50', dot: '🟡' };
+        return { color: 'text-red-600', bg: 'bg-red-50', dot: '🔴' };
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    };
 
     const groupedBarChartData = (claimTypeAmounts || []).reduce((acc, item) => {
         const typeName = (item.name || '').trim().toUpperCase();
@@ -52,6 +94,14 @@ const Dashboard = () => {
         { name: 'Others', amount: groupedBarChartData.Others }
     ];
 
+    const chartData = (academicTrends || []).map((item) => ({
+        name: item.academic_sem_label || item.label,
+        semester: item.academic_sem_label || item.label,
+        year: item.academic_year,
+        amount: item.total_claim_amount || item.amount || 0,
+        count: item.total_claim_count || item.count || 0
+    }));
+
     const pieChartData = barChartData
         .filter(item => item.amount > 0)
         .map(item => ({ name: item.name, value: item.amount }));
@@ -71,16 +121,15 @@ const Dashboard = () => {
         }
     ];
 
-    // Prepare chart data from academic trends
-    const chartData = (academicTrends || []).map((item, index) => ({
-        name: item.academic_sem_label || item.label,
-        semester: item.academic_sem_label || item.label,
-        year: item.academic_year,
-        amount: item.total_claim_amount || item.amount || 0,
-        count: item.total_claim_count || item.count || 0
-    }));
+    const staffDistributionData = [
+        { name: "Internal Staff", value: staffCounts?.internal || 0 },
+        { name: "External Staff", value: staffCounts?.external || 0 }
+    ];
 
-    // Custom tooltip
+    const isAdmin = role === 'admin';
+    const isStaff = role === 'staff';
+    const isFinance = role === 'finance';
+
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
             return (
@@ -108,187 +157,308 @@ const Dashboard = () => {
                         <div>
                             <div className="flex items-center gap-2 mb-2">
                                 <span className="h-1 w-8 bg-blue-600 rounded-full" />
-                                <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">Executive Portal</span>
+                                <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">
+                                    {isAdmin ? 'Executive Portal' : isStaff ? 'Staff Portal' : 'Finance Portal'}
+                                </span>
                             </div>
                             <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">
                                 Claims <span className="text-slate-400 font-light">Dashboard</span>
                             </h1>
+                            {!isAdmin && (
+                                <p className="text-slate-500 mt-2">
+                                    Welcome back, {username}
+                                </p>
+                            )}
                         </div>
                     </div>
                 </header>
 
                 <main className="mx-auto space-y-8">
-                    {/* Stats Cards */}
-                    <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                        <ClaimCard title="Total Claims" count={data?.totalClaims || 0} amount={data?.totalAmount || 0} color="blue" />
-                        <ClaimCard title="Pending Claims" count={pendingCounts?.pendingClaims || 0} amount={pendingCounts?.pendingAmount || 0} color="yellow" />
-                        <ClaimCard title="Submitted Claims" count={submittedCounts?.submittedClaims || 0} amount={submittedCounts?.submittedAmount || 0} color="green" />
-                        <ClaimCard title="Credited Claims" count={creditedCounts?.creditedClaims || 0} amount={creditedCounts?.creditedAmount || 0} color="pink" />
-                        <ClaimCard
-                            title="Awaiting for Credit"
-                            count={
-                                awaitingCounts
-                                    ? `${awaitingCounts.awaitingClaims || 0} ( ${awaitingCounts.uniqueReportCount || 0} )`
-                                    : "0 ( 0 )"
-                            }
-                            amount={awaitingCounts?.awaitingAmount || 0}
-                            color="red"
-                            showAlert={true}
-                        />
-                    </section>
 
-                    {/* Charts Grid */}
-                    <div className="grid gap-6 lg:grid-cols-2">
-                        {/* Bar Chart */}
-                        <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                            <ClaimBarChart data={barChartData} />
+                    {/* STATS CARDS */}
+                    {isAdmin ? (
+                        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                            <ClaimCard title="Total Claims" count={totalClaims?.totalClaims || 0} amount={totalClaims?.totalAmount || 0} color="blue" />
+                            <ClaimCard title="Pending Claims" count={pendingCounts?.pendingClaims || 0} amount={pendingCounts?.pendingAmount || 0} color="yellow" />
+                            <ClaimCard title="Submitted Claims" count={submittedCounts?.submittedClaims || 0} amount={submittedCounts?.submittedAmount || 0} color="green" />
+                            <ClaimCard title="Credited Claims" count={creditedCounts?.creditedClaims || 0} amount={creditedCounts?.creditedAmount || 0} color="pink" />
+                            <ClaimCard
+                                title="Awaiting for Credit"
+                                count={
+                                    awaitingCounts
+                                        ? `${awaitingCounts.awaitingClaims || 0} ( ${awaitingCounts.uniqueReportCount || 0} )`
+                                        : "0 ( 0 )"
+                                }
+                                amount={awaitingCounts?.awaitingAmount || 0}
+                                color="red"
+                                showAlert={true}
+                            />
                         </section>
+                    ) : (
+                        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <ClaimCard
+                                title="Total Badges"
+                                count={paymentStats?.totalBadges || 0}
+                                amount={0}
+                                hideAmount={true}
+                                color="blue"
+                            />
+                            <ClaimCard
+                                title="Pending Badges"
+                                count={paymentStats?.pendingBadges || 0}
+                                amount={0}
+                                hideAmount={true}
+                                color="yellow"
+                            />
+                            <ClaimCard
+                                title="Finished Badges"
+                                count={paymentStats?.finishedBadges || 0}
+                                amount={0}
+                                hideAmount={true}
+                                color="green"
+                            />
+                        </section>
+                    )}
 
-                        {/* Wavy Area Chart - Like the image */}
-                        <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                            <div className="mb-6">
-                                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Trend Analysis</p>
-                                <h2 className="mt-1 text-xl font-bold text-slate-900">Academic Semester Trends</h2>
-                                <p className="text-sm text-slate-500 mt-1">Last 6 semesters - Total Claim Amount</p>
-                            </div>
+                    {/* ADMIN CHARTS SECTION */}
+                    {isAdmin && (
+                        <>
+                            {/* Charts Grid */}
+                            <div className="grid gap-6 lg:grid-cols-2">
+                                {/* Bar Chart */}
+                                <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                    <ClaimBarChart data={barChartData} />
+                                </section>
 
-                            <div className="h-80">
-                                {chartData.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart
-                                            data={chartData}
-                                            margin={{ top: 10, right: 30, left: 0, bottom: 20 }}
-                                        >
-                                            <defs>
-                                                <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
-                                                    <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.0} />
-                                                </linearGradient>
-                                            </defs>
+                                {/* Wavy Area Chart */}
+                                <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                    <div className="mb-6">
+                                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Trend Analysis</p>
+                                        <h2 className="mt-1 text-xl font-bold text-slate-900">Academic Semester Trends</h2>
+                                        <p className="text-sm text-slate-500 mt-1">Last 6 semesters - Total Claim Amount</p>
+                                    </div>
 
-                                            <CartesianGrid
-                                                stroke="#e2e8f0"
-                                                strokeDasharray="3 3"
-                                                vertical={false}
-                                                opacity={0.5}
-                                            />
+                                    <div className="h-80">
+                                        {chartData.length > 0 ? (
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <AreaChart
+                                                    data={chartData}
+                                                    margin={{ top: 10, right: 30, left: 0, bottom: 20 }}
+                                                >
+                                                    <defs>
+                                                        <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
+                                                            <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
+                                                            <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.0} />
+                                                        </linearGradient>
+                                                    </defs>
 
-                                            <XAxis
-                                                dataKey="name"
-                                                axisLine={false}
-                                                tickLine={false}
-                                                tick={{ fill: '#64748b', fontSize: 11, fontWeight: 500 }}
-                                                dy={10}
-                                            />
+                                                    <CartesianGrid
+                                                        stroke="#e2e8f0"
+                                                        strokeDasharray="3 3"
+                                                        vertical={false}
+                                                        opacity={0.5}
+                                                    />
 
-                                            <YAxis
-                                                axisLine={false}
-                                                tickLine={false}
-                                                tick={{ fill: '#64748b', fontSize: 11 }}
-                                                tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
-                                                width={50}
-                                            />
+                                                    <XAxis
+                                                        dataKey="name"
+                                                        axisLine={{ stroke: '#cbd5e1', strokeWidth: 1 }}
+                                                        tickLine={{ stroke: '#cbd5e1', strokeWidth: 1 }}
+                                                        tick={{ fill: '#64748b', fontSize: 11, fontWeight: 500 }}
+                                                        dy={10}
+                                                    />
 
-                                            <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#93c5fd', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                                                    <YAxis
+                                                        axisLine={{ stroke: '#cbd5e1', strokeWidth: 1 }}
+                                                        tickLine={{ stroke: '#cbd5e1', strokeWidth: 1 }}
+                                                        tick={{ fill: '#64748b', fontSize: 11 }}
+                                                        tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
+                                                        width={50}
+                                                    />
 
-                                            <Legend
-                                                verticalAlign="top"
-                                                height={36}
-                                                iconType="circle"
-                                                formatter={(value) => <span className="text-sm text-gray-700 font-medium">Claim Amount Trend</span>}
-                                            />
+                                                    <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#93c5fd', strokeWidth: 1, strokeDasharray: '4 4' }} />
 
-                                            <Area
-                                                type="monotone"
-                                                dataKey="amount"
-                                                name="Claim Amount"
-                                                stroke="#3b82f6"
-                                                strokeWidth={3}
-                                                fill="url(#colorAmount)"
-                                                dot={{
-                                                    r: 5,
-                                                    fill: '#ffffff',
-                                                    stroke: '#3b82f6',
-                                                    strokeWidth: 2.5,
-                                                    cursor: 'pointer'
-                                                }}
-                                                activeDot={{
-                                                    r: 7,
-                                                    fill: '#3b82f6',
-                                                    stroke: '#ffffff',
-                                                    strokeWidth: 2,
-                                                    cursor: 'pointer'
-                                                }}
-                                                isAnimationActive={true}
-                                                animationDuration={1500}
-                                                animationEasing="ease-in-out"
-                                            />
-                                        </AreaChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                    <div className="h-full flex items-center justify-center">
-                                        <div className="text-center">
-                                            <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                                                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                                </svg>
+                                                    <Legend
+                                                        verticalAlign="top"
+                                                        height={36}
+                                                        iconType="circle"
+                                                        formatter={(value) => <span className="text-sm text-gray-700 font-medium">Claim Amount Trend</span>}
+                                                    />
+
+                                                    <Area
+                                                        type="monotone"
+                                                        dataKey="amount"
+                                                        name="Claim Amount"
+                                                        stroke="#3b82f6"
+                                                        strokeWidth={3}
+                                                        fill="url(#colorAmount)"
+                                                        dot={{
+                                                            r: 5,
+                                                            fill: '#ffffff',
+                                                            stroke: '#3b82f6',
+                                                            strokeWidth: 2.5,
+                                                            cursor: 'pointer'
+                                                        }}
+                                                        activeDot={{
+                                                            r: 7,
+                                                            fill: '#3b82f6',
+                                                            stroke: '#ffffff',
+                                                            strokeWidth: 2,
+                                                            cursor: 'pointer'
+                                                        }}
+                                                        isAnimationActive={true}
+                                                        animationDuration={1500}
+                                                        animationEasing="ease-in-out"
+                                                    />
+                                                </AreaChart>
+                                            </ResponsiveContainer>
+                                        ) : (
+                                            <div className="h-full flex items-center justify-center">
+                                                <div className="text-center">
+                                                    <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                                                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                                        </svg>
+                                                    </div>
+                                                    <p className="text-slate-400 font-medium">No academic data available</p>
+                                                    <p className="text-slate-300 text-sm mt-1">Add semester records to see trends</p>
+                                                </div>
                                             </div>
-                                            <p className="text-slate-400 font-medium">No academic data available</p>
-                                            <p className="text-slate-300 text-sm mt-1">Add semester records to see trends</p>
-                                        </div>
+                                        )}
                                     </div>
-                                )}
+                                </section>
                             </div>
 
-                            {/* Summary Stats */}
-                            {chartData.length > 0 && (
-                                <div className="mt-6 grid grid-cols-2 gap-4 pt-5 border-t border-slate-100">
-                                    <div className="bg-gradient-to-br from-blue-50 to-blue-100/30 rounded-xl p-4">
-                                        <p className="text-xs text-blue-600 font-semibold uppercase tracking-wide">Total Amount</p>
-                                        <p className="text-2xl font-bold text-blue-900 mt-1">
-                                            ₹{chartData.reduce((sum, item) => sum + item.amount, 0).toLocaleString('en-IN')}
-                                        </p>
-                                        <p className="text-xs text-blue-600/70 mt-1">Last {chartData.length} semesters</p>
-                                    </div>
-                                    <div className="bg-gradient-to-br from-green-50 to-green-100/30 rounded-xl p-4">
-                                        <p className="text-xs text-green-600 font-semibold uppercase tracking-wide">Total Claims</p>
-                                        <p className="text-2xl font-bold text-green-900 mt-1">
-                                            {chartData.reduce((sum, item) => sum + item.count, 0).toLocaleString()}
-                                        </p>
-                                        <p className="text-xs text-green-600/70 mt-1">Across all semesters</p>
-                                    </div>
+                            {/* Three Pie Charts Row for Admin */}
+                            <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                    <ClaimPieChart
+                                        title="Distribution by Staff"
+                                        data={staffDistributionData}
+                                        colors={['#f59e0b', '#8b5cf6']}
+                                    />
                                 </div>
-                            )}
-                        </section>
-                    </div>
+                                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                    <ClaimPieChart
+                                        title="Claim Amount by Type"
+                                        data={pieChartData}
+                                        colors={pieColors}
+                                    />
+                                </div>
+                                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                    <ClaimPieChart
+                                        title="Distribution by Claims"
+                                        data={internalExternalData}
+                                        colors={['#10b981', '#ef4444']}
+                                    />
+                                </div>
+                            </section>
+                        </>
+                    )}
 
-                    {/* Three Pie Charts Row */}
-                    <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                            <ClaimPieChart
-                                title="Distribution by Staff"
-                                data={[
-                                    { name: "Internal Staff", value: staffCounts?.internal || 0 },
-                                    { name: "External Staff", value: staffCounts?.external || 0 }
-                                ]}
-                                colors={['#f59e0b', '#8b5cf6']}
-                            />
+                    {/* PAYMENT ID TABLE - For all roles (only submitted payment reports) */}
+                    <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="px-6 py-5 border-b border-slate-100">
+                            <h2 className="text-xl font-bold text-slate-800">
+                                {isAdmin ? 'Payment Reports Summary' : 'Your Submitted Payment Reports'}
+                            </h2>
+                            <p className="text-sm text-slate-500 mt-1">
+                                {isAdmin
+                                    ? 'All submitted payment reports across the system'
+                                    : 'Track your submitted payment reports'}
+                            </p>
                         </div>
-                        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                            <ClaimPieChart
-                                title="Claim Amount by Type"
-                                data={pieChartData}
-                                colors={pieColors}
-                            />
-                        </div>
-                        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                            <ClaimPieChart
-                                title="Distribution by Claims"
-                                data={internalExternalData}
-                                colors={['#10b981', '#ef4444']}
-                            />
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-slate-50">
+                                    <tr>
+                                        <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Payment ID</th>
+                                        <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Claim Type</th>
+                                        <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">No. of Bills</th>
+                                        <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Submitted Date</th>
+                                        <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Amount (₹)</th>
+                                        <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Days Pending</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 text-center">
+                                    {(isAdmin ? tableData : paymentTableData || [])
+                                        .filter(item => item.status === 'Submitted')
+                                        .map((item, index) => {
+                                            const daysPendingColor = getDaysPendingColor(item.daysPending || 0);
+                                            return (
+                                                <tr key={item.payment_report_id || index} className="hover:bg-slate-50 transition-colors">
+                                                    <td className="px-6 py-4 font-mono text-sm font-semibold text-slate-700">
+                                                        {item.payment_report_id || '-'}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-slate-600">
+                                                        {item.claim_type_name || '-'}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-slate-600">
+                                                        {item.bill_count || 0}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-slate-600">
+                                                        {formatDate(item.submitted_date)}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm font-semibold text-slate-700">
+                                                        {`₹${(item.amount || 0).toLocaleString('en-IN')}`}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${daysPendingColor.bg} ${daysPendingColor.color}`}>
+                                                            <span>{daysPendingColor.dot}</span>
+                                                            {item.daysPending || 0} days
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    {(isAdmin ? tableData : paymentTableData || []).filter(item => item.status === 'Submitted').length === 0 && (
+                                        <tr>
+                                            <td colSpan="6" className="px-6 py-12 text-center text-slate-400">
+                                                No submitted payment reports found
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
                     </section>
+
+                    {/* PIE CHARTS FOR NON-ADMIN ROLES - At the end, NO amount details */}
+                    {!isAdmin && (
+                        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                <ClaimPieChart
+                                    title="Distribution by Staff"
+                                    data={staffDistributionData}
+                                    colors={['#f59e0b', '#8b5cf6']}
+                                    hideAmount={true}
+                                />
+                            </div>
+                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                <ClaimPieChart
+                                    title="Claim Count by Type"
+                                    data={pieChartData.map(item => ({
+                                        name: item.name,
+                                        value: item.value,
+                                    }))}
+                                    colors={pieColors}
+                                    hideAmount={true}
+                                    useCountInstead={true}
+                                />
+                            </div>
+                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                <ClaimPieChart
+                                    title="Distribution by Claims"
+                                    data={[
+                                        { name: "Internal", value: claimIE?.internal?.count || 0 },
+                                        { name: "External", value: claimIE?.external?.count || 0 }
+                                    ]}
+                                    colors={['#10b981', '#ef4444']}
+                                    hideAmount={true}
+                                />
+                            </div>
+                        </section>
+                    )}
                 </main>
             </div>
         </div>

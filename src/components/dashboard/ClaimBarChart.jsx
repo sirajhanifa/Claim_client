@@ -2,7 +2,6 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, Cell
 } from 'recharts';
 
-// Elegant, distinct colors 
 const COLORS = [
     '#3b82f6', // blue
     '#8b5cf6', // violet
@@ -35,6 +34,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const CustomXAxisTick = ({ x, y, payload }) => {
+
     const words = payload.value?.split(' ') || [];
     const lines = [];
     let current = '';
@@ -70,6 +70,7 @@ const CustomXAxisTick = ({ x, y, payload }) => {
 };
 
 const ClaimBarChart = ({ data }) => {
+
     const barSize = 36;
     const bottomMargin = data.some(d => d.name?.length > 12) ? 56 : 24;
 

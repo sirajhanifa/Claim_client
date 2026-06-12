@@ -3,10 +3,10 @@ import axios from "axios";
 import {
     Search, Layers, ChevronRight, FileSpreadsheet, Printer,
     AlertCircle, Loader2, CheckCircle2,
-    TrendingUp, Users, Hash, Filter, RefreshCw, XCircle
+    TrendingUp, Users, Hash, Filter, RefreshCw, XCircle, ArrowUpDown, ArrowUp, ArrowDown
 } from "lucide-react";
 
-const FinanceProcessing = () => {
+const ClaimStatus = () => {
 
     const API_URL = import.meta.env.VITE_API_URL;
     const [batches, setBatches] = useState([]);
@@ -20,6 +20,9 @@ const FinanceProcessing = () => {
     const [updateLoading, setUpdateLoading] = useState(false);
     const [viewMode, setViewMode] = useState('individual');
 
+    // Sorting state
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: null });
+
     // Fetch batches (Processed, Submitted, Credited)
     const fetchBatches = async () => {
         try {
@@ -28,7 +31,9 @@ const FinanceProcessing = () => {
                 const order = { Processed: 0, Submitted: 1, Credited: 2 };
                 const statusCompare = (order[a.batchStatus] ?? 3) - (order[b.batchStatus] ?? 3);
                 if (statusCompare !== 0) return statusCompare;
-                return a.payment_report_id.localeCompare(b.payment_report_id);
+                const dateA = new Date(a.batchDate || 0);
+                const dateB = new Date(b.batchDate || 0);
+                return dateB - dateA;
             });
             setBatches(sorted);
         } catch (err) {
@@ -42,6 +47,7 @@ const FinanceProcessing = () => {
         setLoading(true);
         setSelectedBatchId(batchId);
         setError(null);
+        setSortConfig({ key: null, direction: null });
         try {
             const res = await axios.get(
                 `${API_URL}/api/claims/batch/${encodeURIComponent(batchId)}`
@@ -70,17 +76,17 @@ const FinanceProcessing = () => {
         filtered.sort((a, b) => {
             const statusCompare = (order[a.batchStatus] ?? 3) - (order[b.batchStatus] ?? 3);
             if (statusCompare !== 0) return statusCompare;
-            return a.payment_report_id.localeCompare(b.payment_report_id);
+            const dateA = new Date(a.batchDate || 0);
+            const dateB = new Date(b.batchDate || 0);
+            return dateB - dateA;
         });
         return filtered;
     }, [batches, searchTerm, statusFilter]);
 
     // Individual view: filtered by search
     const filteredClaimsForIndividual = useMemo(() => {
-
         const term = globalSearch.toLowerCase().trim();
         if (!term) return claims;
-
         return claims.filter(claim => {
             const staffMatch = claim.staff_name?.toLowerCase().includes(term);
             const phoneMatch = claim.phone_number?.toLowerCase().includes(term);
@@ -94,6 +100,66 @@ const FinanceProcessing = () => {
                 accountMatch || ifscMatch || statusMatch || emailStatusMatch;
         });
     }, [claims, globalSearch]);
+
+    // Group claims by phone number and claim type to track email status
+    const groupedClaimsWithEmailStatus = useMemo(() => {
+        const map = new Map();
+        claims.forEach(c => {
+            const key = `${c.phone_number || ''}||${c.claim_type_name || ''}`;
+            if (!map.has(key)) {
+                map.set(key, {
+                    staff_name: c.staff_name,
+                    claim_type_name: c.claim_type_name,
+                    phone_number: c.phone_number,
+                    totalAmount: 0,
+                    count: 0,
+                    account_no: c.account_no,
+                    ifsc_code: c.ifsc_code,
+                    entry_date: c.entry_date,
+                    processed_date: c.processed_date,
+                    submitted_date: c.submitted_date,
+                    credited_date: c.credited_date,
+                    status: c.status,
+                    email_statuses: new Set(),
+                });
+            }
+            const g = map.get(key);
+            g.totalAmount += Number(c.amount) || 0;
+            g.count += 1;
+            if (c.account_no) g.account_no = c.account_no;
+            if (c.ifsc_code) g.ifsc_code = c.ifsc_code;
+            if (c.email_status) {
+                g.email_statuses.add(c.email_status);
+            }
+        });
+
+        return Array.from(map.values()).map((g, idx) => {
+            let finalEmailStatus = 'N/A';
+            let statusColor = 'gray';
+            if (g.email_statuses.has('failed')) {
+                finalEmailStatus = 'Failed';
+                statusColor = 'red';
+            } else if (g.email_statuses.has('sent')) {
+                finalEmailStatus = 'Sent';
+                statusColor = 'green';
+            } else if (g.email_statuses.size > 0) {
+                const firstStatus = Array.from(g.email_statuses)[0];
+                finalEmailStatus = firstStatus.charAt(0).toUpperCase() + firstStatus.slice(1);
+                statusColor = firstStatus === 'failed' ? 'red' : (firstStatus === 'sent' ? 'green' : 'gray');
+            }
+            return {
+                ...g,
+                Sno: idx + 1,
+                aggregatedEmailStatus: finalEmailStatus,
+                aggregatedEmailStatusColor: statusColor
+            };
+        });
+    }, [claims]);
+
+    // Calculate successful email count (Sent emails) from grouped claims
+    const successfulEmailCount = useMemo(() => {
+        return groupedClaimsWithEmailStatus.filter(g => g.aggregatedEmailStatus === 'Sent').length;
+    }, [groupedClaimsWithEmailStatus]);
 
     // Always use the full claims for grouping
     const groupedClaims = useMemo(() => {
@@ -150,7 +216,7 @@ const FinanceProcessing = () => {
     }, [claims]);
 
     // Determine which rows to display based on view mode
-    const displayedRows = useMemo(() => {
+    const displayedRowsBase = useMemo(() => {
         if (viewMode === 'grouped') {
             return groupedClaims;
         } else {
@@ -161,6 +227,69 @@ const FinanceProcessing = () => {
             }));
         }
     }, [viewMode, groupedClaims, filteredClaimsForIndividual]);
+
+    // Sorting logic
+    const displayedRows = useMemo(() => {
+        if (!displayedRowsBase.length) return [];
+        if (!sortConfig.key || sortConfig.direction === null) {
+            return displayedRowsBase;
+        }
+        const sorted = [...displayedRowsBase];
+        sorted.sort((a, b) => {
+            let aVal, bVal;
+
+            // Handle special cases
+            if (sortConfig.key === 'staff_name') {
+                aVal = a.staff_name || '';
+                bVal = b.staff_name || '';
+            } else if (sortConfig.key === 'claim_type_name') {
+                aVal = a.claim_type_name || '';
+                bVal = b.claim_type_name || '';
+            } else if (sortConfig.key === 'amount') {
+                aVal = a.totalAmount || a.amount || 0;
+                bVal = b.totalAmount || b.amount || 0;
+            } else if (sortConfig.key === 'email_status') {
+                aVal = viewMode === 'grouped' ? a.aggregatedEmailStatus : a.emailStatusDisplay;
+                bVal = viewMode === 'grouped' ? b.aggregatedEmailStatus : b.emailStatusDisplay;
+            } else {
+                aVal = a[sortConfig.key] || '';
+                bVal = b[sortConfig.key] || '';
+            }
+
+            if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+            if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+        return sorted;
+    }, [displayedRowsBase, sortConfig, viewMode]);
+
+    const handleSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key) {
+            if (sortConfig.direction === 'asc') direction = 'desc';
+            else if (sortConfig.direction === 'desc') {
+                setSortConfig({ key: null, direction: null });
+                return;
+            }
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const getSortIcon = (key) => {
+        if (sortConfig.key !== key) {
+            return <ArrowUpDown className="w-3 h-3 ml-1 inline-block opacity-50" />;
+        }
+        if (sortConfig.direction === 'asc') {
+            return <ArrowUp className="w-3 h-3 ml-1 inline-block text-blue-600" />;
+        }
+        if (sortConfig.direction === 'desc') {
+            return <ArrowDown className="w-3 h-3 ml-1 inline-block text-blue-600" />;
+        }
+        return <ArrowUpDown className="w-3 h-3 ml-1 inline-block" />;
+    };
 
     const selectedBatch = useMemo(() => batches.find(b => b.payment_report_id === selectedBatchId), [batches, selectedBatchId]);
     const selectedBatchStatus = selectedBatch?.batchStatus;
@@ -197,6 +326,14 @@ const FinanceProcessing = () => {
     };
 
     const showEmailStatus = selectedBatchStatus === 'Credited';
+
+    // Sortable column keys
+    const sortableKeys = {
+        "Staff Name": "staff_name",
+        "Claim Type": "claim_type_name",
+        "Amount": "amount",
+        "Email Status": "email_status"
+    };
 
     return (
         <div className="min-h-screen font-sans">
@@ -296,8 +433,8 @@ const FinanceProcessing = () => {
                             <EmptyState icon={<Layers className="w-12 h-12" />} title="Select a Batch" description="Choose a payment report from the sidebar to view details." />
                         ) : (
                             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                                {/* Metrics Cards – second card always shows grouped claims count */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {/* Metrics Cards  */}
+                                <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${showEmailStatus ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
                                     <MetricCard label="Total Amount" value={`₹${totalBatchAmount.toLocaleString()}`} icon={<TrendingUp className="w-5 h-5" />} theme="emerald" />
                                     <MetricCard
                                         label="Grouped Claims"
@@ -305,6 +442,14 @@ const FinanceProcessing = () => {
                                         icon={<Users className="w-5 h-5" />}
                                         theme="blue"
                                     />
+                                    {showEmailStatus && (
+                                        <MetricCard
+                                            label="Successful Emails"
+                                            value={`${successfulEmailCount}`}
+                                            icon={<CheckCircle2 className="w-5 h-5" />}
+                                            theme="green"
+                                        />
+                                    )}
                                     <MetricCard label="Batch ID" value={selectedBatchId} icon={<Hash className="w-5 h-5" />} theme="orange" />
                                 </div>
 
@@ -368,7 +513,7 @@ const FinanceProcessing = () => {
                                     )}
                                 </div>
 
-                                {/* Claims Table */}
+                                {/* Claims Table with Sorting */}
                                 <div className="bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden">
                                     <div className="px-6 py-4 border-b border-slate-100">
                                         <h3 className="font-bold text-slate-700">Claim Transactions</h3>
@@ -383,11 +528,43 @@ const FinanceProcessing = () => {
                                                 <thead className="bg-gradient-to-r from-slate-100 to-slate-50 border-b border-slate-200">
                                                     <tr>
                                                         <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">S. No.</th>
-                                                        <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Staff Name</th>
-                                                        <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Claim Type</th>
-                                                        <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Amount</th>
+                                                        <th
+                                                            onClick={() => handleSort('staff_name')}
+                                                            className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider cursor-pointer hover:text-blue-600 transition-colors select-none"
+                                                        >
+                                                            <span className="inline-flex items-center gap-1">
+                                                                Staff Name
+                                                                {getSortIcon('staff_name')}
+                                                            </span>
+                                                        </th>
+                                                        <th
+                                                            onClick={() => handleSort('claim_type_name')}
+                                                            className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider cursor-pointer hover:text-blue-600 transition-colors select-none"
+                                                        >
+                                                            <span className="inline-flex items-center gap-1">
+                                                                Claim Type
+                                                                {getSortIcon('claim_type_name')}
+                                                            </span>
+                                                        </th>
+                                                        <th
+                                                            onClick={() => handleSort('amount')}
+                                                            className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider cursor-pointer hover:text-blue-600 transition-colors select-none"
+                                                        >
+                                                            <span className="inline-flex items-center gap-1">
+                                                                Amount
+                                                                {getSortIcon('amount')}
+                                                            </span>
+                                                        </th>
                                                         {showEmailStatus && (
-                                                            <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Email Status</th>
+                                                            <th
+                                                                onClick={() => handleSort('email_status')}
+                                                                className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider cursor-pointer hover:text-blue-600 transition-colors select-none"
+                                                            >
+                                                                <span className="inline-flex items-center gap-1">
+                                                                    Email Status
+                                                                    {getSortIcon('email_status')}
+                                                                </span>
+                                                            </th>
                                                         )}
                                                     </tr>
                                                 </thead>
@@ -453,8 +630,8 @@ const FinanceProcessing = () => {
                         )}
                     </main>
                 </div>
-            </div >
-        </div >
+            </div>
+        </div>
     );
 };
 
@@ -471,7 +648,8 @@ const MetricCard = ({ label, value, icon, theme }) => {
         emerald: "bg-emerald-50 text-emerald-600",
         blue: "bg-blue-50 text-blue-600",
         purple: "bg-purple-50 text-purple-600",
-        orange: "bg-orange-50 text-orange-600"
+        orange: "bg-orange-50 text-orange-600",
+        green: "bg-green-50 text-green-600"
     };
     return (
         <div className="rounded-xl border border-slate-200 p-5 transition-all hover:shadow-md">
@@ -528,4 +706,4 @@ const EmailStatusBadge = ({ status }) => {
     );
 };
 
-export default FinanceProcessing;
+export default ClaimStatus;
