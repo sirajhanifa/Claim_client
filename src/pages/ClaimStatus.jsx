@@ -156,6 +156,28 @@ const ClaimStatus = () => {
         });
     }, [claims]);
 
+    const getStatusDate = (claim) => {
+        const status = claim.status;
+        if (status === 'Processed') {
+            return claim.processed_date;
+        } else if (status === 'Submitted') {
+            return claim.submitted_date;
+        } else if (status === 'Credited') {
+            return claim.credited_date;
+        }
+        return claim.entry_date;
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    };
+
     // Calculate successful email count (Sent emails) from grouped claims
     const successfulEmailCount = useMemo(() => {
         return groupedClaimsWithEmailStatus.filter(g => g.aggregatedEmailStatus === 'Sent').length;
@@ -163,13 +185,16 @@ const ClaimStatus = () => {
 
     // Always use the full claims for grouping
     const groupedClaims = useMemo(() => {
+
         const map = new Map();
         claims.forEach(c => {
-            const key = `${c.staff_name || ''}||${c.claim_type_name || ''}`;
+            const key = `${c.phone_number || ''}::${c.payment_report_id || ''}`;
+
             if (!map.has(key)) {
                 map.set(key, {
                     staff_name: c.staff_name,
                     claim_type_name: c.claim_type_name,
+                    phone_number: c.phone_number,
                     totalAmount: 0,
                     count: 0,
                     account_no: c.account_no,
@@ -180,6 +205,7 @@ const ClaimStatus = () => {
                     credited_date: c.credited_date,
                     status: c.status,
                     email_statuses: new Set(),
+                    payment_report_id: c.payment_report_id,
                 });
             }
             const g = map.get(key);
@@ -191,7 +217,6 @@ const ClaimStatus = () => {
                 g.email_statuses.add(c.email_status);
             }
         });
-
         return Array.from(map.values()).map((g, idx) => {
             let finalEmailStatus = 'N/A';
             let statusColor = 'gray';
@@ -218,12 +243,16 @@ const ClaimStatus = () => {
     // Determine which rows to display based on view mode
     const displayedRowsBase = useMemo(() => {
         if (viewMode === 'grouped') {
-            return groupedClaims;
+            return groupedClaims.map(claim => ({
+                ...claim,
+                statusDate: claim.processed_date || claim.submitted_date || claim.credited_date || claim.entry_date
+            }));
         } else {
             return filteredClaimsForIndividual.map(claim => ({
                 ...claim,
                 emailStatusDisplay: claim.email_status || 'N/A',
-                emailStatusColor: claim.email_status === 'failed' ? 'red' : (claim.email_status === 'sent' ? 'green' : 'gray')
+                emailStatusColor: claim.email_status === 'failed' ? 'red' : (claim.email_status === 'sent' ? 'green' : 'gray'),
+                statusDate: getStatusDate(claim)
             }));
         }
     }, [viewMode, groupedClaims, filteredClaimsForIndividual]);
@@ -248,6 +277,9 @@ const ClaimStatus = () => {
             } else if (sortConfig.key === 'amount') {
                 aVal = a.totalAmount || a.amount || 0;
                 bVal = b.totalAmount || b.amount || 0;
+            } else if (sortConfig.key === 'date') {
+                aVal = new Date(a.statusDate || 0);
+                bVal = new Date(b.statusDate || 0);
             } else if (sortConfig.key === 'email_status') {
                 aVal = viewMode === 'grouped' ? a.aggregatedEmailStatus : a.emailStatusDisplay;
                 bVal = viewMode === 'grouped' ? b.aggregatedEmailStatus : b.emailStatusDisplay;
@@ -326,14 +358,6 @@ const ClaimStatus = () => {
     };
 
     const showEmailStatus = selectedBatchStatus === 'Credited';
-
-    // Sortable column keys
-    const sortableKeys = {
-        "Staff Name": "staff_name",
-        "Claim Type": "claim_type_name",
-        "Amount": "amount",
-        "Email Status": "email_status"
-    };
 
     return (
         <div className="min-h-screen font-sans">
@@ -528,42 +552,21 @@ const ClaimStatus = () => {
                                                 <thead className="bg-gradient-to-r from-slate-100 to-slate-50 border-b border-slate-200">
                                                     <tr>
                                                         <th className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">S. No.</th>
-                                                        <th
-                                                            onClick={() => handleSort('staff_name')}
-                                                            className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider cursor-pointer hover:text-blue-600 transition-colors select-none"
-                                                        >
-                                                            <span className="inline-flex items-center gap-1">
-                                                                Staff Name
-                                                                {getSortIcon('staff_name')}
-                                                            </span>
+                                                        <th onClick={() => handleSort('staff_name')} className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider cursor-pointer hover:text-blue-600 transition-colors select-none">
+                                                            <span className="inline-flex items-center gap-1">Staff Name {getSortIcon('staff_name')}</span>
                                                         </th>
-                                                        <th
-                                                            onClick={() => handleSort('claim_type_name')}
-                                                            className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider cursor-pointer hover:text-blue-600 transition-colors select-none"
-                                                        >
-                                                            <span className="inline-flex items-center gap-1">
-                                                                Claim Type
-                                                                {getSortIcon('claim_type_name')}
-                                                            </span>
+                                                        <th onClick={() => handleSort('claim_type_name')} className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider cursor-pointer hover:text-blue-600 transition-colors select-none">
+                                                            <span className="inline-flex items-center gap-1">Claim Type {getSortIcon('claim_type_name')}</span>
                                                         </th>
-                                                        <th
-                                                            onClick={() => handleSort('amount')}
-                                                            className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider cursor-pointer hover:text-blue-600 transition-colors select-none"
-                                                        >
-                                                            <span className="inline-flex items-center gap-1">
-                                                                Amount
-                                                                {getSortIcon('amount')}
-                                                            </span>
+                                                        <th onClick={() => handleSort('amount')} className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider cursor-pointer hover:text-blue-600 transition-colors select-none">
+                                                            <span className="inline-flex items-center gap-1">Amount {getSortIcon('amount')}</span>
+                                                        </th>
+                                                        <th onClick={() => handleSort('date')} className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider cursor-pointer hover:text-blue-600 transition-colors select-none">
+                                                            <span className="inline-flex items-center gap-1">Date {getSortIcon('date')}</span>
                                                         </th>
                                                         {showEmailStatus && (
-                                                            <th
-                                                                onClick={() => handleSort('email_status')}
-                                                                className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider cursor-pointer hover:text-blue-600 transition-colors select-none"
-                                                            >
-                                                                <span className="inline-flex items-center gap-1">
-                                                                    Email Status
-                                                                    {getSortIcon('email_status')}
-                                                                </span>
+                                                            <th onClick={() => handleSort('email_status')} className="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider cursor-pointer hover:text-blue-600 transition-colors select-none">
+                                                                <span className="inline-flex items-center gap-1">Email Status {getSortIcon('email_status')}</span>
                                                             </th>
                                                         )}
                                                     </tr>
@@ -602,6 +605,11 @@ const ClaimStatus = () => {
                                                             <td className="px-6 py-4 text-center">
                                                                 <span className="font-bold text-blue-600 font-mono text-[15px]">
                                                                     ₹{getRowAmount(row).toLocaleString('en-IN')}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-center">
+                                                                <span className="text-sm font-medium text-slate-600">
+                                                                    {formatDate(row.statusDate)}
                                                                 </span>
                                                             </td>
                                                             {showEmailStatus && (

@@ -36,12 +36,22 @@ const Dashboard = () => {
         try {
             const response = await fetch(`${apiUrl}/api/payment-table`);
             const data = await response.json();
-            setTableData(data);
+            const sortedData = [...data].sort((a, b) => {
+                const daysA = parseInt(a.daysPending, 10) || 0;
+                const daysB = parseInt(b.daysPending, 10) || 0;
+                if (daysA !== daysB) {
+                    return daysB - daysA;
+                }
+                const idA = a.payment_report_id || '';
+                const idB = b.payment_report_id || '';
+                const lastTwoA = parseInt(idA.toString().slice(-2), 10) || 0;
+                const lastTwoB = parseInt(idB.toString().slice(-2), 10) || 0;
+                return lastTwoA - lastTwoB;
+            });
+            setTableData(sortedData);
         } catch (error) {
             console.error('Error fetching admin table data:', error);
-        } finally {
-            setLoading(false);
-        }
+        } finally { setLoading(false) }
     };
 
     const getDaysPendingColor = (days) => {

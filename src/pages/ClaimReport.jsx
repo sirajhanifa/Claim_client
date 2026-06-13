@@ -106,17 +106,17 @@ const ClaimReport = () => {
     }, [mainFilter]);
 
     const fromDateLabel = useMemo(() => {
-        if (mainFilter === 'Processed') return 'Processed From Date';
-        if (mainFilter === 'Submitted') return 'Submitted From Date';
-        if (mainFilter === 'Credited') return 'Credited From Date';
-        return 'Entry From Date';
+        if (mainFilter === 'Processed') return 'From Date (Processed Date)';
+        if (mainFilter === 'Submitted') return 'From Date (Submitted Date)';
+        if (mainFilter === 'Credited') return 'From Date (Credited Date)';
+        return 'From Date (Entry Date)';
     }, [mainFilter]);
 
     const toDateLabel = useMemo(() => {
-        if (mainFilter === 'Processed') return 'Processed To Date';
-        if (mainFilter === 'Submitted') return 'Submitted To Date';
-        if (mainFilter === 'Credited') return 'Credited To Date';
-        return 'Entry To Date';
+        if (mainFilter === 'Processed') return 'To Date (Processed Date)';
+        if (mainFilter === 'Submitted') return 'To Date (Submitted Date)';
+        if (mainFilter === 'Credited') return 'To Date (Credited Date)';
+        return 'To Date (Entry Date)';
     }, [mainFilter]);
 
     // Filter logic based on mainFilter 
