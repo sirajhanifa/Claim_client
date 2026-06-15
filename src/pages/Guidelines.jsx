@@ -1,5 +1,25 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
+import {
+    LayoutDashboard,
+    PenTool,
+    FileText,
+    CreditCard,
+    Users,
+    Settings,
+    LogOut,
+    Upload,
+    BarChart3,
+    TrendingUp,
+    AlertCircle,
+    CheckCircle,
+    Clock,
+    DollarSign,
+    UserCheck,
+    FileCheck,
+    Send,
+    Gift
+} from 'lucide-react';
 
 function Guidelines() {
 
@@ -9,7 +29,7 @@ function Guidelines() {
 
     const adminContent = (
         <>
-            <Section title="Dashboard Analytics" icon="📊" id="dashboard">
+            <Section title="Dashboard Analytics" icon={<LayoutDashboard size={22} />} id="dashboard">
                 <p className="text-slate-600 leading-relaxed mb-6">This section displays the following five categories in box format:</p>
                 <div className="grid md:grid-cols-3 gap-4">
                     <InfoCard title="Total Claims" list={['Total number of claims']} color="blue" />
@@ -25,7 +45,7 @@ function Guidelines() {
                 </div>
             </Section>
 
-            <Section title="Claim Entry" icon="✍️" id="entry">
+            <Section title="Claim Entry" icon={<PenTool size={22} />} id="entry">
                 <div className="bg-slate-50 rounded-xl p-6 border border-slate-100">
                     <div className="flex flex-col md:flex-row gap-8">
                         <div className="flex-1">
@@ -57,28 +77,34 @@ function Guidelines() {
                 </div>
             </Section>
 
-            <Section title="Claim Reporting & Authorization" icon="📑" id="report">
+            <Section title="Claim Reporting & Authorization" icon={<FileText size={22} />} id="report">
                 <div className="grid md:grid-cols-2 gap-6 mb-8">
                     <div className="border border-slate-200 rounded-xl p-5">
-                        <h4 className="font-bold text-slate-800 mb-3 text-sm">Filter Options & Reports</h4>
+                        <h4 className="font-bold text-slate-800 mb-3 text-sm flex items-center gap-2">
+                            <BarChart3 size={16} /> Filter Options & Reports
+                        </h4>
                         <p className="text-sm text-slate-600">Various reports can be generated using the eight available filter options. Staff claim enquiries can also be viewed here.</p>
                     </div>
                     <div className="bg-blue-600 text-white rounded-xl p-5">
-                        <h4 className="font-bold mb-2 text-sm">Claim Submission</h4>
+                        <h4 className="font-bold mb-2 text-sm flex items-center gap-2">
+                            <Send size={16} /> Claim Submission
+                        </h4>
                         <p className="text-sm text-white/90">A grouped claim is formed by combining individual claims that have the same Claim Type, Staff Category, and Bank Type. Multiple grouped claims together constitute a batch, which is sent to the Principal for approval.</p>
                     </div>
                 </div>
 
                 <div className="space-y-4">
-                    <ReportItem title="Unsubmitted" text="Claim bills have been entered into the system." />
-                    <ReportItem title="Processed" text="Claim bills have been grouped into batches and are ready for the Principal's approval/signature." highlight />
-                    <ReportItem title="Submitted" text="Claim bills have been submitted to the Finance Section." />
-                    <ReportItem title="Credited" text="The claim amount has been credited to the staff members." />
+                    <ReportItem title="Unsubmitted" text="Claim bills have been entered into the system." icon={<Clock size={14} />} />
+                    <ReportItem title="Processed" text="Claim bills have been grouped into batches and are ready for the Principal's approval/signature." highlight icon={<CheckCircle size={14} />} />
+                    <ReportItem title="Submitted" text="Claim bills have been submitted to the Finance Section." icon={<Send size={14} />} />
+                    <ReportItem title="Credited" text="The claim amount has been credited to the staff members." icon={<Gift size={14} />} />
                 </div>
 
                 <div className="mt-8 bg-amber-50 border border-amber-200 p-6 rounded-2xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-4 opacity-10 text-amber-600 text-6xl font-bold italic">FLOW</div>
-                    <h4 className="text-amber-800 font-extrabold uppercase tracking-widest text-xs mb-4">Status of Claims</h4>
+                    <h4 className="text-amber-800 font-extrabold uppercase tracking-widest text-xs mb-4 flex items-center gap-2">
+                        <TrendingUp size={14} /> Status of Claims
+                    </h4>
                     <div className="grid grid-cols-2 gap-3 text-sm relative z-10">
                         <div><span className="font-bold">Unsubmitted:</span> Claim bills entered.</div>
                         <div><span className="font-bold">Processed:</span> Grouped & ready for approval.</div>
@@ -88,13 +114,15 @@ function Guidelines() {
                 </div>
             </Section>
 
-            <Section title="Payment Tracking & Finance Processing" icon="💳" id="payment">
+            <Section title="Payment Tracking & Finance Processing" icon={<CreditCard size={22} />} id="payment">
                 <div className="flex flex-col md:flex-row gap-6 items-start">
                     <div className="flex-1">
                         <p className="text-slate-600 mb-4 font-semibold">Finance Processing (Claim Status)</p>
                         <p className="text-sm text-slate-600">This menu displays the status of each claim batch. The action of submitting a batch to the Finance Section is performed here by clicking the Submit Batch to Finance button.</p>
                         <div className="mt-4 p-4 bg-indigo-50 rounded-xl">
-                            <p className="text-sm font-semibold text-indigo-800">Payment Processing (Finance Section)</p>
+                            <p className="text-sm font-semibold text-indigo-800 flex items-center gap-2">
+                                <DollarSign size={16} /> Payment Processing (Finance Section)
+                            </p>
                             <p className="text-sm text-indigo-700">This section displays the claim batches as viewed by Finance Section staff after logging into the system. It is a replica of the page available in the Finance Section login.</p>
                         </div>
                     </div>
@@ -109,14 +137,18 @@ function Guidelines() {
             </Section>
 
             <div className="grid md:grid-cols-2 gap-6">
-                <Section title="Staff Management" icon="👥" id="staff">
+                <Section title="Staff Management" icon={<Users size={22} />} id="staff">
                     <p className="text-sm text-slate-600 mb-4">Staff details are maintained and managed here.</p>
                     <div className="flex gap-2">
-                        <span className="text-[10px] bg-green-50 text-green-700 px-2 py-1 rounded font-bold border border-green-200">ADD STAFF</span>
-                        <span className="text-[10px] bg-slate-50 text-slate-700 px-2 py-1 rounded font-bold border border-slate-200">BULK EXPORT</span>
+                        <span className="text-[10px] bg-green-50 text-green-700 px-2 py-1 rounded font-bold border border-green-200 flex items-center gap-1">
+                            <UserCheck size={10} /> ADD STAFF
+                        </span>
+                        <span className="text-[10px] bg-slate-50 text-slate-700 px-2 py-1 rounded font-bold border border-slate-200 flex items-center gap-1">
+                            <Upload size={10} /> BULK EXPORT
+                        </span>
                     </div>
                 </Section>
-                <Section title="Claim Management" icon="⚙️" id="claims">
+                <Section title="Claim Management" icon={<FileCheck size={22} />} id="claims">
                     <p className="text-sm text-slate-600">Claim details are maintained and managed here.</p>
                 </Section>
             </div>
@@ -124,7 +156,7 @@ function Guidelines() {
             <div className="grid md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                     <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
-                        <span className="text-blue-600">🔧</span> Core Settings
+                        <Settings size={18} className="text-blue-600" /> Core Settings
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -140,13 +172,17 @@ function Guidelines() {
                             <p className="text-xs text-slate-500">Allows the current user to change their password.</p>
                         </div>
                         <div>
-                            <p className="text-sm font-bold text-red-600">Data Deletion</p>
+                            <p className="text-sm font-bold text-red-600 flex items-center gap-1">
+                                <AlertCircle size={12} /> Data Deletion
+                            </p>
                             <p className="text-xs text-slate-500">Used to delete all claim entry data for a selected academic semester.</p>
                         </div>
                     </div>
                 </div>
                 <div className="bg-indigo-900 p-6 rounded-2xl text-white shadow-lg shadow-indigo-200">
-                    <h3 className="font-bold flex items-center gap-2 mb-2 italic">📌 Logout</h3>
+                    <h3 className="font-bold flex items-center gap-2 mb-2 italic">
+                        <LogOut size={18} /> Logout
+                    </h3>
                     <p className="text-xs text-indigo-100 leading-relaxed">Logs out the current user from the system.</p>
                 </div>
             </div>
@@ -155,7 +191,7 @@ function Guidelines() {
 
     const financeContent = (
         <>
-            <Section title="Dashboard Analytics" icon="📊" id="dashboard">
+            <Section title="Dashboard Analytics" icon={<LayoutDashboard size={22} />} id="dashboard">
                 <p className="text-slate-600 leading-relaxed mb-6">This section displays the following five categories in box format:</p>
                 <div className="grid md:grid-cols-3 gap-4">
                     <InfoCard title="Total Claims" list={['Total number of claims']} color="blue" />
@@ -171,12 +207,14 @@ function Guidelines() {
                 </div>
             </Section>
 
-            <Section title="Payment Processing (Finance Section)" icon="💳" id="payment">
+            <Section title="Payment Processing (Finance Section)" icon={<CreditCard size={22} />} id="payment">
                 <div className="flex flex-col md:flex-row gap-6 items-start">
                     <div className="flex-1">
                         <p className="text-slate-600 mb-4">This section displays the claim batches as viewed by Finance Section staff after logging into the system. It is a replica of the page available in the Finance Section login.</p>
                         <div className="mt-4 p-4 bg-indigo-50 rounded-xl">
-                            <p className="text-sm font-semibold text-indigo-800">Finance Processing (Claim Status)</p>
+                            <p className="text-sm font-semibold text-indigo-800 flex items-center gap-2">
+                                <DollarSign size={16} /> Finance Processing (Claim Status)
+                            </p>
                             <p className="text-sm text-indigo-700">This menu displays the status of each claim batch. The action of submitting a batch to the Finance Section is performed here by clicking the Submit Batch to Finance button.</p>
                         </div>
                     </div>
@@ -192,14 +230,14 @@ function Guidelines() {
                 </div>
             </Section>
 
-            <Section title="Claim Report" icon="📑" id="report">
+            <Section title="Claim Report" icon={<FileText size={22} />} id="report">
                 <p className="text-slate-600">Various reports can be generated using the eight available filter options. Staff claim enquiries can also be viewed here.</p>
             </Section>
 
             <div className="grid md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                     <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
-                        <span className="text-blue-600">🔧</span> Core Settings
+                        <Settings size={18} className="text-blue-600" /> Core Settings
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -209,7 +247,9 @@ function Guidelines() {
                     </div>
                 </div>
                 <div className="bg-indigo-900 p-6 rounded-2xl text-white shadow-lg shadow-indigo-200">
-                    <h3 className="font-bold flex items-center gap-2 mb-2 italic">📌 Logout</h3>
+                    <h3 className="font-bold flex items-center gap-2 mb-2 italic">
+                        <LogOut size={18} /> Logout
+                    </h3>
                     <p className="text-xs text-indigo-100 leading-relaxed">Logs out the current user from the system.</p>
                 </div>
             </div>
@@ -218,7 +258,7 @@ function Guidelines() {
 
     const staffContent = (
         <>
-            <Section title="Dashboard Analytics" icon="📊" id="dashboard">
+            <Section title="Dashboard Analytics" icon={<LayoutDashboard size={22} />} id="dashboard">
                 <p className="text-slate-600 leading-relaxed mb-6">This section displays the following five categories in box format:</p>
                 <div className="grid md:grid-cols-3 gap-4">
                     <InfoCard title="Total Claims" list={['Total number of claims']} color="blue" />
@@ -234,7 +274,7 @@ function Guidelines() {
                 </div>
             </Section>
 
-            <Section title="Claim Entry" icon="✍️" id="entry">
+            <Section title="Claim Entry" icon={<PenTool size={22} />} id="entry">
                 <div className="bg-slate-50 rounded-xl p-6 border border-slate-100">
                     <div className="flex flex-col md:flex-row gap-8">
                         <div className="flex-1">
@@ -266,7 +306,7 @@ function Guidelines() {
                 </div>
             </Section>
 
-            <Section title="Claim Submission" icon="📤" id="submission">
+            <Section title="Claim Submission" icon={<Send size={22} />} id="submission">
                 <div className="bg-blue-50 rounded-xl p-6 border border-blue-100">
                     <p className="text-slate-700">A grouped claim is formed by combining individual claims that have the same Claim Type, Staff Category, and Bank Type. Multiple grouped claims together constitute a batch, which is sent to the Principal for approval.</p>
                     <div className="mt-4 p-4 bg-white rounded-lg">
@@ -277,24 +317,26 @@ function Guidelines() {
                 </div>
             </Section>
 
-            <Section title="Claim Report" icon="📑" id="report">
+            <Section title="Claim Report" icon={<FileText size={22} />} id="report">
                 <p className="text-slate-600 mb-4">Various reports can be generated using the eight available filter options. Staff claim enquiries can also be viewed here.</p>
                 <div className="space-y-4">
-                    <ReportItem title="Unsubmitted" text="Claim bills have been entered into the system." />
-                    <ReportItem title="Processed" text="Claim bills have been grouped into batches and are ready for the Principal's approval/signature." highlight />
-                    <ReportItem title="Submitted" text="Claim bills have been submitted to the Finance Section." />
-                    <ReportItem title="Credited" text="The claim amount has been credited to the staff members." />
+                    <ReportItem title="Unsubmitted" text="Claim bills have been entered into the system." icon={<Clock size={14} />} />
+                    <ReportItem title="Processed" text="Claim bills have been grouped into batches and are ready for the Principal's approval/signature." highlight icon={<CheckCircle size={14} />} />
+                    <ReportItem title="Submitted" text="Claim bills have been submitted to the Finance Section." icon={<Send size={14} />} />
+                    <ReportItem title="Credited" text="The claim amount has been credited to the staff members." icon={<Gift size={14} />} />
                 </div>
             </Section>
 
             <div className="grid md:grid-cols-2 gap-6">
-                <Section title="Staff Management" icon="👥" id="staff">
+                <Section title="Staff Management" icon={<Users size={22} />} id="staff">
                     <p className="text-sm text-slate-600 mb-4">Staff details are maintained and managed here.</p>
                     <div className="flex gap-2">
-                        <span className="text-[10px] bg-green-50 text-green-700 px-2 py-1 rounded font-bold border border-green-200">VIEW STAFF</span>
+                        <span className="text-[10px] bg-green-50 text-green-700 px-2 py-1 rounded font-bold border border-green-200 flex items-center gap-1">
+                            <UserCheck size={10} /> VIEW STAFF
+                        </span>
                     </div>
                 </Section>
-                <Section title="Finance Processing" icon="💰" id="finance">
+                <Section title="Finance Processing" icon={<DollarSign size={22} />} id="finance">
                     <p className="text-sm text-slate-600">This menu displays the status of each claim batch for staff view.</p>
                 </Section>
             </div>
@@ -302,7 +344,7 @@ function Guidelines() {
             <div className="grid md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                     <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
-                        <span className="text-blue-600">🔧</span> Core Settings
+                        <Settings size={18} className="text-blue-600" /> Core Settings
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -312,7 +354,9 @@ function Guidelines() {
                     </div>
                 </div>
                 <div className="bg-indigo-900 p-6 rounded-2xl text-white shadow-lg shadow-indigo-200">
-                    <h3 className="font-bold flex items-center gap-2 mb-2 italic">📌 Logout</h3>
+                    <h3 className="font-bold flex items-center gap-2 mb-2 italic">
+                        <LogOut size={18} /> Logout
+                    </h3>
                     <p className="text-xs text-indigo-100 leading-relaxed">Logs out the current user from the system.</p>
                 </div>
             </div>
@@ -332,8 +376,8 @@ function Guidelines() {
                 </div>
 
                 <div className="max-w-5xl mx-auto relative z-10 text-center">
-                    <span className="inline-block py-1 px-3 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold tracking-widest uppercase mb-4">
-                        Documentation Portal
+                    <span className="inline-block py-1 px-3 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold tracking-widest uppercase mb-4 flex items-center justify-center gap-2">
+                        <LayoutDashboard size={12} /> Documentation Portal
                     </span>
                     <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
                         Claim Management System
@@ -353,27 +397,48 @@ function Guidelines() {
                 <nav className="max-w-5xl flex flex-wrap justify-center gap-2 mb-12 bg-white/80 backdrop-blur-md p-2 rounded-2xl shadow-xl border border-white/20">
                     {userRole === 'admin' && (
                         <>
-                            {['Dashboard', 'Entry', 'Report', 'Payment', 'Staff', 'Claims', 'Settings'].map((item, n) => (
-                                <a key={n} href={`#${item.toLowerCase()}`} className="px-4 py-2 rounded-xl hover:bg-slate-50 transition-all text-slate-700 text-sm font-semibold">
-                                    {item}
+                            {[
+                                { name: 'Dashboard', icon: <LayoutDashboard size={14} /> },
+                                { name: 'Entry', icon: <PenTool size={14} /> },
+                                { name: 'Report', icon: <FileText size={14} /> },
+                                { name: 'Payment', icon: <CreditCard size={14} /> },
+                                { name: 'Staff', icon: <Users size={14} /> },
+                                { name: 'Claims', icon: <FileCheck size={14} /> },
+                                { name: 'Settings', icon: <Settings size={14} /> }
+                            ].map((item, n) => (
+                                <a key={n} href={`#${item.name.toLowerCase()}`} className="px-4 py-2 rounded-xl hover:bg-slate-50 transition-all text-slate-700 text-sm font-semibold flex items-center gap-2">
+                                    {item.icon} {item.name}
                                 </a>
                             ))}
                         </>
                     )}
                     {userRole === 'finance' && (
                         <>
-                            {['Dashboard', 'Payment', 'Report', 'Settings'].map((item, n) => (
-                                <a key={n} href={`#${item.toLowerCase()}`} className="px-4 py-2 rounded-xl hover:bg-slate-50 transition-all text-slate-700 text-sm font-semibold">
-                                    {item}
+                            {[
+                                { name: 'Dashboard', icon: <LayoutDashboard size={14} /> },
+                                { name: 'Payment', icon: <CreditCard size={14} /> },
+                                { name: 'Report', icon: <FileText size={14} /> },
+                                { name: 'Settings', icon: <Settings size={14} /> }
+                            ].map((item, n) => (
+                                <a key={n} href={`#${item.name.toLowerCase()}`} className="px-4 py-2 rounded-xl hover:bg-slate-50 transition-all text-slate-700 text-sm font-semibold flex items-center gap-2">
+                                    {item.icon} {item.name}
                                 </a>
                             ))}
                         </>
                     )}
                     {userRole === 'staff' && (
                         <>
-                            {['Dashboard', 'Entry', 'Submission', 'Report', 'Staff', 'Finance', 'Settings'].map((item, n) => (
-                                <a key={n} href={`#${item.toLowerCase()}`} className="px-4 py-2 rounded-xl hover:bg-slate-50 transition-all text-slate-700 text-sm font-semibold">
-                                    {item}
+                            {[
+                                { name: 'Dashboard', icon: <LayoutDashboard size={14} /> },
+                                { name: 'Entry', icon: <PenTool size={14} /> },
+                                { name: 'Submission', icon: <Send size={14} /> },
+                                { name: 'Report', icon: <FileText size={14} /> },
+                                { name: 'Staff', icon: <Users size={14} /> },
+                                { name: 'Finance', icon: <DollarSign size={14} /> },
+                                { name: 'Settings', icon: <Settings size={14} /> }
+                            ].map((item, n) => (
+                                <a key={n} href={`#${item.name.toLowerCase()}`} className="px-4 py-2 rounded-xl hover:bg-slate-50 transition-all text-slate-700 text-sm font-semibold flex items-center gap-2">
+                                    {item.icon} {item.name}
                                 </a>
                             ))}
                         </>
@@ -390,7 +455,9 @@ function Guidelines() {
                     </p>
                     <div className="flex gap-6">
                         <span className="text-slate-400 text-xs">V1.0.4 - Enterprise Edition</span>
-                        <span className="text-blue-600 text-xs font-bold underline cursor-pointer">Support Portal</span>
+                        <span className="text-blue-600 text-xs font-bold underline cursor-pointer flex items-center gap-1">
+                            <AlertCircle size={10} /> Support Portal
+                        </span>
                     </div>
                 </footer>
             </div>
@@ -400,8 +467,8 @@ function Guidelines() {
 
 const Section = ({ title, icon, id, children }) => (
     <section id={id} className="bg-white rounded-3xl shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] border border-slate-200 overflow-hidden scroll-mt-24">
-        <div className="px-8 py-6 border-b border-slate-50 flex items-center gap-4">
-            <span className="text-2xl">{icon}</span>
+        <div className="px-8 py-6 border-b border-slate-50 flex items-center gap-3">
+            <span className="text-slate-700 flex items-center">{icon}</span>
             <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">{title}</h2>
         </div>
         <div className="p-8">
@@ -430,11 +497,14 @@ const InfoCard = ({ title, list, desc, color }) => {
     );
 };
 
-const ReportItem = ({ title, text, highlight }) => (
+const ReportItem = ({ title, text, highlight, icon }) => (
     <div className={`flex items-center justify-between p-4 rounded-xl border ${highlight ? 'bg-blue-50/50 border-blue-200' : 'border-slate-100'}`}>
-        <div>
-            <h5 className={`text-sm font-bold ${highlight ? 'text-blue-900' : 'text-slate-800'}`}>{title}</h5>
-            <p className="text-xs text-slate-500 mt-0.5">{text}</p>
+        <div className="flex items-center gap-3">
+            {icon && <span className="text-slate-500">{icon}</span>}
+            <div>
+                <h5 className={`text-sm font-bold ${highlight ? 'text-blue-900' : 'text-slate-800'}`}>{title}</h5>
+                <p className="text-xs text-slate-500 mt-0.5">{text}</p>
+            </div>
         </div>
         <div className="h-2 w-2 rounded-full bg-slate-300"></div>
     </div>

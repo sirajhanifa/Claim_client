@@ -26,10 +26,21 @@ const Dashboard = () => {
 
     const [tableData, setTableData] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [pendingAmount, setPendingAmount] = useState(0);
 
     useEffect(() => {
         fetchAdminTableData();
     }, []);
+
+    // Calculate pending amount for finance role
+    useEffect(() => {
+        if (!isAdmin && paymentTableData) {
+            const pendingTotal = (paymentTableData || [])
+                .filter(item => item.status === 'Submitted')
+                .reduce((sum, item) => sum + (item.amount || 0), 0);
+            setPendingAmount(pendingTotal);
+        }
+    }, [paymentTableData]);
 
     const fetchAdminTableData = async () => {
         setLoading(true);
@@ -207,25 +218,26 @@ const Dashboard = () => {
                     ) : (
                         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <ClaimCard
-                                title="Total Badges"
+                                title="Total Bills"
                                 count={paymentStats?.totalBadges || 0}
                                 amount={0}
                                 hideAmount={true}
                                 color="blue"
                             />
                             <ClaimCard
-                                title="Pending Badges"
-                                count={paymentStats?.pendingBadges || 0}
-                                amount={0}
-                                hideAmount={true}
-                                color="yellow"
-                            />
-                            <ClaimCard
-                                title="Finished Badges"
+                                title="Credited Bills"
                                 count={paymentStats?.finishedBadges || 0}
                                 amount={0}
                                 hideAmount={true}
                                 color="green"
+                            />
+                            <ClaimCard
+                                title="Awaiting for Credit"
+                                count={paymentStats?.pendingBadges || 0}
+                                amount={0}
+                                hideAmount={false}
+                                color="red"
+                                customAmount={pendingAmount}
                             />
                         </section>
                     )}
@@ -393,6 +405,19 @@ const Dashboard = () => {
                                 <tbody className="divide-y divide-slate-100 text-center">
                                     {(isAdmin ? tableData : paymentTableData || [])
                                         .filter(item => item.status === 'Submitted')
+                                        .sort((a, b) => {
+                                            // Apply same sorting logic for both admin and finance
+                                            const daysA = parseInt(a.daysPending, 10) || 0;
+                                            const daysB = parseInt(b.daysPending, 10) || 0;
+                                            if (daysA !== daysB) {
+                                                return daysB - daysA;
+                                            }
+                                            const idA = a.payment_report_id || '';
+                                            const idB = b.payment_report_id || '';
+                                            const lastTwoA = parseInt(idA.toString().slice(-2), 10) || 0;
+                                            const lastTwoB = parseInt(idB.toString().slice(-2), 10) || 0;
+                                            return lastTwoA - lastTwoB;
+                                        })
                                         .map((item, index) => {
                                             const daysPendingColor = getDaysPendingColor(item.daysPending || 0);
                                             return (

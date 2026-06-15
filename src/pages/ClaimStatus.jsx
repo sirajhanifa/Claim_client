@@ -3,7 +3,8 @@ import axios from "axios";
 import {
     Search, Layers, ChevronRight, FileSpreadsheet, Printer,
     AlertCircle, Loader2, CheckCircle2,
-    TrendingUp, Users, Hash, Filter, RefreshCw, XCircle, ArrowUpDown, ArrowUp, ArrowDown
+    TrendingUp, Users, Hash, Filter, RefreshCw, XCircle, ArrowUpDown, ArrowUp, ArrowDown,
+    MailCheck
 } from "lucide-react";
 
 const ClaimStatus = () => {
@@ -64,6 +65,36 @@ const ClaimStatus = () => {
     useEffect(() => {
         fetchBatches();
     }, []);
+
+    // Calculate batch counts by status
+    const batchCounts = useMemo(() => {
+        const counts = {
+            total: batches.length,
+            Processed: 0,
+            Submitted: 0,
+            Credited: 0
+        };
+        batches.forEach(batch => {
+            if (batch.batchStatus === 'Processed') counts.Processed++;
+            else if (batch.batchStatus === 'Submitted') counts.Submitted++;
+            else if (batch.batchStatus === 'Credited') counts.Credited++;
+        });
+        return counts;
+    }, [batches]);
+
+    // Get current filter display text and count
+    const currentFilterDisplay = useMemo(() => {
+        if (statusFilter === "All") {
+            return { text: "All Batches", count: batchCounts.total };
+        } else if (statusFilter === "Processed") {
+            return { text: "Processed Batches", count: batchCounts.Processed };
+        } else if (statusFilter === "Submitted") {
+            return { text: "Submitted Batches", count: batchCounts.Submitted };
+        } else if (statusFilter === "Credited") {
+            return { text: "Credited Batches", count: batchCounts.Credited };
+        }
+        return { text: "All Batches", count: batchCounts.total };
+    }, [statusFilter, batchCounts]);
 
     // Filter batches by search & status
     const filteredBatches = useMemo(() => {
@@ -359,6 +390,25 @@ const ClaimStatus = () => {
 
     const showEmailStatus = selectedBatchStatus === 'Credited';
 
+    const emailCounts = useMemo(() => {
+        const counts = {
+            sent: 0,
+            failed: 0,
+            pending: 0
+        };
+        groupedClaimsWithEmailStatus.forEach(g => {
+            const status = g.aggregatedEmailStatus?.toLowerCase();
+            if (status === 'sent') {
+                counts.sent++;
+            } else if (status === 'failed') {
+                counts.failed++;
+            } else {
+                counts.pending++;
+            }
+        });
+        return counts;
+    }, [groupedClaimsWithEmailStatus]);
+
     return (
         <div className="min-h-screen font-sans">
             <div className="space-y-8">
@@ -386,26 +436,60 @@ const ClaimStatus = () => {
                                         <Layers className="w-5 h-5 text-blue-600" />
                                         <h3 className="text-sm font-bold text-slate-600 uppercase">Batches</h3>
                                     </div>
-                                    <button onClick={fetchBatches} className="p-1.5 text-slate-400 hover:text-blue-600">
-                                        <RefreshCw className="w-4 h-4" />
-                                    </button>
+                                    {/* Show only the selected group count */}
+                                    <div className="flex items-center gap-2">
+                                        <div className={`px-3 py-1 rounded-full text-xs font-bold ${statusFilter === "All" ? " text-slate-700" :
+                                            statusFilter === "Processed" ? "text-purple-700" :
+                                                statusFilter === "Submitted" ? "text-blue-700" :
+                                                    "text-green-700"
+                                            }`}>
+                                            {currentFilterDisplay.text} : {currentFilterDisplay.count}
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {/* Status filter tabs */}
                                 <div className="flex gap-1 mb-4 bg-slate-100 p-1 rounded-lg">
-                                    {["All", "Processed", "Submitted", "Credited"].map(status => (
-                                        <button
-                                            key={status}
-                                            onClick={() => {
-                                                setStatusFilter(status);
-                                                setSelectedBatchId(null);
-                                                setClaims([]);
-                                            }}
-                                            className={`flex-1 text-xs font-semibold py-1.5 cursor-pointer rounded-lg transition ${statusFilter === status ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-                                        >
-                                            {status}
-                                        </button>
-                                    ))}
+                                    <button
+                                        onClick={() => {
+                                            setStatusFilter("All");
+                                            setSelectedBatchId(null);
+                                            setClaims([]);
+                                        }}
+                                        className={`flex-1 text-xs font-semibold py-1.5 cursor-pointer rounded-lg transition ${statusFilter === "All" ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                                    >
+                                        All
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setStatusFilter("Processed");
+                                            setSelectedBatchId(null);
+                                            setClaims([]);
+                                        }}
+                                        className={`flex-1 text-xs font-semibold py-1.5 cursor-pointer rounded-lg transition ${statusFilter === "Processed" ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                                    >
+                                        Processed
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setStatusFilter("Submitted");
+                                            setSelectedBatchId(null);
+                                            setClaims([]);
+                                        }}
+                                        className={`flex-1 text-xs font-semibold py-1.5 cursor-pointer rounded-lg transition ${statusFilter === "Submitted" ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                                    >
+                                        Submitted
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setStatusFilter("Credited");
+                                            setSelectedBatchId(null);
+                                            setClaims([]);
+                                        }}
+                                        className={`flex-1 text-xs font-semibold py-1.5 cursor-pointer rounded-lg transition ${statusFilter === "Credited" ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                                    >
+                                        Credited
+                                    </button>
                                 </div>
 
                                 <div className="relative">
@@ -457,8 +541,11 @@ const ClaimStatus = () => {
                             <EmptyState icon={<Layers className="w-12 h-12" />} title="Select a Batch" description="Choose a payment report from the sidebar to view details." />
                         ) : (
                             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                                {/* Metrics Cards  */}
-                                <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${showEmailStatus ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
+                                {/* Metrics Cards */}
+                                <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${showEmailStatus
+                                    ? 'lg:grid-cols-4'
+                                    : 'lg:grid-cols-3'
+                                    }`}>
                                     <MetricCard label="Total Amount" value={`₹${totalBatchAmount.toLocaleString()}`} icon={<TrendingUp className="w-5 h-5" />} theme="emerald" />
                                     <MetricCard
                                         label="Grouped Claims"
@@ -468,10 +555,27 @@ const ClaimStatus = () => {
                                     />
                                     {showEmailStatus && (
                                         <MetricCard
-                                            label="Successful Emails"
-                                            value={`${successfulEmailCount}`}
-                                            icon={<CheckCircle2 className="w-5 h-5" />}
-                                            theme="green"
+                                            label="Email Status"
+                                            value={
+                                                <div className="flex items-center justify-center mt-2 gap-3 text-sm">
+                                                    <span className="flex items-center gap-1">
+                                                        <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                                                        <span className="font-semibold text-green-600">{emailCounts.sent}</span>
+                                                    </span>
+                                                    <span className="text-slate-300">|</span>
+                                                    <span className="flex items-center gap-1">
+                                                        <XCircle className="w-3.5 h-3.5 text-red-600" />
+                                                        <span className="font-semibold text-red-600">{emailCounts.failed}</span>
+                                                    </span>
+                                                    <span className="text-slate-300">|</span>
+                                                    <span className="flex items-center gap-1">
+                                                        <AlertCircle className="w-3.5 h-3.5 text-yellow-500" />
+                                                        <span className="font-semibold text-yellow-500">{emailCounts.pending}</span>
+                                                    </span>
+                                                </div>
+                                            }
+                                            icon={<MailCheck className="w-5 h-5" />}
+                                            theme="purple"
                                         />
                                     )}
                                     <MetricCard label="Batch ID" value={selectedBatchId} icon={<Hash className="w-5 h-5" />} theme="orange" />
@@ -651,21 +755,38 @@ const EmptyState = ({ icon, title, description }) => (
     </div>
 );
 
-const MetricCard = ({ label, value, icon, theme }) => {
+const MetricCard = ({ label, value, icon, theme = 'blue', trend }) => {
+
     const themes = {
-        emerald: "bg-emerald-50 text-emerald-600",
-        blue: "bg-blue-50 text-blue-600",
-        purple: "bg-purple-50 text-purple-600",
-        orange: "bg-orange-50 text-orange-600",
-        green: "bg-green-50 text-green-600"
+        emerald: "bg-emerald-50/80 text-emerald-600 ring-1 ring-emerald-600/10",
+        blue: "bg-blue-50/80 text-blue-600 ring-1 ring-blue-600/10",
+        purple: "bg-purple-50/80 text-purple-600 ring-1 ring-purple-600/10",
+        orange: "bg-orange-50/80 text-orange-600 ring-1 ring-orange-600/10",
+        green: "bg-green-50/80 text-green-600 ring-1 ring-green-600/10",
+        red: "bg-red-50/80 text-red-600 ring-1 ring-red-600/10",
+        yellow: "bg-yellow-50/80 text-yellow-600 ring-1 ring-yellow-600/10"
     };
+
     return (
-        <div className="rounded-xl border border-slate-200 p-5 transition-all hover:shadow-md">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${themes[theme]}`}>
-                {icon}
+        <div className="group relative rounded-xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_12px_20px_-8px_rgba(0,0,0,0.08)]">
+            <div className="flex items-center justify-between gap-4">
+                <div className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-105 ${themes[theme] || themes.blue}`}>
+                    {React.cloneElement(icon, { className: "w-4.5 h-4.5 stroke-[2]" })}
+                </div>
+                <p className="truncate text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {label}
+                </p>
+                {trend && (
+                    <span className={`inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium tracking-tight ${trend.isPositive ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
+                        {trend.value}
+                    </span>
+                )}
             </div>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</p>
-            <p className="text-2xl font-bold text-slate-800 mt-3">{value}</p>
+            <div className="mt-4 flex items-baseline justify-between">
+                <div className="text-2xl font-bold tracking-tight text-slate-900">
+                    {value}
+                </div>
+            </div>
         </div>
     );
 };

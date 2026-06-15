@@ -9,9 +9,10 @@ const themes = {
     pink: { bar: "bg-pink-500", icon: "text-pink-600 bg-pink-50", text: "text-pink-600" },
 };
 
-const ClaimCard = ({ title, count = 0, amount = 0, color = 'blue', hideAmount = false }) => {
+const ClaimCard = ({ title, count = 0, amount = 0, color = 'blue', hideAmount = false, customAmount = null, showAlert = false }) => {
 
     const theme = themes[color] || themes.blue;
+    const displayAmount = customAmount !== null ? customAmount : amount;
 
     return (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
@@ -23,15 +24,15 @@ const ClaimCard = ({ title, count = 0, amount = 0, color = 'blue', hideAmount = 
                 <h3 className="text-slate-500 font-bold text-[10px] uppercase tracking-widest">
                     {title}
                 </h3>
+                {showAlert && (
+                    <span className="text-rose-500 text-xs animate-pulse">⚠️</span>
+                )}
             </div>
 
             <div className="flex items-center justify-between">
                 <div>
                     <p className="text-3xl font-black text-slate-900 tracking-tighter">
-                        {count.toLocaleString('en-IN')}
-                    </p>
-                    <p className="text-xs font-medium text-slate-400 mt-1 uppercase tracking-tighter">
-                        Total {title.includes('Badges') ? 'Badges' : 'Claims'}
+                        {typeof count === 'number' ? count.toLocaleString('en-IN') : count}
                     </p>
                 </div>
 
@@ -42,11 +43,11 @@ const ClaimCard = ({ title, count = 0, amount = 0, color = 'blue', hideAmount = 
 
             {!hideAmount && (
                 <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-400 uppercase">Amount</span>
+                    <span className="text-xs font-bold text-slate-400 uppercase">Total Value</span>
                     <div className="flex items-center gap-2">
                         <FaMoneyBillWave className={`${theme.text} text-sm`} />
                         <span className="text-xl font-black text-slate-800">
-                            ₹{amount.toLocaleString('en-IN')}
+                            ₹{displayAmount.toLocaleString('en-IN')}
                         </span>
                     </div>
                 </div>
