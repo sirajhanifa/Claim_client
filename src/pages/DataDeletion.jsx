@@ -30,17 +30,18 @@ const DataDeletion = () => {
             const res = await axios.post(`${API_URL}/api/data-deletion/export-by-academic-sem`, {
                 academic_sem_label: selectedLabel
             });
-            if (res.data.length === 0) throw new Error("No claim entries found for this semester.");
-
-            const worksheet = XLSX.utils.json_to_sheet(res.data);
+            const { claims = [], staff = [] } = res.data || {};
+            if (!claims.length) throw new Error("No claim entries found for this semester.");
+            const claimSheet = XLSX.utils.json_to_sheet(claims);
+            const staffSheet = XLSX.utils.json_to_sheet(staff);
             const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Claims Backup");
+            XLSX.utils.book_append_sheet(workbook, claimSheet, "Claims Backup");
+            XLSX.utils.book_append_sheet(workbook, staffSheet, "Staff Backup");
             const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-            saveAs(new Blob([excelBuffer], { type: "application/octet-stream" }), `backup_${selectedLabel}.xlsx`);
-
+            saveAs(new Blob([excelBuffer], { type: "application/octet-stream" }), `Claim ${selectedLabel} Backup.xlsx`);
             setMsg({ type: 'success', text: `Backup generated successfully.` });
         } catch (err) {
-            setMsg({ type: 'error', text: err.message || "Export failed." });
+            setMsg({ type: 'error', text: err.response?.data?.message || err.message || "Export failed." });
         } finally {
             setExportLoading(false);
         }

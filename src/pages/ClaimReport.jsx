@@ -22,6 +22,7 @@ const ClaimReport = () => {
 
     const apiUrl = import.meta.env.VITE_API_URL;
     const { data: claimData, loading: fetchLoading, error: fetchError, refetch } = useFetch(`${apiUrl}/claimDatas`);
+    const { data: staffData = [] } = useFetch(`${apiUrl}/staff`);
 
     const showStatusColumn = mainFilter === 'All';
     const showPaymentIdColumn = mainFilter !== 'Unsubmitted';
@@ -73,6 +74,16 @@ const ClaimReport = () => {
             .map(claim => claim.payment_report_id)
             .filter(id => id && id.trim() !== ''))].sort((a, b) => a.localeCompare(b));
     }, [claimData]);
+
+    const staffMapByPhone = useMemo(() => {
+        if (!staffData) return new Map();
+        return new Map(staffData.map((staff) => [staff.phone_no, staff]));
+    }, [staffData]);
+
+    const staffMapById = useMemo(() => {
+        if (!staffData) return new Map();
+        return new Map(staffData.filter((staff) => staff.staff_id).map((staff) => [staff.staff_id, staff]));
+    }, [staffData]);
 
     const selectedPaymentStatuses = useMemo(() => {
         if (!claimData || paymentIdFilter === 'All') return [];
@@ -224,10 +235,20 @@ const ClaimReport = () => {
         }
         const sorted = [...displayedClaimsBase];
         sorted.sort((a, b) => {
-            let aVal = a[sortConfig.key] || '';
-            let bVal = b[sortConfig.key] || '';
-            if (typeof aVal === 'string') aVal = aVal.toLowerCase();
-            if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+            const key = sortConfig.key;
+            let aVal = a[key];
+            let bVal = b[key];
+
+            if (key && key.endsWith('_date')) {
+                aVal = aVal ? new Date(aVal).getTime() : 0;
+                bVal = bVal ? new Date(bVal).getTime() : 0;
+            } else {
+                aVal = aVal ?? '';
+                bVal = bVal ?? '';
+                if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+                if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+            }
+
             if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
             if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
             return 0;
@@ -286,6 +307,8 @@ const ClaimReport = () => {
         }
         return name;
     };
+
+    const formatExcelDate = (date) => date ? new Date(date).toLocaleDateString('en-GB') : '';
 
     // Helper to render date column based on mainFilter
     const renderDateCell = (claim) => {
@@ -366,10 +389,36 @@ const ClaimReport = () => {
             return;
         }
 
-        const excelData = displayedClaims.map((claim) => ({
-            ...claim,
-            staff_name: getExcelDisplayName(claim)
-        }));
+        const excelData = displayedClaims.map((claim) => {
+            const staff = staffMapByPhone.get(claim.phone_number) || staffMapById.get(claim.staff_id) || {};
+            return {
+                StaffID: claim.staff_id || staff.staff_id || '',
+                StaffName: getExcelDisplayName(claim),
+                Designation: claim.designation || staff.designation || '',
+                Department: claim.department || staff.department || '',
+                Category: claim.category || staff.category || '',
+                EmploymentType: claim.employment_type || staff.employment_type || '',
+                College: claim.college || staff.college || '',
+                PhoneNumber: claim.phone_number || staff.phone_no || '',
+                Email: claim.email || staff.email || '',
+                BankName: claim.bank_name || staff.bank_name || '',
+                BranchName: claim.branch_name || staff.branch_name || '',
+                BankCity: claim.bank_city_name || staff.bank_city_name || '',
+                IFSCCode: claim.ifsc_code || staff.ifsc_code || '',
+                AccountNumber: claim.account_no || staff.bank_acc_no || '',
+                ClaimType: claim.claim_type_name || '',
+                Status: claim.status || '',
+                PaymentReportID: claim.payment_report_id || '',
+                InternalExternal: claim.internal_external || '',
+                TDSAmount: claim.tds_amount === -1 ? '' : claim.tds_amount,
+                Amount: claim.amount || '',
+                EntryDate: formatExcelDate(claim.entry_date),
+                ProcessedDate: formatExcelDate(claim.processed_date),
+                SubmittedDate: formatExcelDate(claim.submitted_date),
+                CreditedDate: formatExcelDate(claim.credited_date),
+                CourseCode: claim.course_code || ''
+            };
+        });
         const worksheet = XLSX.utils.json_to_sheet(excelData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Claims");
@@ -423,6 +472,7 @@ const ClaimReport = () => {
         "Account Number": "account_no",
         "Amount": "amount",
         "TDS Amount": "tds_amount",
+        "Dates": "entry_date",
         "Status": "status",
         "Payment ID": "payment_report_id"
     };
